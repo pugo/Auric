@@ -34,11 +34,29 @@ typedef std::pair<int32_t, bool> KeyPress_t;
 typedef std::map<KeyPress_t, KeyPress_t> KeyTranslation_t;
 
 
+class Texture
+{
+public:
+    Texture(uint16_t width, uint16_t height, uint8_t bpp);
+
+    bool create_texture(SDL_Renderer* sdl_renderer);
+    void set_render_zoom(uint8_t zoom);
+
+    const uint16_t width;
+    const uint16_t height;
+    const uint8_t bpp;
+
+    SDL_Texture* texture;
+    SDL_Rect render_rect;
+};
+
+
+
 class Frontend
 {
 public:
     static const uint8_t texture_width = 240;
-    static const uint8_t texture_height = 224;
+    static const uint16_t texture_height = 224;
     static const uint8_t texture_bpp = 4;
 
     Frontend(Oric* oric);
@@ -51,15 +69,12 @@ public:
     bool init_graphics();
 
     /**
-     * Close graphics output.
-     */
-    void close_graphics();
-
-    /**
      * Initialize sound
      * @return true on success
      */
     bool init_sound();
+
+    bool init_fonts();
 
     /**
      * Pause sound.
@@ -88,16 +103,6 @@ public:
     }
 
     /**
-     * Close sound.
-     */
-    void close_sound();
-
-    /**
-     * Close SDL.
-     */
-    void close_sdl();
-
-    /**
      * Perform all tasks happening each frame.
      * @return true if machine should continue.
      */
@@ -110,17 +115,36 @@ public:
     void render_graphics(std::vector<uint8_t>& pixels);
 
 protected:
+    /**
+     * Close graphics output.
+     */
+    void close_graphics();
+
+    /**
+     * Close sound.
+     */
+    void close_sound();
+
+    /**
+     * Close SDL.
+     */
+    void close_sdl();
+
     Oric* oric;
 
     SDL_Window* sdl_window;
-    SDL_Surface* sdl_surface;
     SDL_Renderer* sdl_renderer;
-    SDL_Texture* sdl_texture;
-    SDL_AudioDeviceID audio_device;
     SDL_AudioDeviceID sound_audio_device_id;
+
+    Texture oric_texture;
+    Texture status_texture;
+
+    SDL_Texture* sdl_koko_texture;
 
     KeyMap_t key_map;
     KeyTranslation_t key_translations;
+
+    std::vector<uint8_t> status_pixels;
 
     bool audio_locked;
 };
