@@ -25,6 +25,7 @@
 #include <vector>
 #include <SDL.h>
 #include <SDL_audio.h>
+#include <SDL_ttf.h>
 
 class Oric;
 class Memory;
@@ -135,6 +136,10 @@ protected:
     SDL_Window* sdl_window;
     SDL_Renderer* sdl_renderer;
     SDL_AudioDeviceID sound_audio_device_id;
+
+    TTF_Font* font;
+    SDL_Surface* text;
+    SDL_Texture* text_texture;
 
     Texture oric_texture;
     Texture status_texture;

@@ -1,10 +1,13 @@
 {
+  "name": "pugo-oric",
+  "version-string": "0.0.2",
   "dependencies": [
     "boost-assign",
+    "boost-circular-buffer",
     "boost-log",
     "boost-program-options",
     "sdl2",
     "sdl2-image",
-    "boost-circular-buffer"
+    "sdl2-ttf"
   ]
 }

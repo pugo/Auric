@@ -53,6 +53,7 @@ void Oric::init()
     machine->init(frontend);
     frontend->init_graphics();
     frontend->init_sound();
+    frontend->init_fonts();
 
     machine->cpu->set_quiet(true);
 

@@ -191,6 +191,30 @@ bool Frontend::init_sound()
 }
 
 
+bool Frontend::init_fonts()
+{
+    if (TTF_Init() < 0) {
+        std::cout << "Error intializing SDL_ttf: " << TTF_GetError() << std::endl;
+        return false;
+    }
+
+    font = TTF_OpenFont("fonts/Misc-Fixed-Neue.ttf", 30);
+    if (! font) {
+        std::cout << "Failed to load font: " << TTF_GetError() << std::endl;
+        return false;
+    }
+
+    SDL_Color color = { 255, 255, 255 };
+    text = TTF_RenderText_Solid( font, "Bajskorv? Eller en banan?", color );
+    if ( !text ) {
+        std::cout << "Failed to render text: " << TTF_GetError() << std::endl;
+    }
+
+    text_texture = SDL_CreateTextureFromSurface(sdl_renderer, text);
+    return true;
+}
+
+
 void Frontend::pause_sound(bool pause_on)
 {
     SDL_PauseAudioDevice(sound_audio_device_id, pause_on ? 1 : 0);
@@ -254,6 +278,10 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     SDL_UpdateTexture(oric_texture.texture, NULL, &pixels[0], oric_texture.width * oric_texture.bpp);
     SDL_RenderCopy(sdl_renderer, oric_texture.texture, NULL, &oric_texture.render_rect );
     SDL_RenderCopy(sdl_renderer, sdl_koko_texture, NULL, &status_texture.render_rect);
+
+    SDL_Rect dest = { 10, status_texture.render_rect.y, text->w, text->h };
+    SDL_RenderCopy(sdl_renderer, text_texture, NULL, &dest);
+
     SDL_RenderPresent(sdl_renderer);
 }
 
