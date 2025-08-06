@@ -20,6 +20,7 @@
 #include <thread>
 #include <sys/time.h>
 #include <unistd.h>
+#include <chrono>
 
 #include <boost/assign.hpp>
 #include <SDL.h>
@@ -46,6 +47,10 @@
 constexpr uint8_t cycles_per_raster = 64;
 constexpr uint32_t sound_pause_target = 1000;
 
+using hrc = std::chrono::high_resolution_clock;
+
+using namespace std::chrono_literals;
+
 
 Machine::Machine(Oric* oric) :
     ula(this, &memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
@@ -53,7 +58,6 @@ Machine::Machine(Oric* oric) :
     memory(65535),
     tape(nullptr),
     cycle_count(0),
-    next_frame(0),
     warpmode_on(false),
     break_exec(false),
     sound_paused(true),
@@ -143,10 +147,7 @@ void Machine::reset()
 void Machine::run(Oric* oric)
 {
     uint32_t instructions = 0;
-
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    next_frame = tv.tv_sec * 1000000 + tv.tv_usec;
+    next_frame_tp = hrc::now();
 
     break_exec = false;
     uint8_t ran = 0;
@@ -182,20 +183,19 @@ void Machine::run(Oric* oric)
         }
 
         if (ula.paint_raster()) {
-            next_frame += 20000;
+            next_frame_tp += 20ms;
 
             if (! frontend->handle_frame()) {
                 break_exec = true;
             }
 
-            gettimeofday(&tv, NULL);
-            uint64_t now = tv.tv_sec * 1000000 + tv.tv_usec;
-            if (now > next_frame) {
-                next_frame = now;
+            hrc::time_point now_tp = hrc::now();
+            if (now_tp > next_frame_tp) {
+                next_frame_tp = now_tp;
             }
             else {
                 if (! warpmode_on) {
-                    usleep(next_frame - now);
+                    std::this_thread::sleep_for(next_frame_tp - now_tp);
                 }
             }
         }
@@ -261,15 +261,11 @@ void Machine::load_snapshot()
     std::cout << "Loaded snapshot." << std::endl;
 }
 
-
-
 bool Machine::toggle_warp_mode()
 {
     warpmode_on = !warpmode_on;
     if (! warpmode_on) {
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        next_frame = tv.tv_sec * 1000000 + tv.tv_usec;
+        next_frame_tp = hrc::now();
         frontend->unlock_audio();
     }
     else {

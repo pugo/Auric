@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <memory>
+#include <chrono>
 
 #include "chip/mos6502.hpp"
 #include "chip/mos6522.hpp"
@@ -220,7 +221,7 @@ protected:
     Tape* tape;
 
     int32_t cycle_count;
-    uint64_t next_frame;
+    std::chrono::high_resolution_clock::time_point next_frame_tp;
 
     bool sound_paused;
     uint32_t sound_pause_counter;
