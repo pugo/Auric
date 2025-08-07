@@ -57,6 +57,36 @@ void Texture::set_render_zoom(uint8_t zoom)
 }
 
 
+// ----- StatusBar ----------------
+
+StatusBar::StatusBar(uint16_t width, uint16_t height, uint8_t bpp) :
+    Texture(width, height, bpp),
+    status_surface(nullptr)
+{
+}
+
+StatusBar::~StatusBar()
+{
+    if (status_surface) {
+        SDL_FreeSurface(status_surface);
+    }
+}
+
+bool StatusBar::create_surface()
+{
+    status_surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_RGBA32);
+    return status_surface != nullptr;
+}
+
+bool StatusBar::update_texture(SDL_Renderer* sdl_renderer)
+{
+    uint32_t* pixel = (uint32_t*)((uint8_t*)status_surface->pixels + 3 * status_surface->pitch + 3 * 4);
+    *pixel = 0xffffffff;
+    texture = SDL_CreateTextureFromSurface(sdl_renderer, status_surface);
+    return texture != nullptr;
+}
+
+
 // ----- Frontend ----------------
 
 Frontend::Frontend(Oric* oric) :
@@ -64,7 +94,7 @@ Frontend::Frontend(Oric* oric) :
     sdl_window(NULL),
     sdl_renderer(NULL),
     oric_texture(texture_width, texture_height, texture_bpp),
-    status_texture(texture_width, 16, texture_bpp)
+    status_bar(texture_width*3, 16, texture_bpp)
 {
     for (uint8_t i=0; i < 64; ++i) {
         if (keytab[i] != 0) {
@@ -107,10 +137,10 @@ bool Frontend::init_graphics()
     }
 
     oric_texture.set_render_zoom(3);
-    status_texture.set_render_zoom(3);
-    status_texture.render_rect.y = oric_texture.render_rect.h;
+    status_bar.set_render_zoom(1);
+    status_bar.render_rect.y = oric_texture.render_rect.h;
 
-    uint16_t height = oric_texture.render_rect.h + status_texture.render_rect.h;
+    uint16_t height = oric_texture.render_rect.h + status_bar.render_rect.h;
 
     sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   oric_texture.render_rect.w, height, SDL_WINDOW_SHOWN);
@@ -134,15 +164,15 @@ bool Frontend::init_graphics()
     }
 
     if (! oric_texture.create_texture(sdl_renderer) ||
-        ! status_texture.create_texture(sdl_renderer)) {
+        ! status_bar.create_surface() ||
+        ! status_bar.update_texture(sdl_renderer)) {
         return false;
     }
+
 
     // Initialize renderer color
     SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
     SDL_RenderClear(sdl_renderer);
-
-    sdl_koko_texture = IMG_LoadTexture(sdl_renderer, "koko.png");
 
     return true;
 }
@@ -193,24 +223,6 @@ bool Frontend::init_sound()
 
 bool Frontend::init_fonts()
 {
-    if (TTF_Init() < 0) {
-        std::cout << "Error intializing SDL_ttf: " << TTF_GetError() << std::endl;
-        return false;
-    }
-
-    font = TTF_OpenFont("fonts/Misc-Fixed-Neue.ttf", 30);
-    if (! font) {
-        std::cout << "Failed to load font: " << TTF_GetError() << std::endl;
-        return false;
-    }
-
-    SDL_Color color = { 255, 255, 255 };
-    text = TTF_RenderText_Solid( font, "Bajskorv? Eller en banan?", color );
-    if ( !text ) {
-        std::cout << "Failed to render text: " << TTF_GetError() << std::endl;
-    }
-
-    text_texture = SDL_CreateTextureFromSurface(sdl_renderer, text);
     return true;
 }
 
@@ -277,10 +289,9 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 {
     SDL_UpdateTexture(oric_texture.texture, NULL, &pixels[0], oric_texture.width * oric_texture.bpp);
     SDL_RenderCopy(sdl_renderer, oric_texture.texture, NULL, &oric_texture.render_rect );
-    SDL_RenderCopy(sdl_renderer, sdl_koko_texture, NULL, &status_texture.render_rect);
 
-    SDL_Rect dest = { 10, status_texture.render_rect.y, text->w, text->h };
-    SDL_RenderCopy(sdl_renderer, text_texture, NULL, &dest);
+//    SDL_Rect dest = { 10, status_bar.render_rect.y, status_bar->w, text->h };
+    SDL_RenderCopy(sdl_renderer, status_bar.texture, NULL, &status_bar.render_rect);
 
     SDL_RenderPresent(sdl_renderer);
 }

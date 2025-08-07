@@ -52,6 +52,18 @@ public:
 };
 
 
+class StatusBar : public Texture
+{
+public:
+    StatusBar(uint16_t width, uint16_t height, uint8_t bpp);
+    ~StatusBar();
+
+    bool create_surface();
+    bool update_texture(SDL_Renderer* sdl_renderer);
+
+    SDL_Surface* status_surface;
+};
+
 
 class Frontend
 {
@@ -137,14 +149,8 @@ protected:
     SDL_Renderer* sdl_renderer;
     SDL_AudioDeviceID sound_audio_device_id;
 
-    TTF_Font* font;
-    SDL_Surface* text;
-    SDL_Texture* text_texture;
-
     Texture oric_texture;
-    Texture status_texture;
-
-    SDL_Texture* sdl_koko_texture;
+    StatusBar status_bar;
 
     KeyMap_t key_map;
     KeyTranslation_t key_translations;
