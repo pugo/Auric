@@ -25,6 +25,10 @@
 #include <vector>
 #include <SDL.h>
 #include <SDL_audio.h>
+#include <SDL_ttf.h>
+
+#include "texture.hpp"
+#include "status_bar.hpp"
 
 class Oric;
 class Memory;
@@ -38,7 +42,7 @@ class Frontend
 {
 public:
     static const uint8_t texture_width = 240;
-    static const uint8_t texture_height = 224;
+    static const uint16_t texture_height = 224;
     static const uint8_t texture_bpp = 4;
 
     Frontend(Oric* oric);
@@ -49,11 +53,6 @@ public:
      * @return true on success
      */
     bool init_graphics();
-
-    /**
-     * Close graphics output.
-     */
-    void close_graphics();
 
     /**
      * Initialize sound
@@ -88,16 +87,6 @@ public:
     }
 
     /**
-     * Close sound.
-     */
-    void close_sound();
-
-    /**
-     * Close SDL.
-     */
-    void close_sdl();
-
-    /**
      * Perform all tasks happening each frame.
      * @return true if machine should continue.
      */
@@ -109,18 +98,38 @@ public:
      */
     void render_graphics(std::vector<uint8_t>& pixels);
 
+    bool set_status_bar(const std::string& text);
+    bool clear_status_bar();
+
 protected:
+    /**
+     * Close graphics output.
+     */
+    void close_graphics();
+
+    /**
+     * Close sound.
+     */
+    void close_sound();
+
+    /**
+     * Close SDL.
+     */
+    void close_sdl();
+
     Oric* oric;
 
     SDL_Window* sdl_window;
-    SDL_Surface* sdl_surface;
     SDL_Renderer* sdl_renderer;
-    SDL_Texture* sdl_texture;
-    SDL_AudioDeviceID audio_device;
     SDL_AudioDeviceID sound_audio_device_id;
+
+    Texture oric_texture;
+    StatusBar status_bar;
 
     KeyMap_t key_map;
     KeyTranslation_t key_translations;
+
+    std::vector<uint8_t> status_pixels;
 
     bool audio_locked;
 };

@@ -1,0 +1,143 @@
+// =========================================================================
+//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//
+//   This program is free software: you can redistribute it and/or modify
+//   it under the terms of the GNU General Public License as published by
+//   the Free Software Foundation, either version 3 of the License, or
+//   (at your option) any later version.
+//
+//   This program is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+//
+//   You should have received a copy of the GNU General Public License
+//   along with this program.  If not, see <http://www.gnu.org/licenses/>
+// =========================================================================
+
+#include <filesystem>
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+#include <SDL_image.h>
+
+#include "frontend.hpp"
+
+
+std::filesystem::path font_path = "fonts/light.bin";
+
+const uint8_t ascii_to_glyph[128] = {
+    // Control characters 0–31 (map to themselves or custom handling)
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+
+    // Printable ASCII 32–63 (space to '?')
+    0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,  //  !"#$%&'
+    0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0xff,  // ()*+,-./
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,  // 01234567
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,  // 89:;<=>?
+
+    // ASCII 64–95 ('@' to '_') — same in PETSCII
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,  // @ABCDEFG
+    0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,  // HIJKLMNO
+    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,  // PQRSTUVW
+    0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x64,  // XYZ[\]^_
+
+    // ASCII 96–127 ('`' to DEL)
+    0x27, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,  // `abcdefg
+    0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,  // hijklmno
+    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,  // pqrstuvw
+    0x18, 0x19, 0x1a, 0xff, 0xff, 0xff, 0xff, 0xff   // xyz{|}~
+};
+
+constexpr uint8_t margin_x = 8;
+constexpr uint8_t margin_y = 3;
+
+constexpr uint8_t font_width = 8;
+constexpr uint8_t font_height = 8;
+constexpr uint8_t bpp = 4;
+
+
+StatusBar::StatusBar(uint16_t width, uint16_t height, uint8_t bpp) :
+    Texture(width, height, bpp),
+    status_surface(nullptr),
+    font_size(0),
+    font_data(nullptr)
+{
+}
+
+StatusBar::~StatusBar()
+{
+    if (status_surface) {
+        SDL_FreeSurface(status_surface);
+    }
+}
+
+bool StatusBar::init(SDL_Renderer* sdl_renderer)
+{
+    std::cout << "Status bar: Reading font: '" << font_path << "'" << std::endl;
+
+    std::ifstream file (font_path, std::ios::in | std::ios::binary | std::ios::ate);
+    if (file.is_open())
+    {
+        file.seekg (0, file.end);
+        font_size = file.tellg();
+        font_data = std::unique_ptr<uint8_t>(new uint8_t[font_size]);
+        file.seekg(0, std::ios::beg);
+        file.read(reinterpret_cast<char*>(font_data.get()), font_size);
+        file.close();
+    }
+    else {
+        std::cout << "Status bar: unable to open font file";
+        return false;
+    }
+
+    status_surface = SDL_CreateRGBSurfaceWithFormat(0xff, width, height, 32, SDL_PIXELFORMAT_RGBA32);
+    if (status_surface == nullptr) {
+        return false;
+    }
+
+    return update_texture(sdl_renderer);
+}
+
+bool StatusBar::update_texture(SDL_Renderer* sdl_renderer)
+{
+    SDL_FillRect(status_surface, NULL, 0x000000ff);
+
+    auto pos = 0;
+    for (auto c : text) {
+        if (c > 127) {
+            continue;
+        }
+        put_char(pos++, ascii_to_glyph[c]);
+    }
+
+    texture = SDL_CreateTextureFromSurface(sdl_renderer, status_surface);
+    return texture != nullptr;
+}
+
+void StatusBar::put_char(uint8_t pos, uint8_t chr)
+{
+    if (font_height * chr > font_size) {
+        return;
+    }
+
+    uint8_t* chr_ptr = font_data.get() + (font_height * chr);
+
+    for (auto y = 0; y < font_height; ++y) {
+        for (auto x = 0; x < font_width; ++x) {
+            if (*chr_ptr & (1 << x)) {
+                uint32_t* pixel = (uint32_t*)((uint8_t*)status_surface->pixels +
+                                              (margin_y + y) * status_surface->pitch +
+                                              (margin_x + (pos * font_width) + font_width - x) * bpp);
+
+                *pixel = 0xffffffff;
+            }
+        }
+        ++chr_ptr;
+    }
+}

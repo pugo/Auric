@@ -18,16 +18,15 @@
 #include <iostream>
 #include <cstdlib>
 #include <thread>
-#include <sys/time.h>
 #include <unistd.h>
-#include <chrono>
+#include <thread>
 
 #include <boost/assign.hpp>
 #include <SDL.h>
 
 #include "machine.hpp"
 #include "oric.hpp"
-#include "frontend.hpp"
+#include "frontends/sdl/frontend.hpp"
 
 // VIA Lines        Oric usage
 // ----------       ---------------------------------
@@ -50,6 +49,13 @@ constexpr uint32_t sound_pause_target = 1000;
 using hrc = std::chrono::high_resolution_clock;
 
 using namespace std::chrono_literals;
+
+
+void clear_status_bar_after_delay(Machine* machine, hrc::duration delay)
+{
+    std::this_thread::sleep_for(delay);
+    machine->frontend->clear_status_bar();
+}
 
 
 Machine::Machine(Oric* oric) :
@@ -152,6 +158,8 @@ void Machine::run(Oric* oric)
     break_exec = false;
     uint8_t ran = 0;
 
+    std::thread clear_sb_thread(clear_status_bar_after_delay, this, 3s);
+
     cycle_count += cycles_per_raster;
 
     while (! break_exec) {
@@ -202,6 +210,8 @@ void Machine::run(Oric* oric)
 
         cycle_count += cycles_per_raster;
     }
+
+    clear_sb_thread.join();
 }
 
 void Machine::key_press(uint8_t key_bits, bool down)
@@ -267,9 +277,11 @@ bool Machine::toggle_warp_mode()
     if (! warpmode_on) {
         next_frame_tp = hrc::now();
         frontend->unlock_audio();
+        frontend->clear_status_bar();
     }
     else {
         frontend->lock_audio();
+        frontend->set_status_bar("Warp mode");
     }
 
     std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;

@@ -23,7 +23,7 @@
 #include <string>
 #include <iostream>
 
-#include "frontend.hpp"
+#include "frontends/sdl/frontend.hpp"
 #include "machine.hpp"
 
 

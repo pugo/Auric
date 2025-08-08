@@ -26,7 +26,7 @@
 
 #include "oric.hpp"
 #include "memory.hpp"
-#include "frontend.hpp"
+#include "frontends/sdl/frontend.hpp"
 
 namespace po = boost::program_options;
 
@@ -53,6 +53,8 @@ void Oric::init()
     machine->init(frontend);
     frontend->init_graphics();
     frontend->init_sound();
+
+    frontend->set_status_bar("Starting ORIC...");
 
     machine->cpu->set_quiet(true);
 

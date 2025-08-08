@@ -34,11 +34,14 @@ static int32_t keytab[] = {
     '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
 
+// ----- Frontend ----------------
+
 Frontend::Frontend(Oric* oric) :
     oric(oric),
     sdl_window(NULL),
-    sdl_surface(NULL),
-    sdl_renderer(NULL)
+    sdl_renderer(NULL),
+    oric_texture(texture_width, texture_height, texture_bpp),
+    status_bar(texture_width*3, 16, texture_bpp)
 {
     for (uint8_t i=0; i < 64; ++i) {
         if (keytab[i] != 0) {
@@ -80,9 +83,14 @@ bool Frontend::init_graphics()
         std::cout <<  "Warning: Linear texture filtering not enabled!" << std::endl;
     }
 
-    // Create window (240x224)
+    oric_texture.set_render_zoom(3);
+    status_bar.set_render_zoom(1);
+    status_bar.render_rect.y = oric_texture.render_rect.h;
+
+    uint16_t height = oric_texture.render_rect.h + status_bar.render_rect.h;
+
     sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                  texture_width*3, texture_height*3, SDL_WINDOW_SHOWN);
+                                  oric_texture.render_rect.w, height, SDL_WINDOW_SHOWN);
     if (sdl_window == NULL) {
         std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
         return false;
@@ -102,25 +110,16 @@ bool Frontend::init_graphics()
         return false;
     }
 
-    sdl_texture = SDL_CreateTexture(sdl_renderer,
-                                    SDL_PIXELFORMAT_ARGB8888,
-                                    SDL_TEXTUREACCESS_STREAMING,
-                                    texture_width,
-                                    texture_height);
+    if (! oric_texture.create_texture(sdl_renderer) ||
+        ! status_bar.init(sdl_renderer)) {
+        return false;
+    }
 
     // Initialize renderer color
     SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
     SDL_RenderClear(sdl_renderer);
 
     return true;
-}
-
-
-void Frontend::close_graphics()
-{
-    //Destroy window
-    SDL_DestroyWindow(sdl_window);
-    sdl_window = NULL;
 }
 
 
@@ -145,11 +144,7 @@ bool Frontend::init_sound()
     audio_spec_want.callback = ay3->audio_callback;
     audio_spec_want.userdata = (void*) ay3;
 
-    sound_audio_device_id = SDL_OpenAudioDevice(NULL,
-                                                0,
-                                                &audio_spec_want,
-                                                &audio_spec,
-                                                0);
+    sound_audio_device_id = SDL_OpenAudioDevice(NULL, 0, &audio_spec_want, &audio_spec, 0);
 
     if(!sound_audio_device_id)
     {
@@ -167,8 +162,6 @@ bool Frontend::init_sound()
     std::cout << "channels: " << (int) audio_spec.channels << std::endl;
     std::cout << "samples: " << (int) audio_spec.samples << std::endl;
 
-//    SDL_PauseAudioDevice(sound_audio_device_id, 1);
-
     return true;
 }
 
@@ -178,17 +171,6 @@ void Frontend::pause_sound(bool pause_on)
     SDL_PauseAudioDevice(sound_audio_device_id, pause_on ? 1 : 0);
 }
 
-
-void Frontend::close_sound()
-{
-    SDL_CloseAudioDevice(sound_audio_device_id);
-}
-
-
-void Frontend::close_sdl()
-{
-    SDL_Quit(); // Quit all SDL subsystems
-}
 
 bool Frontend::handle_frame()
 {
@@ -244,8 +226,44 @@ bool Frontend::handle_frame()
 
 void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 {
-    SDL_UpdateTexture(sdl_texture, NULL, &pixels[0], texture_width * texture_bpp);
-    SDL_RenderCopy(sdl_renderer, sdl_texture, NULL, NULL );
+    SDL_UpdateTexture(oric_texture.texture, NULL, &pixels[0], oric_texture.width * oric_texture.bpp);
+    SDL_RenderCopy(sdl_renderer, oric_texture.texture, NULL, &oric_texture.render_rect );
+
+//    SDL_Rect dest = { 10, status_bar.render_rect.y, status_bar->w, text->h };
+    SDL_RenderCopy(sdl_renderer, status_bar.texture, NULL, &status_bar.render_rect);
+
     SDL_RenderPresent(sdl_renderer);
+}
+
+bool Frontend::set_status_bar(const std::string& text)
+{
+    status_bar.set_text(text);
+    return status_bar.update_texture(sdl_renderer);
+}
+
+bool Frontend::clear_status_bar()
+{
+    status_bar.set_text("");
+    return status_bar.update_texture(sdl_renderer);
+}
+
+
+void Frontend::close_graphics()
+{
+    //Destroy window
+    SDL_DestroyWindow(sdl_window);
+    sdl_window = NULL;
+}
+
+
+void Frontend::close_sound()
+{
+    SDL_CloseAudioDevice(sound_audio_device_id);
+}
+
+
+void Frontend::close_sdl()
+{
+    SDL_Quit(); // Quit all SDL subsystems
 }
 

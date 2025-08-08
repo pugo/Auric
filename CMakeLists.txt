@@ -27,18 +27,20 @@ if (DEFINED CMAKE_TOOLCHAIN_FILE)
     find_package(Boost REQUIRED COMPONENTS log program_options assign circular_buffer)
     find_package(SDL2 CONFIG REQUIRED)
     find_package(SDL2_image CONFIG REQUIRED)
+    find_package(SDL2_ttf CONFIG REQUIRED)
 
     set(BOOST_LIBRARIES Boost::log Boost::program_options Boost::assign Boost::circular_buffer)
-    set(SDL2_LIBRARIES SDL2::SDL2 SDL2_image::SDL2_image-static)
+    set(SDL2_LIBRARIES SDL2::SDL2 SDL2_image::SDL2_image-static SDL2_ttf::SDL2_ttf-static)
 else ()
     message("Not using vcpkg")
 
     find_package(Boost 1.71.0 COMPONENTS program_options log)
     find_package(SDL2 REQUIRED)
     find_package(SDL2_image REQUIRED)
+    find_package(SDL2_ttf REQUIRED)
 
     set(BOOST_LIBRARIES ${Boost_LIBRARIES})
-    set(SDL2_LIBRARIES ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
+    set(SDL2_LIBRARIES ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} SDL2_ttf)
 endif ()
 
 
@@ -46,7 +48,6 @@ set (LIB_SOURCES
         oric.cpp
         memory.cpp
         machine.cpp
-        frontend.cpp
         monitor.cpp
         config.cpp
         snapshot.cpp
@@ -57,6 +58,7 @@ include_directories(${Boost_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCL
 
 include(chip/CMakeLists.txt)
 include(tape/CMakeLists.txt)
+include(frontends/sdl/CMakeLists.txt)
 
 add_executable(oric main.cpp ${LIB_SOURCES} )
 target_link_libraries(oric

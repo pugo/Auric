@@ -45,7 +45,7 @@ ULA::ULA(Machine* machine, Memory* memory, uint8_t texture_width, uint8_t textur
     blink(0x3f),
     frame_count(0)
 {
-    pixels = std::vector<uint8_t>(Frontend::texture_width * Frontend::texture_height * Frontend::texture_bpp, 0);
+    pixels = std::vector<uint8_t>(texture_width * texture_height * texture_bpp, 0);
 }
 
 
