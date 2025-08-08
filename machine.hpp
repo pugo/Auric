@@ -41,7 +41,7 @@ class Machine
 {
 public:
     Machine(Oric* oric);
-    virtual ~Machine();
+    ~Machine();
 
     /**
      * Init the machine.

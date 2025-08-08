@@ -15,59 +15,31 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <signal.h>
+#include <boost/assign.hpp>
+#include <SDL_image.h>
 
-#include <sstream>
-#include <string>
-
-#include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
-
+#include "frontend.hpp"
+#include "chip/ay3_8912.hpp"
 #include "oric.hpp"
 
 
-std::unique_ptr<Oric> oric;
-
-struct sigaction sigact;
-
-/**
- * Handle signal
- * @param signal signal to handle
- */
-static void signal_handler(int signal)
+Texture::Texture(uint16_t width, uint16_t height, uint8_t bpp) :
+    width(width), height(height), bpp(bpp)
 {
-    if (signal == SIGINT) {
-        oric->get_machine().stop();
-        oric->do_break();
-    }
+    render_rect = {0, 0, width, height};
 }
 
-/**
- * Initialize signal handler.
- */
-void init_signals()
+bool Texture::create_texture(SDL_Renderer* sdl_renderer)
 {
-    sigact.sa_handler = signal_handler;
-    sigemptyset(&sigact.sa_mask);
-    sigact.sa_flags = 0;
-    sigaction(SIGINT, &sigact, (struct sigaction *)NULL);
+    texture = SDL_CreateTexture(sdl_renderer,
+                                SDL_PIXELFORMAT_ARGB8888,
+                                SDL_TEXTUREACCESS_STREAMING,
+                                width, height);
+    return texture != NULL;
 }
 
-
-int main(int argc, char *argv[])
+void Texture::set_render_zoom(uint8_t zoom)
 {
-    Config config;
-    if (! config.parse(argc, argv)) {
-        return 0;
-    }
-
-    oric = std::make_unique<Oric>(config);
-    init_signals();
-
-    oric->init();
-    oric->get_machine().reset();
-
-    oric->run();
-
-    return 0;
+    render_rect = {0, 0, width * zoom, height * zoom};
 }
+

@@ -48,7 +48,6 @@ set (LIB_SOURCES
         oric.cpp
         memory.cpp
         machine.cpp
-        frontend.cpp
         monitor.cpp
         config.cpp
         snapshot.cpp
@@ -59,6 +58,7 @@ include_directories(${Boost_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCL
 
 include(chip/CMakeLists.txt)
 include(tape/CMakeLists.txt)
+include(frontends/sdl/CMakeLists.txt)
 
 add_executable(oric main.cpp ${LIB_SOURCES} )
 target_link_libraries(oric

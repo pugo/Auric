@@ -15,59 +15,38 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <signal.h>
+#ifndef FRONTENDS_SDL_STATUSBAR_H
+#define FRONTENDS_SDL_STATUSBAR_H
 
-#include <sstream>
-#include <string>
+#include <memory>
+#include <iostream>
+#include <ostream>
+#include <vector>
+#include <SDL.h>
+#include <SDL_audio.h>
+#include <SDL_ttf.h>
 
-#include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
 
-#include "oric.hpp"
-
-
-std::unique_ptr<Oric> oric;
-
-struct sigaction sigact;
-
-/**
- * Handle signal
- * @param signal signal to handle
- */
-static void signal_handler(int signal)
+class StatusBar : public Texture
 {
-    if (signal == SIGINT) {
-        oric->get_machine().stop();
-        oric->do_break();
-    }
-}
+public:
+    StatusBar(uint16_t width, uint16_t height, uint8_t bpp);
+    ~StatusBar();
 
-/**
- * Initialize signal handler.
- */
-void init_signals()
-{
-    sigact.sa_handler = signal_handler;
-    sigemptyset(&sigact.sa_mask);
-    sigact.sa_flags = 0;
-    sigaction(SIGINT, &sigact, (struct sigaction *)NULL);
-}
+    bool init(SDL_Renderer* sdl_renderer);
+
+    bool update_texture(SDL_Renderer* sdl_renderer);
+    void set_text(const std::string& text) { this->text = text; }
+
+private:
+    void put_char(uint8_t pos, uint8_t chr);
+
+    SDL_Surface* status_surface;
+    std::string text;
+
+    uint32_t font_size;
+    std::unique_ptr<uint8_t> font_data;
+};
 
 
-int main(int argc, char *argv[])
-{
-    Config config;
-    if (! config.parse(argc, argv)) {
-        return 0;
-    }
-
-    oric = std::make_unique<Oric>(config);
-    init_signals();
-
-    oric->init();
-    oric->get_machine().reset();
-
-    oric->run();
-
-    return 0;
-}
+#endif // FRONTENDS_SDL_STATUSBAR_H

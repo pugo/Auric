@@ -34,59 +34,6 @@ static int32_t keytab[] = {
     '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
 
-// ----- Texture ----------------
-
-Texture::Texture(uint16_t width, uint16_t height, uint8_t bpp) :
-    width(width), height(height), bpp(bpp)
-{
-    render_rect = {0, 0, width, height};
-}
-
-bool Texture::create_texture(SDL_Renderer* sdl_renderer)
-{
-    texture = SDL_CreateTexture(sdl_renderer,
-                                SDL_PIXELFORMAT_ARGB8888,
-                                SDL_TEXTUREACCESS_STREAMING,
-                                width, height);
-    return texture != NULL;
-}
-
-void Texture::set_render_zoom(uint8_t zoom)
-{
-    render_rect = {0, 0, width * zoom, height * zoom};
-}
-
-
-// ----- StatusBar ----------------
-
-StatusBar::StatusBar(uint16_t width, uint16_t height, uint8_t bpp) :
-    Texture(width, height, bpp),
-    status_surface(nullptr)
-{
-}
-
-StatusBar::~StatusBar()
-{
-    if (status_surface) {
-        SDL_FreeSurface(status_surface);
-    }
-}
-
-bool StatusBar::create_surface()
-{
-    status_surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_RGBA32);
-    return status_surface != nullptr;
-}
-
-bool StatusBar::update_texture(SDL_Renderer* sdl_renderer)
-{
-    uint32_t* pixel = (uint32_t*)((uint8_t*)status_surface->pixels + 3 * status_surface->pitch + 3 * 4);
-    *pixel = 0xffffffff;
-    texture = SDL_CreateTextureFromSurface(sdl_renderer, status_surface);
-    return texture != nullptr;
-}
-
-
 // ----- Frontend ----------------
 
 Frontend::Frontend(Oric* oric) :
@@ -164,11 +111,9 @@ bool Frontend::init_graphics()
     }
 
     if (! oric_texture.create_texture(sdl_renderer) ||
-        ! status_bar.create_surface() ||
-        ! status_bar.update_texture(sdl_renderer)) {
+        ! status_bar.init(sdl_renderer)) {
         return false;
     }
-
 
     // Initialize renderer color
     SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
@@ -217,12 +162,6 @@ bool Frontend::init_sound()
     std::cout << "channels: " << (int) audio_spec.channels << std::endl;
     std::cout << "samples: " << (int) audio_spec.samples << std::endl;
 
-    return true;
-}
-
-
-bool Frontend::init_fonts()
-{
     return true;
 }
 
@@ -294,6 +233,18 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     SDL_RenderCopy(sdl_renderer, status_bar.texture, NULL, &status_bar.render_rect);
 
     SDL_RenderPresent(sdl_renderer);
+}
+
+bool Frontend::set_status_bar(const std::string& text)
+{
+    status_bar.set_text(text);
+    return status_bar.update_texture(sdl_renderer);
+}
+
+bool Frontend::clear_status_bar()
+{
+    status_bar.set_text("");
+    return status_bar.update_texture(sdl_renderer);
 }
 
 

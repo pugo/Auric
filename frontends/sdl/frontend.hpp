@@ -27,42 +27,15 @@
 #include <SDL_audio.h>
 #include <SDL_ttf.h>
 
+#include "texture.hpp"
+#include "status_bar.hpp"
+
 class Oric;
 class Memory;
 
 typedef std::map<int32_t, uint8_t> KeyMap_t;
 typedef std::pair<int32_t, bool> KeyPress_t;
 typedef std::map<KeyPress_t, KeyPress_t> KeyTranslation_t;
-
-
-class Texture
-{
-public:
-    Texture(uint16_t width, uint16_t height, uint8_t bpp);
-
-    bool create_texture(SDL_Renderer* sdl_renderer);
-    void set_render_zoom(uint8_t zoom);
-
-    const uint16_t width;
-    const uint16_t height;
-    const uint8_t bpp;
-
-    SDL_Texture* texture;
-    SDL_Rect render_rect;
-};
-
-
-class StatusBar : public Texture
-{
-public:
-    StatusBar(uint16_t width, uint16_t height, uint8_t bpp);
-    ~StatusBar();
-
-    bool create_surface();
-    bool update_texture(SDL_Renderer* sdl_renderer);
-
-    SDL_Surface* status_surface;
-};
 
 
 class Frontend
@@ -86,8 +59,6 @@ public:
      * @return true on success
      */
     bool init_sound();
-
-    bool init_fonts();
 
     /**
      * Pause sound.
@@ -126,6 +97,9 @@ public:
      * @param pixels refernce to pixels to render
      */
     void render_graphics(std::vector<uint8_t>& pixels);
+
+    bool set_status_bar(const std::string& text);
+    bool clear_status_bar();
 
 protected:
     /**

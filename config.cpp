@@ -28,7 +28,7 @@
 
 #include "oric.hpp"
 #include "memory.hpp"
-#include "frontend.hpp"
+#include "frontends/sdl/frontend.hpp"
 
 namespace po = boost::program_options;
 
