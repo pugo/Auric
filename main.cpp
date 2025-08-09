@@ -18,7 +18,6 @@
 #include <signal.h>
 
 #include <sstream>
-#include <string>
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>

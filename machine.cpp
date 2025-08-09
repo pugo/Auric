@@ -59,7 +59,10 @@ void clear_status_bar_after_delay(Machine* machine, hrc::duration delay)
 
 
 Machine::Machine(Oric* oric) :
-    ula(this, &memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
+    cpu(nullptr),
+    mos_6522(nullptr),
+    ay3(nullptr),
+    ula(*this, memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
     oric(oric),
     memory(65535),
     tape(nullptr),
@@ -76,7 +79,12 @@ Machine::Machine(Oric* oric) :
 }
 
 Machine::~Machine()
-{}
+{
+    delete cpu;
+    delete mos_6522;
+    delete ay3;
+    delete tape;
+}
 
 void Machine::init(Frontend* frontend)
 {

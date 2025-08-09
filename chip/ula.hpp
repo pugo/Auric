@@ -48,7 +48,7 @@ public:
         BLINKING = 0x04,
     };
 
-    ULA(Machine* machine, Memory* memory, uint8_t texture_width, uint8_t texture_height, uint8_t texture_bpp);
+    ULA(Machine& machine, Memory& memory, uint8_t texture_width, uint8_t texture_height, uint8_t texture_bpp);
 
     /**
      * Paint one raster line.
@@ -63,8 +63,8 @@ private:
      */
     void update_graphics(uint8_t raster_line);
 
-    Machine* machine;
-    Memory* memory;
+    Machine& machine;
+    Memory& memory;
 
     uint8_t texture_width;
     uint8_t texture_height;

@@ -210,6 +210,7 @@ public:
     MOS6502* cpu;
     MOS6522* mos_6522;
     AY3_8912* ay3;
+
     bool break_exec;
     Memory memory;
     Frontend* frontend;

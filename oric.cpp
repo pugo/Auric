@@ -75,13 +75,8 @@ void Oric::init_machine()
 
 Oric::~Oric()
 {
-    if (machine) {
-        delete machine;
-    }
-
-    if (frontend) {
-        delete frontend;
-    }
+    delete machine;
+    delete frontend;
 }
 
 

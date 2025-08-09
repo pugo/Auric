@@ -32,7 +32,7 @@ constexpr uint16_t raster_visible_first = 44;
 constexpr uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
 
 
-ULA::ULA(Machine* machine, Memory* memory, uint8_t texture_width, uint8_t texture_height, uint8_t texture_bpp) :
+ULA::ULA(Machine& machine, Memory& memory, uint8_t texture_width, uint8_t texture_height, uint8_t texture_bpp) :
     machine(machine),
     memory(memory),
     texture_width(texture_width),
@@ -59,7 +59,7 @@ bool ULA::paint_raster()
 
     if (++raster_current == raster_max) {
         raster_current = 0;
-        if (machine->warpmode_on) {
+        if (machine.warpmode_on) {
             warpmode_counter = (warpmode_counter + 1) % 25;
             if (warpmode_counter) {
                 return false;
@@ -67,7 +67,7 @@ bool ULA::paint_raster()
         }
 
         render_screen = true;
-        machine->frontend->render_graphics(pixels);
+        machine.frontend->render_graphics(pixels);
         frame_count++;
     }
 
@@ -100,7 +100,7 @@ void ULA::update_graphics(uint8_t raster_line)
         bool ctrl_char = false;
 
         // get char code.
-        uint8_t ch = memory->mem[row + x];
+        uint8_t ch = memory.mem[row + x];
 
         if (!(ch & 0x60)) {
             ctrl_char = true;
@@ -145,7 +145,7 @@ void ULA::update_graphics(uint8_t raster_line)
             }
             else {
                 // get char pixel data for read char code. If hires > 200, charmem is at 0x9800.
-                uint8_t* char_mem = memory->mem + ((video_attrib & VideoAttribs::HIRES) ? 0x9800 : 0xb400) +
+                uint8_t* char_mem = memory.mem + ((video_attrib & VideoAttribs::HIRES) ? 0x9800 : 0xb400) +
                                     ((text_attrib & TextAttribs::ALTERNATE_CHARSET) ? 128 * 8 : 0);
 
                 uint8_t apan = (text_attrib & TextAttribs::DOUBLE_SIZE) ? ((raster_line >> 1) & 0x07) : (raster_line & 0x07);

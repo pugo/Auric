@@ -127,7 +127,7 @@ bool Frontend::init_sound()
 {
     std::cout << "Initializing sound.." << std::endl;
 
-    if(SDL_Init(SDL_INIT_AUDIO) < 0)
+    if (SDL_Init(SDL_INIT_AUDIO) < 0)
     {
         std::cout << "Error: failed initializing SDL: " << SDL_GetError() << std::endl;
         return false;
@@ -146,7 +146,7 @@ bool Frontend::init_sound()
 
     sound_audio_device_id = SDL_OpenAudioDevice(NULL, 0, &audio_spec_want, &audio_spec, 0);
 
-    if(!sound_audio_device_id)
+    if (!sound_audio_device_id)
     {
         std::cout << "Error: creating SDL audio device: " << SDL_GetError() << std::endl;
         return false;
@@ -228,10 +228,7 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 {
     SDL_UpdateTexture(oric_texture.texture, NULL, &pixels[0], oric_texture.width * oric_texture.bpp);
     SDL_RenderCopy(sdl_renderer, oric_texture.texture, NULL, &oric_texture.render_rect );
-
-//    SDL_Rect dest = { 10, status_bar.render_rect.y, status_bar->w, text->h };
     SDL_RenderCopy(sdl_renderer, status_bar.texture, NULL, &status_bar.render_rect);
-
     SDL_RenderPresent(sdl_renderer);
 }
 
@@ -250,7 +247,7 @@ bool Frontend::clear_status_bar()
 
 void Frontend::close_graphics()
 {
-    //Destroy window
+    SDL_DestroyRenderer(sdl_renderer);
     SDL_DestroyWindow(sdl_window);
     sdl_window = NULL;
 }
@@ -258,6 +255,7 @@ void Frontend::close_graphics()
 
 void Frontend::close_sound()
 {
+    SDL_PauseAudioDevice(sound_audio_device_id, true);
     SDL_CloseAudioDevice(sound_audio_device_id);
 }
 

@@ -29,6 +29,8 @@ public:
         motor_running(false)
     {}
 
+    virtual ~Tape() = default;
+
     /**
      * Initialize tape.
      * @return true on success
