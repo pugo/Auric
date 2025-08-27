@@ -41,10 +41,6 @@ Memory::Memory(uint32_t size) :
     std::fill(memory.begin(), memory.end(), 0x00);
 }
 
-Memory::~Memory()
-{
-}
-
 void error_exit(std::string description)
 {
     std::cout << std::endl << "!!! Error: " << description << std::endl << std::endl;

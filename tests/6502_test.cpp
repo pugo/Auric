@@ -49,7 +49,7 @@ protected:
     void run(Machine& machine) {
         bool brk = false;
         while (! brk) {
-            machine.cpu->exec(brk);
+            machine.cpu->exec(true, brk);
         }
     }
 

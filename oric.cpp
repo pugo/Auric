@@ -76,7 +76,7 @@ void Oric::init_machine()
 Oric::~Oric()
 {
     delete machine;
-    delete frontend;
+    //delete frontend;
 }
 
 
@@ -245,7 +245,7 @@ Oric::State Oric::handle_command(std::string& command_line)
         }
         else {
             bool brk = false;
-            while (! machine->cpu->exec(brk)) {}
+            while (! machine->cpu->exec(false, brk)) {}
             if (brk) {
                 std::cout << "Instruction BRK executed." << std::endl;
             }

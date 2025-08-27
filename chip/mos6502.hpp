@@ -126,10 +126,11 @@ public:
 
     /**
      * Execute instruction *cycle*.
+     * @param break_on_brk if true then the CPU will break on executed BRK instruction
      * @param do_break reference to varianble set to true if break is triggered
      * @return true if instruction was executed (not all cycles execute full instruction)
      */
-    bool exec(bool& do_break);
+    bool exec(bool break_on_brk, bool& do_break);
 
     /**
      * Save CPU state to snapshot.

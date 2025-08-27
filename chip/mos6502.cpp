@@ -409,7 +409,7 @@ uint8_t MOS6502::time_instruction()
 }
 
 
-bool MOS6502::exec(bool& do_break)
+bool MOS6502::exec(bool break_on_brk, bool& do_break)
 {
     if (instruction_load) {
         instruction_load = false;
@@ -1118,6 +1118,9 @@ bool MOS6502::exec(bool& do_break)
             I = true;
             D = false;
             PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
+            if (break_on_brk) {
+                do_break = true;
+            }
             break;
 
         case RTI:  // Return from interrupt

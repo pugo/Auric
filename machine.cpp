@@ -78,14 +78,6 @@ Machine::Machine(Oric* oric) :
     }
 }
 
-Machine::~Machine()
-{
-    delete cpu;
-    delete mos_6522;
-    delete ay3;
-    delete tape;
-}
-
 void Machine::init(Frontend* frontend)
 {
     this->frontend = frontend;
@@ -97,7 +89,7 @@ void Machine::init(Frontend* frontend)
 
 void Machine::init_cpu()
 {
-    cpu = new MOS6502(*this);
+    cpu = std::make_unique<MOS6502>(*this);
     cpu->memory_read_byte_handler = read_byte;
     cpu->memory_read_byte_zp_handler = read_byte_zp;
     cpu->memory_read_word_handler = read_word;
@@ -108,7 +100,7 @@ void Machine::init_cpu()
 
 void Machine::init_mos6522()
 {
-    mos_6522 = new MOS6522(*this);
+    mos_6522 = std::make_unique<MOS6522>(*this);
 
     // CA1 is connected to printer ACK line.
     // -- printer not supported.
@@ -131,7 +123,7 @@ void Machine::init_mos6522()
 
 void Machine::init_ay3()
 {
-    ay3 = new AY3_8912(*this);
+    ay3 = std::make_unique<AY3_8912>(*this);
 
     // AY data bus reads from VIA ORA (Output Register A).
     ay3->m_read_data_handler = read_via_ora;
@@ -141,14 +133,14 @@ void Machine::init_ay3()
 void Machine::init_tape()
 {
     if (! oric->get_config().tape_path().empty()) {
-        tape = new TapeTap(*mos_6522, oric->get_config().tape_path());
+        tape = std::make_unique<TapeTap>(*mos_6522, oric->get_config().tape_path());
         if (!tape->init()) {
             exit(1);
         }
     }
     else {
         std::cout << "No tape specified." << std::endl;
-        tape = new TapeBlank();
+        tape = std::make_unique<TapeBlank>();
     }
 }
 
@@ -185,7 +177,7 @@ void Machine::run(Oric* oric)
             mos_6522->exec();
             ay3->exec();
 
-            if (cpu->exec(break_exec)) {
+            if (cpu->exec(false, break_exec)) {
                 update_key_output();
 //                frontend->unlock_audio();
             }

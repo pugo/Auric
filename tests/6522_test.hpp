@@ -38,7 +38,7 @@ protected:
         oric->init_machine();
         oric->get_machine().init_mos6522();
 
-        mos6522 = oric->get_machine().mos_6522;
+        mos6522 = oric->get_machine().mos_6522.get();
         mos6522->orb_changed_handler = test_via_orb_changed_callback;
         mos6522->ca2_changed_handler = test_ca2_changed_callback;
         mos6522->cb2_changed_handler = test_cb2_changed_callback;
@@ -55,7 +55,7 @@ protected:
     void run(Machine& machine) {
         bool brk = false;
         while (! brk) {
-            machine.cpu->exec(brk);
+            machine.cpu->exec(true, brk);
         }
     }
 

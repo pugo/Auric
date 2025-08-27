@@ -41,7 +41,7 @@ class Machine
 {
 public:
     Machine(Oric* oric);
-    ~Machine();
+    ~Machine() = default;
 
     /**
      * Init the machine.
@@ -207,9 +207,9 @@ public:
         machine.irq_clear();
     }
 
-    MOS6502* cpu;
-    MOS6522* mos_6522;
-    AY3_8912* ay3;
+    std::unique_ptr<MOS6502> cpu;
+    std::unique_ptr<MOS6522> mos_6522;
+    std::unique_ptr<AY3_8912> ay3;
 
     bool break_exec;
     Memory memory;
@@ -219,7 +219,7 @@ public:
 protected:
     ULA ula;
     Oric* oric;
-    Tape* tape;
+    std::unique_ptr<Tape> tape;
 
     int32_t cycle_count;
     std::chrono::high_resolution_clock::time_point next_frame_tp;

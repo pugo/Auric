@@ -31,7 +31,7 @@ class Memory
 {
 public:
     Memory(uint32_t size);
-    ~Memory();
+    ~Memory() = default;
 
     /**
      * Load file from given path to given address.
@@ -82,12 +82,13 @@ public:
      */
     void show(uint32_t pos, uint32_t length);
 
-    std::vector<uint8_t> memory;
+    // This is an emulator where speed is important. No smart pointers or getters for memory!
     uint8_t* mem;
 
 protected:
     uint32_t size;
     uint32_t mempos;
+    std::vector<uint8_t> memory;
 };
 
 
