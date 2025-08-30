@@ -21,6 +21,7 @@
 #include <memory>
 #include <iostream>
 #include <ostream>
+#include <thread>
 #include <vector>
 #include <SDL.h>
 #include <SDL_audio.h>
@@ -35,13 +36,26 @@ public:
 
     bool init(SDL_Renderer* sdl_renderer);
 
+    void paint();
     bool update_texture(SDL_Renderer* sdl_renderer);
-    void set_text(const std::string& text) { this->text = text; }
+    bool has_update() { return has_updated; }
+
+    void set_text(const std::string& text);
 
 private:
     void put_char(uint8_t pos, uint8_t chr);
+    void thread_main();
+    void stop_thread();
 
-    SDL_Surface* status_surface;
+    bool do_stop_thread;
+    bool update_requested;
+    bool has_updated;
+    std::mutex update_mutex;
+    std::thread update_thread;
+    std::condition_variable condition_variable;
+
+    SDL_Surface* front_surface;
+    SDL_Surface* back_surface;
     std::string text;
 
     uint32_t font_size;

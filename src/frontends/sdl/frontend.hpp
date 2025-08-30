@@ -98,8 +98,8 @@ public:
      */
     void render_graphics(std::vector<uint8_t>& pixels);
 
-    bool set_status_bar(const std::string& text);
-    bool clear_status_bar();
+    void set_status_bar(const std::string& text);
+    void clear_status_bar();
 
 protected:
     /**

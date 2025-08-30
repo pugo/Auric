@@ -19,10 +19,8 @@
 #include <cstdlib>
 #include <thread>
 #include <unistd.h>
-#include <thread>
 
 #include <boost/assign.hpp>
-#include <SDL.h>
 
 #include "machine.hpp"
 #include "oric.hpp"

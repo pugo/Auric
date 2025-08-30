@@ -20,6 +20,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <thread>
+#include <condition_variable>
 
 #include <SDL_image.h>
 
@@ -64,18 +66,30 @@ constexpr uint8_t bpp = 4;
 
 StatusBar::StatusBar(uint16_t width, uint16_t height, uint8_t bpp) :
     Texture(width, height, bpp),
-    status_surface(nullptr),
+    do_stop_thread(false),
+    update_requested(false),
+    has_updated(false),
+    update_thread(),
+    front_surface(nullptr),
+    back_surface(nullptr),
     font_size(0),
     font_data(nullptr)
-{
-}
+{}
+
 
 StatusBar::~StatusBar()
 {
-    if (status_surface) {
-        SDL_FreeSurface(status_surface);
+    stop_thread();
+
+    if (front_surface) {
+        SDL_FreeSurface(front_surface);
+    }
+
+    if (back_surface) {
+        SDL_FreeSurface(back_surface);
     }
 }
+
 
 bool StatusBar::init(SDL_Renderer* sdl_renderer)
 {
@@ -96,29 +110,40 @@ bool StatusBar::init(SDL_Renderer* sdl_renderer)
         return false;
     }
 
-    status_surface = SDL_CreateRGBSurfaceWithFormat(0xff, width, height, 32, SDL_PIXELFORMAT_RGBA32);
-    if (status_surface == nullptr) {
+    front_surface = SDL_CreateRGBSurfaceWithFormat(0xff, width, height, 32, SDL_PIXELFORMAT_RGBA32);
+    back_surface = SDL_CreateRGBSurfaceWithFormat(0xff, width, height, 32, SDL_PIXELFORMAT_RGBA32);
+    if (front_surface == nullptr || back_surface == nullptr) {
         return false;
     }
 
+    update_thread = std::thread(&StatusBar::thread_main, this);
+
+    paint();
     return update_texture(sdl_renderer);
 }
 
+
+void StatusBar::set_text(const std::string& text)
+{
+    this->text = text;
+}
+
+
+void StatusBar::paint()
+{
+    std::lock_guard<std::mutex> guard(update_mutex);
+    update_requested = true;
+    condition_variable.notify_one();
+}
+
+
 bool StatusBar::update_texture(SDL_Renderer* sdl_renderer)
 {
-    SDL_FillRect(status_surface, NULL, 0x000000ff);
-
-    auto pos = 0;
-    for (auto c : text) {
-        if (c > 127) {
-            continue;
-        }
-        put_char(pos++, ascii_to_glyph[c]);
-    }
-
-    texture = SDL_CreateTextureFromSurface(sdl_renderer, status_surface);
+    has_updated = false;
+    texture = SDL_CreateTextureFromSurface(sdl_renderer, front_surface);
     return texture != nullptr;
 }
+
 
 void StatusBar::put_char(uint8_t pos, uint8_t chr)
 {
@@ -131,8 +156,8 @@ void StatusBar::put_char(uint8_t pos, uint8_t chr)
     for (auto y = 0; y < font_height; ++y) {
         for (auto x = 0; x < font_width; ++x) {
             if (*chr_ptr & (1 << x)) {
-                uint32_t* pixel = (uint32_t*)((uint8_t*)status_surface->pixels +
-                                              (margin_y + y) * status_surface->pitch +
+                uint32_t* pixel = (uint32_t*)((uint8_t*)back_surface->pixels +
+                                              (margin_y + y) * back_surface->pitch +
                                               (margin_x + (pos * font_width) + font_width - x) * bpp);
 
                 *pixel = 0xffffffff;
@@ -140,4 +165,45 @@ void StatusBar::put_char(uint8_t pos, uint8_t chr)
         }
         ++chr_ptr;
     }
+}
+
+
+void StatusBar::thread_main()
+{
+    std::unique_lock<std::mutex> lock(update_mutex);
+
+    while(! do_stop_thread) {
+        condition_variable.wait(lock, [&] { return update_requested || do_stop_thread; });
+
+        if (do_stop_thread) {
+            break;
+        }
+
+        SDL_FillRect(back_surface, NULL, 0x000000ff);
+
+        update_requested = false;
+        lock.unlock();
+
+        auto pos = 0;
+        for (auto c : text) {
+            if (c > 127) {
+                continue;
+            }
+            put_char(pos++, ascii_to_glyph[c]);
+        }
+
+        lock.lock();
+        std::swap(front_surface, back_surface);
+        has_updated = true;
+    }
+}
+
+void StatusBar::stop_thread()
+{
+    {
+        std::lock_guard<std::mutex> guard(update_mutex);
+        do_stop_thread = true;
+    }
+
+    condition_variable.notify_all();
 }

@@ -226,22 +226,26 @@ bool Frontend::handle_frame()
 
 void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 {
+    if (status_bar.has_update()) {
+        status_bar.update_texture(sdl_renderer);
+    }
+
     SDL_UpdateTexture(oric_texture.texture, NULL, &pixels[0], oric_texture.width * oric_texture.bpp);
     SDL_RenderCopy(sdl_renderer, oric_texture.texture, NULL, &oric_texture.render_rect );
     SDL_RenderCopy(sdl_renderer, status_bar.texture, NULL, &status_bar.render_rect);
     SDL_RenderPresent(sdl_renderer);
 }
 
-bool Frontend::set_status_bar(const std::string& text)
+void Frontend::set_status_bar(const std::string& text)
 {
     status_bar.set_text(text);
-    return status_bar.update_texture(sdl_renderer);
+    status_bar.paint();
 }
 
-bool Frontend::clear_status_bar()
+void Frontend::clear_status_bar()
 {
     status_bar.set_text("");
-    return status_bar.update_texture(sdl_renderer);
+    status_bar.paint();
 }
 
 
