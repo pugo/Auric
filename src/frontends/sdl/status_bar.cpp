@@ -66,6 +66,7 @@ constexpr uint8_t bpp = 4;
 
 StatusBar::StatusBar(uint16_t width, uint16_t height, uint8_t bpp) :
     Texture(width, height, bpp),
+    active_flags(0),
     do_stop_thread(false),
     update_requested(false),
     has_updated(false),
@@ -125,7 +126,24 @@ bool StatusBar::init(SDL_Renderer* sdl_renderer)
 
 void StatusBar::set_text(const std::string& text)
 {
+    bool update = this->text != text;
     this->text = text;
+
+    if (update) {
+        paint();
+    }
+}
+
+
+void StatusBar::set_flag(uint16_t flag, bool on)
+{
+    uint16_t old_flags = active_flags;
+
+    active_flags += on ? flag : -flag;
+
+    if (active_flags != old_flags) {
+        paint();
+    }
 }
 
 
@@ -142,6 +160,39 @@ bool StatusBar::update_texture(SDL_Renderer* sdl_renderer)
     has_updated = false;
     texture = SDL_CreateTextureFromSurface(sdl_renderer, front_surface);
     return texture != nullptr;
+}
+
+
+void StatusBar::paint_text()
+{
+    auto pos = 0;
+    for (auto c : text) {
+        if (c > 127) {
+            continue;
+        }
+        put_char(pos++, ascii_to_glyph[c]);
+    }
+}
+
+
+void StatusBar::paint_flags()
+{
+    std::string flags_string{""};
+
+    if (active_flags & StatusbarFlags::loading) {
+        flags_string.append("[Tape]");
+    }
+    if (active_flags & StatusbarFlags::warp_mode) {
+        flags_string.append("[Warp]");
+    }
+
+    uint16_t pos = width/font_width - flags_string.length() - 2;
+    for (auto c : flags_string) {
+        if (c > 127) {
+            continue;
+        }
+        put_char(pos++, ascii_to_glyph[c]);
+    }
 }
 
 
@@ -180,17 +231,11 @@ void StatusBar::thread_main()
         }
 
         SDL_FillRect(back_surface, NULL, 0x000000ff);
-
         update_requested = false;
         lock.unlock();
 
-        auto pos = 0;
-        for (auto c : text) {
-            if (c > 127) {
-                continue;
-            }
-            put_char(pos++, ascii_to_glyph[c]);
-        }
+        paint_text();
+        paint_flags();
 
         lock.lock();
         std::swap(front_surface, back_surface);

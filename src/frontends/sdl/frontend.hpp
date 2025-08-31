@@ -15,8 +15,8 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef FRONTEND_H
-#define FRONTEND_H
+#ifndef FRONTENDS_SDL_FRONTEND_H
+#define FRONTENDS_SDL_FRONTEND_H
 
 #include <map>
 #include <memory>
@@ -25,7 +25,6 @@
 #include <vector>
 #include <SDL.h>
 #include <SDL_audio.h>
-#include <SDL_ttf.h>
 
 #include "texture.hpp"
 #include "status_bar.hpp"
@@ -52,24 +51,24 @@ public:
      * Initialize graphics output.
      * @return true on success
      */
-    bool init_graphics();
+    virtual bool init_graphics();
 
     /**
      * Initialize sound
      * @return true on success
      */
-    bool init_sound();
+    virtual bool init_sound();
 
     /**
      * Pause sound.
      * @param pause_on true if sound should be paused, false otherwise
      */
-    void pause_sound(bool pause_on);
+    virtual void pause_sound(bool pause_on);
 
     /**
      * Lock audio playback.
      */
-    void lock_audio() {
+    virtual void lock_audio() {
         if (! audio_locked) {
             SDL_LockAudioDevice(sound_audio_device_id);
             audio_locked = true;
@@ -79,7 +78,7 @@ public:
     /**
      * Unlock audio playback.
      */
-    void unlock_audio() {
+    virtual void unlock_audio() {
         if (audio_locked) {
             SDL_UnlockAudioDevice(sound_audio_device_id);
             audio_locked = false;
@@ -90,16 +89,19 @@ public:
      * Perform all tasks happening each frame.
      * @return true if machine should continue.
      */
-    bool handle_frame();
+    virtual bool handle_frame();
 
     /**
      * Render graphics.
      * @param pixels refernce to pixels to render
      */
-    void render_graphics(std::vector<uint8_t>& pixels);
+    virtual void render_graphics(std::vector<uint8_t>& pixels);
 
-    void set_status_bar(const std::string& text);
-    void clear_status_bar();
+    /**
+     * Get reference to status bar handler.
+     * @return reference to status bar handler
+     */
+    virtual StatusBar& get_status_bar() { return status_bar; }
 
 protected:
     /**
@@ -135,4 +137,4 @@ protected:
 };
 
 
-#endif // FRONTEND_H
+#endif // FRONTENDS_SDL_FRONTEND_H

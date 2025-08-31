@@ -25,7 +25,8 @@
 #include <vector>
 #include <SDL.h>
 #include <SDL_audio.h>
-#include <SDL_ttf.h>
+
+#include "frontends/flags.hpp"
 
 
 class StatusBar : public Texture
@@ -41,11 +42,18 @@ public:
     bool has_update() { return has_updated; }
 
     void set_text(const std::string& text);
+    void clear_text() { text = ""; paint(); }
+    void set_flag(uint16_t flag, bool on);
 
 private:
+    void paint_text();
+    void paint_flags();
     void put_char(uint8_t pos, uint8_t chr);
+
     void thread_main();
     void stop_thread();
+
+    uint16_t active_flags;
 
     bool do_stop_thread;
     bool update_requested;

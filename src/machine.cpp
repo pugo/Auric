@@ -25,6 +25,7 @@
 #include "machine.hpp"
 #include "oric.hpp"
 #include "frontends/sdl/frontend.hpp"
+#include "frontends/flags.hpp"
 
 // VIA Lines        Oric usage
 // ----------       ---------------------------------
@@ -52,7 +53,7 @@ using namespace std::chrono_literals;
 void clear_status_bar_after_delay(Machine* machine, hrc::duration delay)
 {
     std::this_thread::sleep_for(delay);
-    machine->frontend->clear_status_bar();
+    machine->frontend->get_status_bar().clear_text();
 }
 
 
@@ -246,6 +247,7 @@ void Machine::via_orb_changed(uint8_t orb)
     bool motor_on = orb & 0x40;
     if (motor_on != tape->is_motor_running()) {
         tape->set_motor(motor_on);
+        frontend->get_status_bar().set_flag(StatusbarFlags::loading, motor_on);
     }
 }
 
@@ -275,11 +277,11 @@ bool Machine::toggle_warp_mode()
     if (! warpmode_on) {
         next_frame_tp = hrc::now();
         frontend->unlock_audio();
-        frontend->clear_status_bar();
+        frontend->get_status_bar().set_flag(StatusbarFlags::warp_mode, false);
     }
     else {
         frontend->lock_audio();
-        frontend->set_status_bar("Warp mode");
+        frontend->get_status_bar().set_flag(StatusbarFlags::warp_mode, true);
     }
 
     std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
