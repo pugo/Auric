@@ -54,7 +54,7 @@ void Oric::init()
     frontend->init_graphics();
     frontend->init_sound();
 
-    frontend->get_status_bar().set_text("Starting ORIC...");
+    frontend->get_status_bar().show_text_for("Starting ORIC...", std::chrono::seconds(3));
 
     machine->cpu->set_quiet(true);
 

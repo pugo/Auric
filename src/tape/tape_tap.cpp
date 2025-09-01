@@ -45,7 +45,6 @@ TapeTap::TapeTap(MOS6522& via, const std::string& path) :
 
 TapeTap::~TapeTap()
 {
-//    delete[] memblock;
 }
 
 
@@ -73,8 +72,8 @@ bool TapeTap::init()
     {
         size = file.tellg();
         data = new uint8_t[size];
-        file.seekg (0, std::ios::beg);
-        file.read (reinterpret_cast<char*>(data), size);
+        file.seekg(0, std::ios::beg);
+        file.read(reinterpret_cast<char*>(data), size);
         file.close();
     }
     else {

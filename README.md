@@ -112,10 +112,11 @@ Allowed options:
 
 The following control keys can alter the emulator behavior.
 
-* `F4`: Make snapshot (to RAM)
-* `F5`: Load snapshot (from RAM)
+* `F1`: Save snapshot (to RAM)
+* `F2`: Load snapshot (from RAM)
 * `F10`: Soft reset the emulator (NMI)
 * `F12`: Toggle warp mode (go as fast as possible).
+* `CTRL-B`: Break to debugger (in console).
 
 
 ### Loading from tape image
@@ -149,7 +150,8 @@ time.
 
 ## Monitor
 
-You can at any time enter a small monitor mode by pressing `ctrl-c`.
+You can at any time enter a small monitor mode by pressing `ctrl-c` in
+the terminal or by pressing `ctrl-b` inside the emulator.
 
 The monitor has commands like the following.
 

@@ -193,12 +193,17 @@ bool Frontend::handle_frame()
                         oric->get_machine().cpu->NMI();
                     }
 
-                    else if (event.key.keysym.sym == SDLK_F4) {
+                    else if (event.key.keysym.sym == SDLK_F1) {
                         oric->get_machine().save_snapshot();
                     }
 
-                    else if (event.key.keysym.sym == SDLK_F5) {
+                    else if (event.key.keysym.sym == SDLK_F2) {
                         oric->get_machine().load_snapshot();
+                    }
+
+                    else if (event.key.keysym.sym == SDLK_b && event.key.keysym.mod & KMOD_CTRL) {
+                        oric->get_machine().stop();
+                        oric->do_break();
                     }
                 }
 

@@ -135,6 +135,17 @@ void StatusBar::set_text(const std::string& text)
 }
 
 
+void StatusBar::show_text_for(const std::string& text, std::chrono::milliseconds duration)
+{
+    std::lock_guard<std::mutex> guard(update_mutex);
+    this->text = text;
+    clear_at = std::chrono::steady_clock::now() + duration;
+
+    update_requested = true;
+    condition_variable.notify_one();
+}
+
+
 void StatusBar::set_flag(uint16_t flag, bool on)
 {
     uint16_t old_flags = active_flags;
@@ -224,24 +235,36 @@ void StatusBar::thread_main()
     std::unique_lock<std::mutex> lock(update_mutex);
 
     while(! do_stop_thread) {
-        condition_variable.wait(lock, [&] { return update_requested || do_stop_thread; });
+        auto deadline = clear_at ? *clear_at : std::chrono::steady_clock::time_point::max();
+        bool woke = condition_variable.wait_until(lock, deadline, [&] { return update_requested || do_stop_thread; });
 
         if (do_stop_thread) {
             break;
         }
 
-        SDL_FillRect(back_surface, NULL, 0x000000ff);
-        update_requested = false;
-        lock.unlock();
+        if (!woke) {
+            if (clear_at && std::chrono::steady_clock::now() >= *clear_at) {
+                text.clear();
+                clear_at.reset();
+                update_requested = true;
+            }
+        }
 
-        paint_text();
-        paint_flags();
+        if (update_requested) {
+            SDL_FillRect(back_surface, NULL, 0x000000ff);
+            update_requested = false;
+            lock.unlock();
 
-        lock.lock();
-        std::swap(front_surface, back_surface);
-        has_updated = true;
+            paint_text();
+            paint_flags();
+
+            lock.lock();
+            std::swap(front_surface, back_surface);
+            has_updated = true;
+        }
     }
 }
+
 
 void StatusBar::stop_thread()
 {
@@ -251,4 +274,5 @@ void StatusBar::stop_thread()
     }
 
     condition_variable.notify_all();
+    if (update_thread.joinable()) update_thread.join();
 }

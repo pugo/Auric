@@ -50,13 +50,6 @@ using hrc = std::chrono::high_resolution_clock;
 using namespace std::chrono_literals;
 
 
-void clear_status_bar_after_delay(Machine* machine, hrc::duration delay)
-{
-    std::this_thread::sleep_for(delay);
-    machine->frontend->get_status_bar().clear_text();
-}
-
-
 Machine::Machine(Oric* oric) :
     cpu(nullptr),
     mos_6522(nullptr),
@@ -157,8 +150,6 @@ void Machine::run(Oric* oric)
     break_exec = false;
     uint8_t ran = 0;
 
-    std::thread clear_sb_thread(clear_status_bar_after_delay, this, 3s);
-
     cycle_count += cycles_per_raster;
 
     while (! break_exec) {
@@ -209,8 +200,6 @@ void Machine::run(Oric* oric)
 
         cycle_count += cycles_per_raster;
     }
-
-    clear_sb_thread.join();
 }
 
 void Machine::key_press(uint8_t key_bits, bool down)
@@ -258,7 +247,7 @@ void Machine::save_snapshot()
     memory.save_to_snapshot(snapshot);
     ay3->save_to_snapshot(snapshot);
 
-    std::cout << "Saved snapshot." << std::endl;
+    frontend->get_status_bar().show_text_for("Saved snapshot", std::chrono::seconds(2));
 }
 
 void Machine::load_snapshot()
@@ -268,7 +257,7 @@ void Machine::load_snapshot()
     memory.load_from_snapshot(snapshot);
     ay3->load_from_snapshot(snapshot);
 
-    std::cout << "Loaded snapshot." << std::endl;
+    frontend->get_status_bar().show_text_for("Loaded snapshot", std::chrono::seconds(2));
 }
 
 bool Machine::toggle_warp_mode()

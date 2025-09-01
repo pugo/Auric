@@ -28,29 +28,91 @@
 
 #include "frontends/flags.hpp"
 
-
+/**
+ * Handle status bar.
+ */
 class StatusBar : public Texture
 {
 public:
     StatusBar(uint16_t width, uint16_t height, uint8_t bpp);
     ~StatusBar();
 
+    /**
+     * Init the status bar.
+     * @param sdl_renderer SDL renderer
+     * @return true on success
+     */
     bool init(SDL_Renderer* sdl_renderer);
 
+    /**
+     * Notify status bar that the contents should be repainted.
+     */
     void paint();
+
+    /**
+     * Update the texture from status bar surface.
+     * @param sdl_renderer SDL renderer
+     * @return true on success
+     */
     bool update_texture(SDL_Renderer* sdl_renderer);
+
+    /**
+     * True if a requested update is finished.
+     * @return true if update is finished
+     */
     bool has_update() { return has_updated; }
 
+    /**
+     * Set status bar text to given string. Will trigger update if different to current string.
+     * @param text new status bar text
+     */
     void set_text(const std::string& text);
+
+    /**
+     * Show given string for a certain duration. Triggers an update.
+     * @param text text to show
+     * @param duration duration to show text
+     */
+    void show_text_for(const std::string& text, std::chrono::milliseconds duration);
+
+    /**
+     * Clear text and update.
+     */
     void clear_text() { text = ""; paint(); }
+
+    /**
+     * Set flag to wanted state. Triggers update if flags are changed.
+     * @param flag flag to set
+     * @param on flag state
+     */
     void set_flag(uint16_t flag, bool on);
 
 private:
+    /**
+     * Paint the current text to the current surface.
+     */
     void paint_text();
+
+    /**
+     * Paint the current flags to the current surface.
+     */
     void paint_flags();
+
+    /**
+     * Put a character to specified position.
+     * @param pos character position (as in character widths, not pixels)
+     * @param chr character to put
+     */
     void put_char(uint8_t pos, uint8_t chr);
 
+    /**
+     * Thread main function.
+     */
     void thread_main();
+
+    /**
+     * Signal thread to stop.
+     */
     void stop_thread();
 
     uint16_t active_flags;
@@ -60,11 +122,14 @@ private:
     bool has_updated;
     std::mutex update_mutex;
     std::thread update_thread;
+
     std::condition_variable condition_variable;
 
     SDL_Surface* front_surface;
     SDL_Surface* back_surface;
+
     std::string text;
+    std::optional<std::chrono::steady_clock::time_point> clear_at;
 
     uint32_t font_size;
     std::unique_ptr<uint8_t> font_data;
