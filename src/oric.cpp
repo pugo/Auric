@@ -47,10 +47,10 @@ Oric::Oric(Config& config) :
 
 void Oric::init()
 {
-    machine = new Machine(this);
-    frontend = new Frontend(this);
+    machine = std::make_unique<Machine>(this);
+    frontend = std::make_unique<Frontend>(this);
 
-    machine->init(frontend);
+    machine->init(frontend.get());
     frontend->init_graphics();
     frontend->init_sound();
 
@@ -69,16 +69,8 @@ void Oric::init()
 
 void Oric::init_machine()
 {
-    machine = new Machine(this);
+    machine = std::make_unique<Machine>(this);
 }
-
-
-Oric::~Oric()
-{
-    delete machine;
-    //delete frontend;
-}
-
 
 void Oric::run()
 {

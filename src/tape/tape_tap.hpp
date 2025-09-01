@@ -88,6 +88,7 @@ protected:
     int16_t tape_cycles_counter;
     uint8_t tape_pulse;
 
+    std::vector<uint8_t> memory_vector;
     uint8_t* data;
 
     static const int Pulse_1 = 208;

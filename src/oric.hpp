@@ -38,7 +38,7 @@ public:
     };
 
     Oric(Config& config);
-    ~Oric();
+    ~Oric() = default;
 
     /**
      * Initialize Oric.
@@ -89,8 +89,8 @@ protected:
 
     Config& config;
     State state;
-    Frontend* frontend;
-    Machine* machine;
+    std::unique_ptr<Frontend> frontend;
+    std::unique_ptr<Machine> machine;
     std::string last_command;
     uint16_t last_address;
 };

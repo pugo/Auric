@@ -38,7 +38,8 @@ TapeTap::TapeTap(MOS6522& via, const std::string& path) :
     current_bit(0),
     parity(1),
     tape_cycles_counter(2),
-    tape_pulse(0)
+    tape_pulse(0),
+    data(nullptr)
 {
 }
 
@@ -71,7 +72,9 @@ bool TapeTap::init()
     if (file.is_open())
     {
         size = file.tellg();
-        data = new uint8_t[size];
+        memory_vector = std::vector<uint8_t>(size);
+        data = memory_vector.data();
+
         file.seekg(0, std::ios::beg);
         file.read(reinterpret_cast<char*>(data), size);
         file.close();
