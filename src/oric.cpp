@@ -16,10 +16,12 @@
 // =========================================================================
 
 
-#include <sstream>
 #include <cstdlib>
-#include <vector>
+#include <format>
+#include <sstream>
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
@@ -29,6 +31,9 @@
 #include "frontends/sdl/frontend.hpp"
 
 namespace po = boost::program_options;
+
+const std::string_view rom_basic10 = "ROMS/basic10.rom";
+const std::string_view rom_basic11b = "ROMS/basic11b.rom";
 
 
 Oric::Oric(Config& config) :
@@ -42,6 +47,11 @@ Oric::Oric(Config& config) :
     if (config.start_in_monitor()) {
         state = STATE_MON;
     }
+}
+
+Oric::~Oric()
+{
+    std::cout << "oric stopping"  << std::endl;
 }
 
 
@@ -58,12 +68,17 @@ void Oric::init()
 
     machine->cpu->set_quiet(true);
 
-    if (config.use_atmos_rom()) {
-        machine->memory.load("ROMS/basic11b.rom", 0xc000);
-    }
-    else {
+    try {
+        if (config.use_atmos_rom()) {
+            machine->memory.load(rom_basic11b, 0xc000);
+        }
+        else {
 //    	machine->memory.load("ROMS/test108k.rom", 0xc000);
-        machine->memory.load("ROMS/basic10.rom", 0xc000);
+            machine->memory.load(rom_basic10, 0xc000);
+        }
+    }
+    catch (const std::runtime_error& err) {
+        throw(std::runtime_error(std::format("Failed loading ROM: {}", err.what())));
     }
 }
 
@@ -74,7 +89,9 @@ void Oric::init_machine()
 
 void Oric::run()
 {
-    while (true) {
+    bool do_run{true};
+
+    while (do_run) {
         switch (state) {
             case STATE_RUN:
                 machine->run(this);
@@ -93,9 +110,11 @@ void Oric::run()
                 break;
             }
             case STATE_QUIT:
-                return;
+                do_run = false;
+                break;
         }
     }
+    frontend->close_sound();
 }
 
 

@@ -61,7 +61,6 @@ Frontend::Frontend(Oric* oric) :
 Frontend::~Frontend()
 {
     close_graphics();
-    close_sound();
     close_sdl();
 }
 

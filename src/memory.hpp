@@ -18,6 +18,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+#include <filesystem>
 #include <iostream>
 #include <ostream>
 #include <cstdint>
@@ -30,7 +31,7 @@ class Snapshot;
 class Memory
 {
 public:
-    Memory(uint32_t size);
+    Memory(size_t size);
     ~Memory() = default;
 
     /**
@@ -38,7 +39,7 @@ public:
      * @param path path to load data from
      * @param address address to start storing file at
      */
-    void load(const std::string& path, uint32_t address);
+    void load(const std::filesystem::path& path, uint32_t address);
 
     /**
      * Get size of memory.

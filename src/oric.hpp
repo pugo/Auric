@@ -38,7 +38,7 @@ public:
     };
 
     Oric(Config& config);
-    ~Oric() = default;
+    ~Oric();
 
     /**
      * Initialize Oric.

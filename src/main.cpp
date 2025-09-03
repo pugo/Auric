@@ -17,6 +17,7 @@
 
 #include <signal.h>
 
+#include <print>
 #include <sstream>
 
 #include <boost/program_options.hpp>
@@ -63,7 +64,14 @@ int main(int argc, char *argv[])
     oric = std::make_unique<Oric>(config);
     init_signals();
 
-    oric->init();
+    try {
+        oric->init();
+    }
+    catch (const std::exception &err) {
+        std::println("Error initializing: {}", err.what());
+        return 1;
+    }
+
     oric->get_machine().reset();
 
     oric->run();

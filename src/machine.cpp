@@ -45,6 +45,8 @@
 constexpr uint8_t cycles_per_raster = 64;
 constexpr uint32_t sound_pause_target = 1000;
 
+constexpr size_t oric_ram_size = 64*1024;
+
 using hrc = std::chrono::high_resolution_clock;
 
 using namespace std::chrono_literals;
@@ -56,7 +58,7 @@ Machine::Machine(Oric* oric) :
     ay3(nullptr),
     ula(*this, memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
     oric(oric),
-    memory(65535),
+    memory(oric_ram_size),
     tape(nullptr),
     cycle_count(0),
     warpmode_on(false),

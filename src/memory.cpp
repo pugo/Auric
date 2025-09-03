@@ -15,14 +15,20 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <algorithm>
+#include <exception>
+#include <fcntl.h>
+#include <format>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <print>
+#include <stdexcept>
 #include <stdlib.h>
+#include <sstream>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sstream>
-#include <iomanip>
-#include <string.h>
-#include <algorithm>
 
 #include "memory.hpp"
 #include "snapshot.hpp"
@@ -30,59 +36,38 @@
 #include "chip/mos6502.hpp"
 
 
-Memory::Memory(uint32_t size) :
+Memory::Memory(size_t size) :
     mem(NULL),
     size(size),
     mempos(0),
     memory(size)
 {
     mem = memory.data();
-
     std::fill(memory.begin(), memory.end(), 0x00);
 }
 
-void error_exit(std::string description)
-{
-    std::cout << std::endl << "!!! Error: " << description << std::endl << std::endl;
-    exit(1);
-}
 
-void Memory::load(const std::string& path, uint32_t address)
+void Memory::load(const std::filesystem::path& path, uint32_t address)
 {
-    std::cout << "Memory: loading " << path << " -> $" << std::hex << address << std::endl;
-    // stat to check existance and size
-    struct stat file_info;
-    if (stat(path.c_str(), &file_info)) {
-        error_exit("no such file: " + path);
+    std::println("Memory: loading {} -> ${:04X}", path.string(), address);
+
+    if (! std::filesystem::exists(path)) {
+        throw(std::runtime_error(std::format("no such file: {}", path.string())));
     }
 
-    int file_size = file_info.st_size;
+    auto file_size = std::filesystem::file_size(path);
 
-    int fd = open(path.c_str(), O_RDONLY);
+    if (address + file_size > memory.size()) {
+        throw(std::runtime_error(std::format("trying to read outside memory area.")));
+    }
+
+    auto fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
-        error_exit("could not open file: " + path);
+        throw(std::runtime_error(std::format("could not open file: {}", path.string())));
     }
 
-    ssize_t count = 0;
-    int pos = address;
-    uint8_t* buff = (uint8_t*)malloc(1);
-    while (file_size - count > 0) {
-        ssize_t result = read(fd, buff, 1);
-
-        if (result == 0) {
-            break;
-        }
-        if (result == -1) {
-            error_exit("error reading file: " + path);
-        }
-
-        mem[pos] = *buff;
-        pos += result;
-        count += result;
-    }
-
-    free(buff);
-    return;
+    std::ifstream in{path, std::ios::binary};
+    in.read(reinterpret_cast<char *>(mem + address), file_size);
 }
 
 
@@ -100,7 +85,7 @@ void Memory::load_from_snapshot(Snapshot& snapshot)
 
 void Memory::show(uint32_t pos, uint32_t length)
 {
-    std::cout << "Showing 0x" << length << " bytes from " << std::hex << pos << std::endl;
+    std::println("Showing 0x{:04X} bytes from ${:x}", length, pos);
     std::ostringstream chars;
 
     for (uint32_t i=0; i < length; i++) {

@@ -103,16 +103,16 @@ public:
      */
     virtual StatusBar& get_status_bar() { return status_bar; }
 
+    /**
+     * Close sound.
+     */
+    void close_sound();
+
 protected:
     /**
      * Close graphics output.
      */
     void close_graphics();
-
-    /**
-     * Close sound.
-     */
-    void close_sound();
 
     /**
      * Close SDL.
