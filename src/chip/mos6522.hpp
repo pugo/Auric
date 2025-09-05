@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright ( C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef MOS6522_H
-#define MOS6522_H
+#ifndef CHIP_MOS6522_H
+#define CHIP_MOS6522_H
 
 #include <map>
 #include <memory>
@@ -126,7 +126,7 @@ public:
         uint8_t ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
 
         void reset();
-        void print();
+        void print() const;
 
         void sr_shift_in();
         void sr_shift_out();
@@ -140,13 +140,8 @@ public:
     typedef void (*f_irq_handler)(Machine &machine);
     typedef void (*f_irq_clear_handler)(Machine &machine);
 
-    MOS6522(Machine& a_Machine);
-    ~MOS6522();
-
-    /**
-     * Reset the MOS 6522.
-     */
-    void reset();
+    explicit MOS6522(Machine& a_Machine);
+    ~MOS6522() = default;
 
     /**
      * Execute one clock cycle.
@@ -183,27 +178,27 @@ public:
      * Read output register A.
      * @return value of output register A, with correct data direction
      */
-    uint8_t read_ora() { return (state.ora & state.ddra); }
+    [[nodiscard]] uint8_t read_ora() const { return (state.ora & state.ddra); }
 
     /**
      * Read output register B.
      * @return value of output register B, with correct data direction
      */
-    uint8_t read_orb() { return (state.orb & state.ddrb); }
+    [[nodiscard]] uint8_t read_orb() const { return (state.orb & state.ddrb); }
 
     /**
      * Set bit in input register A.
      * @param bit bit to set (0-7)
      * @param value value to set (boolean)
      */
-    void set_ira_bit(const uint8_t bit, const bool value);
+    void set_ira_bit(uint8_t bit, bool value);
 
     /**
      * Set bit in input register B.
      * @param bit bit to set (0-7)
      * @param value value to set (boolean)
      */
-    void set_irb_bit(const uint8_t bit, const bool value);
+    void set_irb_bit(uint8_t bit, bool value);
 
     /**
      * Set CA1 value
@@ -240,14 +235,14 @@ public:
      * @return value of T1 counter
      * Mainly used by unit tests to be able to get and set values without affecting interrupt flags.
      */
-    uint16_t get_t1_counter() { return state.t1_counter; }
+    [[nodiscard]] uint16_t get_t1_counter() const { return state.t1_counter; }
 
     /**
      * Get value of T2 counter.
      * @return value of T2 counter
      * Mainly used by unit tests to be able to get and set values without affecting interrupt flags.
      */
-    uint16_t get_t2_counter() { return state.t2_counter; }
+    [[nodiscard]] uint16_t get_t2_counter() const { return state.t2_counter; }
 
     /**
      * Set IFR (interrupt flag register) value
@@ -277,4 +272,4 @@ private:
 };
 
 
-#endif // MOS6502_H
+#endif // CHIP_MOS6522_H

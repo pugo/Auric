@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ Machine::Machine(Oric& oric) :
     cpu(nullptr),
     mos_6522(nullptr),
     ay3(nullptr),
+    frontend(nullptr),
     ula(*this, memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
     oric(oric),
     memory(oric_ram_size),
@@ -65,10 +66,11 @@ Machine::Machine(Oric& oric) :
     break_exec(false),
     sound_paused(true),
     sound_pause_counter(0),
-    current_key_row(0)
+    current_key_row(0),
+    key_rows(0)
 {
-    for (uint8_t i=0; i < 8; i++) {
-        key_rows[i] = 0;
+    for (auto& key_row : key_rows) {
+        key_row = 0;
     }
 }
 
@@ -138,7 +140,7 @@ void Machine::init_tape()
     }
 }
 
-void Machine::reset()
+void Machine::reset() const
 {
     cpu->Reset();
 }
@@ -171,7 +173,6 @@ void Machine::run(Oric* oric)
 
             if (cpu->exec(false, break_exec)) {
                 update_key_output();
-//                frontend->unlock_audio();
             }
 
             if (break_exec) {

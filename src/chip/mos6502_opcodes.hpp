@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef MOS6502_OPCODES_H
-#define MOS6502_OPCODES_H
+#ifndef CHIP_MOS6502_OPCODES_H
+#define CHIP_MOS6502_OPCODES_H
 
 //   7                           0
 // +---+---+---+---+---+---+---+---+
@@ -258,4 +258,4 @@
 #define ILL_ISC_ABS_X 0xFF
 
 
-#endif // MOS6502_OPCODES_H
+#endif // CHIP_MOS6502_OPCODES_H

@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ class AY3_8912;
 class Machine
 {
 public:
-    Machine(Oric& oric);
+    explicit Machine(Oric& oric);
     ~Machine() = default;
 
     /**
@@ -73,7 +73,7 @@ public:
     /**
      * Reset the machine.
      */
-    void reset();
+    void reset() const;
 
     /**
      * Run the machine.
@@ -96,12 +96,12 @@ public:
     /**
      * Trigger CPU IRQ.
      */
-    void irq() { cpu->irq(); }
+    void irq() const { cpu->irq(); }
 
     /**
      * Clear CPU IRQ.
      */
-    void irq_clear() { cpu->irq_clear(); }
+    void irq_clear() const { cpu->irq_clear(); }
 
     /**
      * Handle key press.

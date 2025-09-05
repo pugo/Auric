@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ public:
 
     void reset();
 
-    void print_status(uint8_t channel) {
+    void print_status(uint8_t channel) const {
         std::cout << " ------- Channel " << (int)channel << " -------------------------" << std::endl;
         std::cout << "    -         Volume: " << (int)volume << std::endl;
         std::cout << "    -    Tome period: " << (int)tone_period << std::endl;
@@ -67,7 +67,7 @@ public:
 
     void reset();
 
-    void print_status() {
+    void print_status() const {
         std::cout << " ------- Noise -------------------------" << std::endl;
         std::cout << "    -  Period: " << (int)period << std::endl;
         std::cout << "    - Counter: " << (int)counter << std::endl;
@@ -152,6 +152,9 @@ public:
 
     struct SoundState
     {
+        SoundState();
+        ~SoundState() = default;
+
         void reset();
         void print_status();
 
@@ -209,8 +212,9 @@ public:
     };
 
 
-    AY3_8912(Machine& machine);
-    ~AY3_8912();
+    explicit AY3_8912(Machine& machine);
+
+    ~AY3_8912() = default;
 
     /**
      * Reset the AY-3-8912.

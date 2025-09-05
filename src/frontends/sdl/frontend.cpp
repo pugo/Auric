@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -38,10 +38,12 @@ static int32_t keytab[] = {
 
 Frontend::Frontend(Oric& oric) :
     oric(oric),
-    sdl_window(NULL),
-    sdl_renderer(NULL),
+    sdl_window(nullptr),
+    sdl_renderer(nullptr),
     oric_texture(texture_width, texture_height, texture_bpp),
-    status_bar(texture_width*3, 16, texture_bpp)
+    status_bar(texture_width*3, 16, texture_bpp),
+    sound_audio_device_id(),
+    audio_locked(false)
 {
     for (uint8_t i=0; i < 64; ++i) {
         if (keytab[i] != 0) {
@@ -90,12 +92,12 @@ bool Frontend::init_graphics()
 
     sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   oric_texture.render_rect.w, height, SDL_WINDOW_SHOWN);
-    if (sdl_window == NULL) {
+    if (sdl_window == nullptr) {
         std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
         return false;
     }
 
-    // Try to load window icon.
+    // Try to load a window icon.
     SDL_Surface* icon = IMG_Load("images/window_icon.png");
     if (icon) {
         SDL_SetWindowIcon(sdl_window, icon);
@@ -104,7 +106,7 @@ bool Frontend::init_graphics()
     // Create renderer for window
     sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
 
-    if (sdl_renderer == NULL) {
+    if (sdl_renderer == nullptr) {
         std::cout <<  "Renderer could not be created! SDL Error: " << SDL_GetError() << std::endl;
         return false;
     }
@@ -140,10 +142,10 @@ bool Frontend::init_sound()
     audio_spec_want.channels = 2;
     audio_spec_want.samples  = 2048;
     AY3_8912* ay3 = oric.get_machine().ay3.get();
-    audio_spec_want.callback = ay3->audio_callback;
+    audio_spec_want.callback = AY3_8912::audio_callback;
     audio_spec_want.userdata = (void*) ay3;
 
-    sound_audio_device_id = SDL_OpenAudioDevice(NULL, 0, &audio_spec_want, &audio_spec, 0);
+    sound_audio_device_id = SDL_OpenAudioDevice(nullptr, 0, &audio_spec_want, &audio_spec, 0);
 
     if (!sound_audio_device_id)
     {
@@ -235,9 +237,9 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
         status_bar.update_texture(sdl_renderer);
     }
 
-    SDL_UpdateTexture(oric_texture.texture, NULL, &pixels[0], oric_texture.width * oric_texture.bpp);
-    SDL_RenderCopy(sdl_renderer, oric_texture.texture, NULL, &oric_texture.render_rect );
-    SDL_RenderCopy(sdl_renderer, status_bar.texture, NULL, &status_bar.render_rect);
+    SDL_UpdateTexture(oric_texture.texture, nullptr, &pixels[0], oric_texture.width * oric_texture.bpp);
+    SDL_RenderCopy(sdl_renderer, oric_texture.texture, nullptr, &oric_texture.render_rect );
+    SDL_RenderCopy(sdl_renderer, status_bar.texture, nullptr, &status_bar.render_rect);
     SDL_RenderPresent(sdl_renderer);
 }
 
@@ -246,11 +248,11 @@ void Frontend::close_graphics()
 {
     SDL_DestroyRenderer(sdl_renderer);
     SDL_DestroyWindow(sdl_window);
-    sdl_window = NULL;
+    sdl_window = nullptr;
 }
 
 
-void Frontend::close_sound()
+void Frontend::close_sound() const
 {
     SDL_PauseAudioDevice(sound_audio_device_id, true);
     SDL_CloseAudioDevice(sound_audio_device_id);

@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ Oric::Oric(Config& config) :
     state(STATE_RUN),
     frontend(nullptr),
     machine(nullptr),
-    last_command(""),
+    last_command(),
     last_address(0)
 {
     if (config.start_in_monitor()) {
@@ -157,8 +157,8 @@ uint16_t Oric::string_to_word(std::string& addr)
 
 Oric::State Oric::handle_command(std::string& command_line)
 {
-    if (command_line.length() == 0) {
-        if (last_command.length() == 0) {
+    if (command_line.empty()) {
+        if (last_command.empty()) {
             return STATE_MON;
         }
         command_line = last_command;
@@ -269,6 +269,9 @@ Oric::State Oric::handle_command(std::string& command_line)
     }
     else if (cmd == "v") { // info
         machine->mos_6522->get_state().print();
+    }
+    else {
+        println("Unknown command \"{}\". Use command \"h\" to get help.", cmd);
     }
 
     return STATE_MON;

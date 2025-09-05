@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -15,17 +15,12 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <vector>
-#include <stack>
 #include <utility>
-#include <bitset>
 
 #include <boost/assign.hpp>
-#include <boost/tuple/tuple.hpp>
 
 #include <machine.hpp>
 #include "mos6522.hpp"
-#include "snapshot.hpp"
 
 
 using namespace std;
@@ -92,7 +87,7 @@ void MOS6522::State::reset()
 }
 
 
-void MOS6522::State::print()
+void MOS6522::State::print() const
 {
     std::cout << "VIA stats:" << std::endl;
     std::cout << "  -   ORA: " << (int)ora << std::endl;
@@ -127,6 +122,7 @@ void MOS6522::State::sr_shift_out()
 
 MOS6522::MOS6522(Machine& a_Machine) :
     machine(a_Machine),
+    state(),
     orb_changed_handler(nullptr),
     ca2_changed_handler(nullptr),
     cb2_changed_handler(nullptr),
@@ -141,10 +137,6 @@ MOS6522::MOS6522(Machine& a_Machine) :
         (PCR, "PCR")(IFR, "IFR")(IER, "IER")(IORA2, "IORA2");
 
     state.reset();
-}
-
-MOS6522::~MOS6522()
-{
 }
 
 
@@ -563,14 +555,14 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
     }
 }
 
-void MOS6522::set_ira_bit(const uint8_t bit, const bool value)
+void MOS6522::set_ira_bit(uint8_t bit, bool value)
 {
     uint8_t b = 1 << bit;
 
     state.ira = (state.ira & ~b) | (value ? b : 0);
 }
 
-void MOS6522::set_irb_bit(const uint8_t bit, const bool value)
+void MOS6522::set_irb_bit(uint8_t bit, bool value)
 {
     uint8_t original_bit_6 = state.irb & 0x40;
 
@@ -667,8 +659,8 @@ void MOS6522::write_ca2(bool value)
     if (state.ca2 != value) {
         state.ca2 = value;
         // Set interrupt on pos/neg transition if 0 or 4 in pcr.
-        if ((state.ca2 && ((state.pcr & 0x0C) == 0x04 || (state.pcr & 0x0C) == 0x06)) ||
-            (!state.ca2 && ((state.pcr & 0x0C) == 0x00) || (state.pcr & 0x0C) == 0x02)) {
+        if ((state.ca2 && ((state.pcr & 0x0E) == 0x04 || (state.pcr & 0x0E) == 0x06)) ||
+            (!state.ca2 && ((state.pcr & 0x0E) == 0x00) || (state.pcr & 0x0E) == 0x02)) {
             irq_set(IRQ_CA2);
         }
 

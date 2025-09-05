@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -42,12 +42,6 @@ TapeTap::TapeTap(MOS6522& via, const std::string& path) :
     data(nullptr)
 {
 }
-
-
-TapeTap::~TapeTap()
-{
-}
-
 
 void TapeTap::reset()
 {

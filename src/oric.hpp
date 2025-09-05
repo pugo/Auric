@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ public:
         STATE_QUIT
     };
 
-    Oric(Config& config);
+    explicit Oric(Config& config);
     ~Oric();
 
     /**
@@ -58,15 +58,9 @@ public:
 
     /**
      * Ger current machine.
-     * @return refrence to machine
+     * @return reference to machine
      */
     Machine& get_machine() { return *machine; }
-
-    /**
-     * Get current frontend.
-     * @return reference to frontend
-     */
-    Frontend& get_frontend() { return *frontend; }
 
     /**
      * Run Oric.

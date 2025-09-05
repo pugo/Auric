@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ typedef void (*f_memory_write_byte_zp_handler)(Machine &oric, uint8_t address, u
 class MOS6502
 {
 public:
-    MOS6502(Machine& a_Machine);
+    explicit MOS6502(Machine& a_Machine);
     ~MOS6502() = default;
 
     /**
@@ -82,19 +82,19 @@ public:
      * Get program counter address.
      * @return program counter address
      */
-    uint16_t get_pc() { return PC; }
+    [[nodiscard]] uint16_t get_pc() const { return PC; }
 
     /**
      * Get stack pointer address.
      * @return stack pointer address
      */
-    uint8_t get_sp() { return SP; }
+    [[nodiscard]] uint8_t get_sp() const { return SP; }
 
     /**
      * Get the P register (processor status).
      * @return P register
      */
-    uint8_t get_p();
+    [[nodiscard]] uint8_t get_p() const;
 
     /**
      * Set the P register (processor status).
@@ -136,7 +136,7 @@ public:
      * Save CPU state to snapshot.
      * @param snapshot reference to snapshot
      */
-    void save_to_snapshot(Snapshot& snapshot);
+    void save_to_snapshot(Snapshot& snapshot) const;
 
     /**
      * Load CPU state from snapshot.

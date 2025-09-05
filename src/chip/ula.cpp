@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -92,7 +92,7 @@ void ULA::update_graphics(uint8_t raster_line)
     text_attrib = 0;
     blink = 0x3f;
 
-    uint32_t* texture_line = (uint32_t*) &pixels[raster_line * Frontend::texture_width * Frontend::texture_bpp];
+    auto* texture_line = reinterpret_cast<uint32_t*>(&pixels[raster_line * Frontend::texture_width * Frontend::texture_bpp]);
     uint16_t row = calcRowAddr(raster_line, video_attrib);
 
     // 40 characters wide, regardless of lores or hires.
@@ -144,7 +144,7 @@ void ULA::update_graphics(uint8_t raster_line)
                 chr_dat = ch & mask;	// Hires, read byte directly.
             }
             else {
-                // get char pixel data for read char code. If hires > 200, charmem is at 0x9800.
+                // Get char pixel data for read char code. If hires > 200, charmem is at 0x9800.
                 uint8_t* char_mem = memory.mem + ((video_attrib & VideoAttribs::HIRES) ? 0x9800 : 0xb400) +
                                     ((text_attrib & TextAttribs::ALTERNATE_CHARSET) ? 128 * 8 : 0);
 

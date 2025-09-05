@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ class Snapshot;
 class Memory
 {
 public:
-    Memory(size_t size);
+    explicit Memory(size_t size);
     ~Memory() = default;
 
     /**
@@ -45,7 +45,7 @@ public:
      * Get size of memory.
      * @return size of memory
      */
-    uint32_t get_size() { return size; }
+    uint32_t get_size() const { return size; }
 
     /**
      * Save memory to snapshot.
@@ -81,7 +81,7 @@ public:
      * @param pos position in memory to show from
      * @param length number of bytes to show
      */
-    void show(uint32_t pos, uint32_t length);
+    void show(uint32_t pos, uint32_t length) const;
 
     // This is an emulator where speed is important. Allow direct access to the memory area.
     uint8_t* mem;

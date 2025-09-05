@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -61,7 +61,6 @@ constexpr uint8_t margin_y = 3;
 
 constexpr uint8_t font_width = 8;
 constexpr uint8_t font_height = 8;
-constexpr uint8_t bpp = 4;
 
 
 StatusBar::StatusBar(uint16_t width, uint16_t height, uint8_t bpp) :
@@ -121,17 +120,6 @@ bool StatusBar::init(SDL_Renderer* sdl_renderer)
 
     paint();
     return update_texture(sdl_renderer);
-}
-
-
-void StatusBar::set_text(const std::string& text)
-{
-    bool update = this->text != text;
-    this->text = text;
-
-    if (update) {
-        paint();
-    }
 }
 
 

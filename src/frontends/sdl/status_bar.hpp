@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -60,13 +60,7 @@ public:
      * True if a requested update is finished.
      * @return true if update is finished
      */
-    bool has_update() { return has_updated; }
-
-    /**
-     * Set status bar text to given string. Will trigger update if different to current string.
-     * @param text new status bar text
-     */
-    void set_text(const std::string& text);
+    [[nodiscard]] bool has_update() const { return has_updated; }
 
     /**
      * Show given string for a certain duration. Triggers an update.
@@ -74,11 +68,6 @@ public:
      * @param duration duration to show text
      */
     void show_text_for(const std::string& text, std::chrono::milliseconds duration);
-
-    /**
-     * Clear text and update.
-     */
-    void clear_text() { text = ""; paint(); }
 
     /**
      * Set flag to wanted state. Triggers update if flags are changed.

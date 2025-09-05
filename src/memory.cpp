@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -15,8 +15,6 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <algorithm>
-#include <exception>
 #include <fcntl.h>
 #include <format>
 #include <fstream>
@@ -24,20 +22,15 @@
 #include <iostream>
 #include <print>
 #include <stdexcept>
-#include <stdlib.h>
 #include <sstream>
-#include <string.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #include "memory.hpp"
 #include "snapshot.hpp"
 
-#include "chip/mos6502.hpp"
-
 
 Memory::Memory(size_t size) :
-    mem(NULL),
+    mem(nullptr),
     size(size),
     mempos(0),
     memory(size)
@@ -83,7 +76,7 @@ void Memory::load_from_snapshot(Snapshot& snapshot)
 }
 
 
-void Memory::show(uint32_t pos, uint32_t length)
+void Memory::show(uint32_t pos, uint32_t length) const
 {
     std::println("Showing 0x{:04X} bytes from ${:x}", length, pos);
     std::ostringstream chars;

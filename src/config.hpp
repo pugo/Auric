@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -48,13 +48,13 @@ public:
      * Check if emulator should start in monitor mode.
      * @return true if emulator should start in monitor mode
      */
-    bool start_in_monitor() { return _start_in_monitor; }
+    bool start_in_monitor() const { return _start_in_monitor; }
 
     /**
      * Check if emulator should start in Oric Atmos mode.
      * @return true if emulator should start in Oric Atmos mode
      */
-    bool use_atmos_rom() { return _use_atmos_rom; }
+    bool use_atmos_rom() const { return _use_atmos_rom; }
 
 protected:
     bool _start_in_monitor;

@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 #include <cstdio>
 
 #include "machine.hpp"
-#include "snapshot.hpp"
 
 #include "mos6502.hpp"
 #include "mos6502_opcodes.hpp"
@@ -130,7 +129,7 @@ void MOS6502::Reset()
     current_cycle = 0;
 }
 
-void MOS6502::save_to_snapshot(Snapshot& snapshot)
+void MOS6502::save_to_snapshot(Snapshot& snapshot) const
 {
     snapshot.mos6502.A = A;
     snapshot.mos6502.X = X;
@@ -205,7 +204,7 @@ void MOS6502::PrintStat(uint16_t address)
 // +---+---+---+---+---+---+---+---+
 // | N | V |   | B | D | I | Z | C |
 // +---+---+---+---+---+---+---+---+
-uint8_t MOS6502::get_p()
+uint8_t MOS6502::get_p() const
 {
     uint8_t result = 0;
     result |= N ? FLAG_N : 0;
@@ -1247,7 +1246,7 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
 //            PrintStat(pc_initial);
             do_break = true;
             break;
-    };
+    }
 
     if (! quiet) {
         PrintStat(pc_initial);

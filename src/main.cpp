@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <signal.h>
+#include <csignal>
 
 #include <print>
 #include <sstream>
@@ -50,7 +50,7 @@ void init_signals()
     sigact.sa_handler = signal_handler;
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
-    sigaction(SIGINT, &sigact, (struct sigaction *)NULL);
+    sigaction(SIGINT, &sigact, (struct sigaction *) nullptr);
 }
 
 

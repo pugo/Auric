@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ public:
     static const uint16_t texture_height = 224;
     static const uint8_t texture_bpp = 4;
 
-    Frontend(Oric& oric);
+    explicit Frontend(Oric& oric);
     ~Frontend();
 
     /**
@@ -93,7 +93,7 @@ public:
 
     /**
      * Render graphics.
-     * @param pixels refernce to pixels to render
+     * @param pixels reference to pixels to render
      */
     virtual void render_graphics(std::vector<uint8_t>& pixels);
 
@@ -106,7 +106,7 @@ public:
     /**
      * Close sound.
      */
-    void close_sound();
+    void close_sound() const;
 
 protected:
     /**
@@ -117,13 +117,12 @@ protected:
     /**
      * Close SDL.
      */
-    void close_sdl();
+    static void close_sdl();
 
     Oric& oric;
 
     SDL_Window* sdl_window;
     SDL_Renderer* sdl_renderer;
-    SDL_AudioDeviceID sound_audio_device_id;
 
     Texture oric_texture;
     StatusBar status_bar;
@@ -133,6 +132,7 @@ protected:
 
     std::vector<uint8_t> status_pixels;
 
+    SDL_AudioDeviceID sound_audio_device_id;
     bool audio_locked;
 };
 

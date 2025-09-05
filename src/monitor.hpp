@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2024 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -18,10 +18,7 @@
 #ifndef MONITOR_H
 #define MONITOR_H
 
-#include <stdio.h>
-#include <string.h>
 #include <iostream>
-
 #include <map>
 #include <vector>
 
@@ -57,7 +54,7 @@ struct Opcode
 class Monitor
 {
 public:
-    Monitor(Memory& memory);
+    explicit Monitor(Memory& memory);
 
     /**
      * Disassemble the instruction at given address.
