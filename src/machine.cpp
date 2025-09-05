@@ -277,11 +277,11 @@ bool Machine::toggle_warp_mode()
     warpmode_on = !warpmode_on;
     if (! warpmode_on) {
         next_frame_tp = hrc::now();
-        frontend->unlock_audio();
+        frontend->pause_sound(false);
         frontend->get_status_bar().set_flag(StatusbarFlags::warp_mode, false);
     }
     else {
-        frontend->lock_audio();
+        frontend->pause_sound(true);
         frontend->get_status_bar().set_flag(StatusbarFlags::warp_mode, true);
     }
 
