@@ -52,7 +52,7 @@ using hrc = std::chrono::high_resolution_clock;
 using namespace std::chrono_literals;
 
 
-Machine::Machine(Oric* oric) :
+Machine::Machine(Oric& oric) :
     cpu(nullptr),
     mos_6522(nullptr),
     ay3(nullptr),
@@ -126,8 +126,8 @@ void Machine::init_ay3()
 
 void Machine::init_tape()
 {
-    if (! oric->get_config().tape_path().empty()) {
-        tape = std::make_unique<TapeTap>(*mos_6522, oric->get_config().tape_path());
+    if (! oric.get_config().tape_path().empty()) {
+        tape = std::make_unique<TapeTap>(*mos_6522, oric.get_config().tape_path());
         if (!tape->init()) {
             exit(1);
         }

@@ -57,14 +57,14 @@ Oric::~Oric()
 
 void Oric::init()
 {
-    machine = std::make_unique<Machine>(this);
-    frontend = std::make_unique<Frontend>(this);
+    machine = std::make_unique<Machine>(*this);
+    frontend = std::make_unique<Frontend>(*this);
 
     machine->init(frontend.get());
     frontend->init_graphics();
     frontend->init_sound();
 
-    frontend->get_status_bar().show_text_for("Starting ORIC...", std::chrono::seconds(3));
+    frontend->get_status_bar().show_text_for("Starting ORIC!", std::chrono::seconds(3));
 
     machine->cpu->set_quiet(true);
 
@@ -84,7 +84,7 @@ void Oric::init()
 
 void Oric::init_machine()
 {
-    machine = std::make_unique<Machine>(this);
+    machine = std::make_unique<Machine>(*this);
 }
 
 void Oric::run()

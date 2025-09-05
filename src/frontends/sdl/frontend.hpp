@@ -44,7 +44,7 @@ public:
     static const uint16_t texture_height = 224;
     static const uint8_t texture_bpp = 4;
 
-    Frontend(Oric* oric);
+    Frontend(Oric& oric);
     ~Frontend();
 
     /**
@@ -119,7 +119,7 @@ protected:
      */
     void close_sdl();
 
-    Oric* oric;
+    Oric& oric;
 
     SDL_Window* sdl_window;
     SDL_Renderer* sdl_renderer;

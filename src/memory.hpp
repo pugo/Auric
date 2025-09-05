@@ -83,7 +83,7 @@ public:
      */
     void show(uint32_t pos, uint32_t length);
 
-    // This is an emulator where speed is important. No smart pointers or getters for memory!
+    // This is an emulator where speed is important. Allow direct access to the memory area.
     uint8_t* mem;
 
 protected:

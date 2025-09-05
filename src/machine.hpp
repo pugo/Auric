@@ -40,7 +40,7 @@ class AY3_8912;
 class Machine
 {
 public:
-    Machine(Oric* oric);
+    Machine(Oric& oric);
     ~Machine() = default;
 
     /**
@@ -218,7 +218,7 @@ public:
 
 protected:
     ULA ula;
-    Oric* oric;
+    Oric& oric;
     std::unique_ptr<Tape> tape;
 
     int32_t cycle_count;

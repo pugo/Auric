@@ -36,7 +36,7 @@ static int32_t keytab[] = {
 
 // ----- Frontend ----------------
 
-Frontend::Frontend(Oric* oric) :
+Frontend::Frontend(Oric& oric) :
     oric(oric),
     sdl_window(NULL),
     sdl_renderer(NULL),
@@ -139,7 +139,7 @@ bool Frontend::init_sound()
     audio_spec_want.format   = AUDIO_S16SYS;
     audio_spec_want.channels = 2;
     audio_spec_want.samples  = 2048;
-    AY3_8912* ay3 = oric->get_machine().ay3.get();
+    AY3_8912* ay3 = oric.get_machine().ay3.get();
     audio_spec_want.callback = ay3->audio_callback;
     audio_spec_want.userdata = (void*) ay3;
 
@@ -185,24 +185,24 @@ bool Frontend::handle_frame()
 
                 if (event.type == SDL_KEYDOWN) {
                     if (event.key.keysym.sym == SDLK_F12) {
-                        oric->get_machine().toggle_warp_mode();
+                        oric.get_machine().toggle_warp_mode();
                     }
 
                     else if (event.key.keysym.sym == SDLK_F10) {
-                        oric->get_machine().cpu->NMI();
+                        oric.get_machine().cpu->NMI();
                     }
 
                     else if (event.key.keysym.sym == SDLK_F1) {
-                        oric->get_machine().save_snapshot();
+                        oric.get_machine().save_snapshot();
                     }
 
                     else if (event.key.keysym.sym == SDLK_F2) {
-                        oric->get_machine().load_snapshot();
+                        oric.get_machine().load_snapshot();
                     }
 
                     else if (event.key.keysym.sym == SDLK_b && event.key.keysym.mod & KMOD_CTRL) {
-                        oric->get_machine().stop();
-                        oric->do_break();
+                        oric.get_machine().stop();
+                        oric.do_break();
                     }
                 }
 
@@ -213,14 +213,14 @@ bool Frontend::handle_frame()
 
                 auto key = key_map.find(sym);
                 if (key != key_map.end()) {
-                    oric->get_machine().key_press(key->second, event.type == SDL_KEYDOWN);
+                    oric.get_machine().key_press(key->second, event.type == SDL_KEYDOWN);
                 }
                 break;
             }
 
             case SDL_WINDOWEVENT:
                 if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
-                    oric->do_quit();
+                    oric.do_quit();
                     return false;
                 }
         }
