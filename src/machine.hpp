@@ -21,6 +21,7 @@
 #include <iostream>
 #include <memory>
 #include <chrono>
+#include <optional>
 
 #include "chip/mos6502.hpp"
 #include "chip/mos6522.hpp"
@@ -230,7 +231,7 @@ protected:
     uint8_t current_key_row;
     uint8_t key_rows[8];
 
-    Snapshot snapshot;
+    std::optional<Snapshot> snapshot;
 };
 
 #endif // MACHINE_H

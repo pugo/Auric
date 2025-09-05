@@ -244,20 +244,29 @@ void Machine::via_orb_changed(uint8_t orb)
 
 void Machine::save_snapshot()
 {
-    cpu->save_to_snapshot(snapshot);
-    mos_6522->save_to_snapshot(snapshot);
-    memory.save_to_snapshot(snapshot);
-    ay3->save_to_snapshot(snapshot);
+    if (! snapshot) {
+        snapshot = Snapshot{};
+    }
+
+    cpu->save_to_snapshot(*snapshot);
+    mos_6522->save_to_snapshot(*snapshot);
+    memory.save_to_snapshot(*snapshot);
+    ay3->save_to_snapshot(*snapshot);
 
     frontend->get_status_bar().show_text_for("Saved snapshot", std::chrono::seconds(2));
 }
 
 void Machine::load_snapshot()
 {
-    cpu->load_from_snapshot(snapshot);
-    mos_6522->load_from_snapshot(snapshot);
-    memory.load_from_snapshot(snapshot);
-    ay3->load_from_snapshot(snapshot);
+    if (! snapshot) {
+        frontend->get_status_bar().show_text_for("No snapshot saved", 2s);
+        return;
+    }
+
+    cpu->load_from_snapshot(*snapshot);
+    mos_6522->load_from_snapshot(*snapshot);
+    memory.load_from_snapshot(*snapshot);
+    ay3->load_from_snapshot(*snapshot);
 
     frontend->get_status_bar().show_text_for("Loaded snapshot", std::chrono::seconds(2));
 }
