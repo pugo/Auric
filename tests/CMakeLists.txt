@@ -16,8 +16,11 @@ add_executable(gtests_run
         6502_test.cpp
         6522_test.cpp
         6522_test_control_registers.cpp
-        6522_test_counters.cpp
+        6522_test_t1.cpp
+        6522_test_t2.cpp
         6522_test_shift_registers.cpp
+        mocks/test_machine.cpp
+        mocks/test_machine.h
 )
 
 target_link_libraries(gtests_run  gtest_main gmock oric_lib)

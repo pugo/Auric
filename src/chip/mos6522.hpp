@@ -84,6 +84,8 @@ public:
         bool ca2_do_pulse;
 
         bool cb1;
+        bool cb1_do_pulse;
+
         bool cb2;
         bool cb2_do_pulse;
 
@@ -113,6 +115,7 @@ public:
         uint8_t sr_counter; // Modulo 8 counter for current bit
         uint8_t sr_timer;   // Time countdown
         bool sr_run;        // Set true by read/write to SR
+        bool sr_first;      // Used to handle differences in shift cycles.
 
         uint8_t acr;		// Auxilliary control register (shift mode, etc)
         // |  7  |  6  |    5    |  4  |  3  |  2  |      1       |      0       |

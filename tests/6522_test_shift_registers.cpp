@@ -27,6 +27,18 @@ using namespace testing;
 class MOS6522TestSR : public MOS6522Test
 {};
 
+/**
+ * Test Shift Register operations according to ACR bits 4-2
+ * 000: Disabled
+ * 001: Shift in under T2 control
+ * 010: Shift in under φ2 control
+ * 011: Shift in under external clock control
+ * 100: Shift out free-running at T2 rate
+ * 101: Shift out under T2 control
+ * 110: Shift out under φ2 control
+ * 111: Shift out under external clock control
+ */
+
 // ==== Shift in ================
 
 // ---- In by T2 ---------------
@@ -48,16 +60,61 @@ TEST_F(MOS6522TestSR, Shift_in_by_t2)
 
     ASSERT_EQ(mos6522->get_state().sr, 0x01);
 
-    // Count down again, now it is negative transition. No shift!
+    // Count down again, expect new shift.
     for (uint8_t i = 0; i < 4; i++) {
         mos6522->exec();
     }
 
-    ASSERT_EQ(mos6522->get_state().sr, 0x01);
+    ASSERT_EQ(mos6522->get_state().sr, 0x03);
 }
 
 
-TEST_F(MOS6522TestSR, Shift_in_by_t2_cb1_toggles)
+TEST_F(MOS6522TestSR, Shift_in_inder_T2_control)
+{
+    // Set SR mode to shift in under T2 control (ACR bits 4-2 = 001)
+    mos6522->write_byte(MOS6522::ACR, 0x04);
+
+    // Enable SR interrupt
+    mos6522->write_byte(MOS6522::IER, 0x80 | MOS6522::IRQ_SR);
+
+    // Set T2 to control shift rate - load with value 2 for fast shifting
+    mos6522->write_byte(MOS6522::T2C_L, 0x02);
+    mos6522->write_byte(MOS6522::T2C_H, 0x00);
+
+    // Load cycle for T2
+    mos6522->exec();
+
+    // Write to SR to start shifting
+    mos6522->write_byte(MOS6522::SR, 0x00);
+
+    // Set up CB2 for input data (simulating serial input)
+    mos6522->write_cb2(true);  // First bit = 1
+
+    // Wait for T2 cycles (2 + load + 0.5)
+    for (int i = 0; i < 3; i++) {
+        mos6522->exec();
+    }
+
+    // CB1 should toggle and shift should occur
+    EXPECT_EQ(mos6522->get_state().sr & 0x01, 1); // LSB should be 1
+
+    // Continue shifting with different data
+    mos6522->write_cb2(false); // Next bit = 0
+
+    // After 8 shifts, interrupt should be set
+    for (int bit = 1; bit < 8; bit++) {
+        mos6522->write_cb2(bit & 1); // Alternate pattern
+        for (int i = 0; i < 4; i++) {
+            mos6522->exec();
+        }
+    }
+
+    // Check interrupt after 8 shifts
+    EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_SR, 0);
+}
+
+
+TEST_F(MOS6522TestSR, Shift_in_by_t2_cb1_low_one_cycle_on_timeout)
 {
     mos6522->write_byte(MOS6522::ACR, 0x04);    // Shift in under control of T2
     mos6522->write_byte(MOS6522::IER, 0xff);    // Enable interrupts for bit 0-6.
@@ -68,13 +125,12 @@ TEST_F(MOS6522TestSR, Shift_in_by_t2_cb1_toggles)
     for (uint8_t i = 0; i < 4; i++) {
         mos6522->exec();
     }
-    ASSERT_EQ(mos6522->get_state().cb1, true);
 
-    for (uint8_t i = 0; i < 4; i++) {
-        mos6522->exec();
-    }
     ASSERT_EQ(mos6522->get_state().cb1, false);
+    mos6522->exec();
+    ASSERT_EQ(mos6522->get_state().cb1, true);
 }
+
 
 TEST_F(MOS6522TestSR, Shift_in_by_t2_correct_value)
 {
@@ -90,7 +146,8 @@ TEST_F(MOS6522TestSR, Shift_in_by_t2_correct_value)
         mos6522->get_state().cb2 = value & 0x80;
         value <<= 1;
 
-        for (uint8_t i = 0; i < 8; i++) {
+        uint8_t cycles = 4 + (b == 0 ? 0 : 1);
+        for (uint8_t i = 0; i < cycles; i++) {
             mos6522->exec();
         }
     }
@@ -112,7 +169,8 @@ TEST_F(MOS6522TestSR, Shift_in_by_t2_stops_after_8_bits)
         mos6522->get_state().cb2 = value & 0x80;
         value <<= 1;
 
-        for (uint8_t i = 0; i < 8; i++) {
+        uint8_t cycles = 4 + (b == 0 ? 0 : 1);
+        for (uint8_t i = 0; i < cycles; i++) {
             mos6522->exec();
         }
     }

@@ -50,6 +50,7 @@ void MOS6522::State::reset()
     ca2_do_pulse = false;
 
     cb1 = false;
+    cb1_do_pulse = false;
     cb2 = false;
     cb2_do_pulse = false;
 
@@ -79,6 +80,7 @@ void MOS6522::State::reset()
     sr_counter = 0;     // Modulo 8 counter for current bit
     sr_timer = 0;       // Time countdown
     sr_run = false;     // Whether SR shifting should be done, triggered by SR read/write
+    sr_first = false;
 
     acr = 0;            // Auxilliary Control Register
     pcr = 0;            // Peripheral Control Register
@@ -237,17 +239,29 @@ void MOS6522::exec()
         case 0x04:  // Shift in under T2 control
             if (! state.sr_run) { break; }
 
+            if (state.cb1_do_pulse) {
+                state.cb1 = true;   // Go back to default value.
+                state.cb1_do_pulse = false;
+            }
+
+            // Arm on first entry (after writing SR / enabling the mode)
             if (state.sr_timer == 0) {
-                state.sr_timer = state.t2_latch_low;
+                state.sr_timer = (state.t2_latch_high << 8) | state.t2_latch_low;
+                state.sr_first = true;
                 break;
             }
 
             if (--state.sr_timer == 0) {
-                state.cb1 = ! state.cb1;
-                if (state.cb1) {
-                    state.sr_shift_in();
-                    sr_handle_counter();
-                }
+                // Pulse CB1 for one cycle (low).
+                state.cb1 = false;
+                state.cb1_do_pulse = true;
+
+                state.sr_shift_in();
+                sr_handle_counter();
+
+                // re-arm for next underflow
+                state.sr_timer = (state.t2_latch_high << 8) | state.t2_latch_low + (state.sr_first ? 1 : 2);
+                state.sr_first = false;
             }
             break;
         case 0x08:  // Shift in under O2 control
