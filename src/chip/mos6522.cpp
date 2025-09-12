@@ -50,7 +50,6 @@ void MOS6522::State::reset()
     ca2_do_pulse = false;
 
     cb1 = false;
-    cb1_do_pulse = false;
     cb2 = false;
     cb2_do_pulse = false;
 
@@ -77,9 +76,7 @@ void MOS6522::State::reset()
     t2_reload = false;
 
     sr = 0;             // Shift Register
-    sr_counter = 0;     // Modulo 8 counter for current bit
-    sr_timer = 0;       // Time countdown
-    sr_run = false;     // Whether SR shifting should be done, triggered by SR read/write
+    sr_stop();
     sr_first = false;
 
     acr = 0;            // Auxilliary Control Register
@@ -121,6 +118,16 @@ void MOS6522::State::sr_shift_out()
     sr = (sr << 1) + (cb2 ? 1 : 0);
 }
 
+void MOS6522::State::sr_stop()
+{
+    sr_run = false;
+    sr_out_started = false;
+    sr_out_gap_pending = false;
+    sr_counter = 0;
+    sr_timer = 0;
+}
+
+// ===== MOS6522 =====
 
 MOS6522::MOS6522(Machine& a_Machine) :
     machine(a_Machine),
@@ -239,28 +246,22 @@ void MOS6522::exec()
         case 0x04:  // Shift in under T2 control
             if (! state.sr_run) { break; }
 
-            if (state.cb1_do_pulse) {
-                state.cb1 = true;   // Go back to default value.
-                state.cb1_do_pulse = false;
-            }
-
             // Arm on first entry (after writing SR / enabling the mode)
             if (state.sr_timer == 0) {
-                state.sr_timer = (state.t2_latch_high << 8) | state.t2_latch_low;
+                state.sr_timer = state.t2_latch_low;
                 state.sr_first = true;
                 break;
             }
 
             if (--state.sr_timer == 0) {
-                // Pulse CB1 for one cycle (low).
-                state.cb1 = false;
-                state.cb1_do_pulse = true;
+                // NMOS version of 6522 toggles CB1 on each underflow.
+                state.cb1 = ! state.cb1;
 
                 state.sr_shift_in();
                 sr_handle_counter();
 
                 // re-arm for next underflow
-                state.sr_timer = (state.t2_latch_high << 8) | state.t2_latch_low + (state.sr_first ? 1 : 2);
+                state.sr_timer = state.t2_latch_low + (state.sr_first ? 1 : 2);
                 state.sr_first = false;
             }
             break;
@@ -268,50 +269,58 @@ void MOS6522::exec()
             if (! state.sr_run) { break; }
 
             state.cb1 = ! state.cb1;
-            if (state.cb1) {
-                state.sr_shift_in();
-                sr_handle_counter();
-            }
+            state.sr_shift_in();
+            sr_handle_counter();
+
             break;
         case 0x0c:  // Shift in under control of external clock (not implemented)
             if (state.ifr & IRQ_SR) { irq_clear(IRQ_SR); }
-            state.sr_run = false;
-            state.sr_counter = 0;
-            break;
-        case 0x1c:  // Shift out under control of external clock (not implemented)
-            if (state.ifr & IRQ_SR) { irq_clear(IRQ_SR); }
-            state.sr_run = false;
-            state.sr_counter = 0;
+            state.sr_stop();
             break;
         case 0x10:  // Shift out free-running at T2 rate
             if (! state.sr_run) { break; }
 
-            if (state.sr_timer == 0) {
+            if (!state.sr_out_started) {
+                state.sr_out_started = true;
                 state.sr_timer = state.t2_latch_low;
                 break;
             }
 
             if (--state.sr_timer == 0) {
                 state.cb1 = ! state.cb1;
-                if (! state.cb1) {
-                    state.sr_shift_out();
-                    state.sr_counter = (state.sr_counter + 1) % 8;
+                state.sr_shift_out();
+
+                bool wrapped = (++state.sr_counter == 8);
+                if (wrapped) {
+                    state.sr_counter = 0;
+                    irq_set(IRQ_SR);
+                    state.sr_out_gap_pending = true;
+                }
+
+                state.sr_timer = state.t2_latch_low;
+
+                if (state.sr_out_gap_pending) {
+                    state.sr_out_gap_pending = false;
+                    // Not documented, but analysis of the real hardware shows a full count cycle gap after each byte.
+                    state.sr_counter += (state.sr_counter + 1) % 8;
                 }
             }
             break;
         case 0x14:  // Shift out under T2 control
             if (! state.sr_run) { break; }
 
-            if (state.sr_timer == 0) {
+            if (!state.sr_out_started) {
+                state.sr_out_started = true;
                 state.sr_timer = state.t2_latch_low;
+                state.sr_counter = 0;
                 break;
             }
 
             if (--state.sr_timer == 0) {
                 state.cb1 = ! state.cb1;
-                if (! state.cb1) {
-                    state.sr_shift_out();
-                    sr_handle_counter();
+                state.sr_shift_out();
+                if (!sr_handle_counter()) {
+                    state.sr_timer = state.t2_latch_low;
                 }
             }
             break;
@@ -323,6 +332,10 @@ void MOS6522::exec()
                 state.sr_shift_out();
                 sr_handle_counter();
             }
+            break;
+        case 0x1c:  // Shift out under control of external clock (not implemented)
+            if (state.ifr & IRQ_SR) { irq_clear(IRQ_SR); }
+            state.sr_stop();
             break;
     }
 }
@@ -511,11 +524,22 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
             irq_clear(IRQ_SR);
             break;
         case ACR:
+        {
+            const uint8_t old_mode = (state.acr >> 2) & 0x07;
+            const uint8_t new_mode = (value >> 2) & 0x07;
             state.acr = value;
-            if( ( ( value & 0xc0 ) != 0x40 ) &&
-                ( ( value & 0xc0 ) != 0xc0 ) )
+
+            if (new_mode != old_mode) {
+                state.sr_out_started = false;
+                state.sr_out_gap_pending = false;
+            }
+
+            if (((value & 0xc0) != 0x40) && ((value & 0xc0) != 0xc0)) {
                 state.t1_reload = false;
+            }
+
             break;
+        }
         case PCR:
             state.pcr = value;
             // Manual output modes
@@ -641,13 +665,14 @@ void MOS6522::irq_clear(uint8_t bits)
     }
 }
 
-void MOS6522::sr_handle_counter()
+bool MOS6522::sr_handle_counter()
 {
     if (++state.sr_counter == 8) {
         irq_set(IRQ_SR);
-        state.sr_timer = 0;
-        state.sr_run = false;
+        state.sr_stop();
+        return true;
     }
+    return false;
 }
 
 void MOS6522::write_ca1(bool value)

@@ -114,7 +114,7 @@ TEST_F(MOS6522TestSR, Shift_in_inder_T2_control)
 }
 
 
-TEST_F(MOS6522TestSR, Shift_in_by_t2_cb1_low_one_cycle_on_timeout)
+TEST_F(MOS6522TestSR, Shift_in_by_t2_cb1_toggles)
 {
     mos6522->write_byte(MOS6522::ACR, 0x04);    // Shift in under control of T2
     mos6522->write_byte(MOS6522::IER, 0xff);    // Enable interrupts for bit 0-6.
@@ -125,10 +125,12 @@ TEST_F(MOS6522TestSR, Shift_in_by_t2_cb1_low_one_cycle_on_timeout)
     for (uint8_t i = 0; i < 4; i++) {
         mos6522->exec();
     }
-
-    ASSERT_EQ(mos6522->get_state().cb1, false);
-    mos6522->exec();
     ASSERT_EQ(mos6522->get_state().cb1, true);
+
+    for (uint8_t i = 0; i < 4; i++) {
+        mos6522->exec();
+    }
+    ASSERT_EQ(mos6522->get_state().cb1, false);
 }
 
 
@@ -214,9 +216,42 @@ TEST_F(MOS6522TestSR, Shift_in_by_t2_interrupt_when_done)
 
 // ---- In by O2 ---------------
 
+
+TEST_F(MOS6522TestSR, ShiftInUnderClockControl)
+{
+    // Set SR mode to shift in under φ2 control (ACR bits 4-2 = 010)
+    mos6522->write_byte(MOS6522::ACR, 0x08);
+
+    // Enable SR interrupt
+    mos6522->write_byte(MOS6522::IER, 0x80 | MOS6522::IRQ_SR);
+
+    // Write to SR to start shifting
+    mos6522->write_byte(MOS6522::SR, 0x00);
+
+    // Set CB2 input data
+    mos6522->write_cb2(true);
+
+    // Each clock cycle should shift one bit
+    mos6522->exec();
+    EXPECT_EQ(mos6522->get_state().sr & 0x01, 1);
+
+    mos6522->write_cb2(false);
+    mos6522->exec();
+    EXPECT_EQ(mos6522->get_state().sr & 0x01, 0);
+
+    // Continue for remaining 6 bits
+    for (int bit = 2; bit < 8; bit++) {
+        mos6522->write_cb2(bit & 1);
+        mos6522->exec();
+    }
+
+    // Check interrupt after 8 shifts
+    EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_SR, 0);
+}
+
 TEST_F(MOS6522TestSR, Shift_in_by_o2)
 {
-    mos6522->write_byte(MOS6522::ACR, 0x08);    // Shift in under control of O2
+    mos6522->write_byte(MOS6522::ACR, 0x08);    // Shift in under control of φ2
     mos6522->write_byte(MOS6522::IER, 0xff);    // Enable interrupts for bit 0-6.
     mos6522->write_byte(MOS6522::SR, 0x00);
     mos6522->get_state().cb1 = false;
@@ -228,15 +263,13 @@ TEST_F(MOS6522TestSR, Shift_in_by_o2)
     mos6522->exec();
     ASSERT_EQ(mos6522->get_state().sr, 0x01);
 
-    // Now it is negative transition. No shift!
     mos6522->exec();
-
-    ASSERT_EQ(mos6522->get_state().sr, 0x01);
+    ASSERT_EQ(mos6522->get_state().sr, 0x03);
 }
 
 TEST_F(MOS6522TestSR, Shift_in_by_o2_cb1_toggles)
 {
-    mos6522->write_byte(MOS6522::ACR, 0x08);    // Shift in under control of O2
+    mos6522->write_byte(MOS6522::ACR, 0x08);    // Shift in under control of φ2
     mos6522->write_byte(MOS6522::IER, 0xff);    // Enable interrupts for bit 0-6.
     mos6522->write_byte(MOS6522::SR, 0x00);
     mos6522->get_state().cb1 = false;
@@ -253,7 +286,7 @@ TEST_F(MOS6522TestSR, Shift_in_by_o2_cb1_toggles)
 
 TEST_F(MOS6522TestSR, Shift_in_by_o2_correct_value)
 {
-    mos6522->write_byte(MOS6522::ACR, 0x08);    // Shift in under control of O2
+    mos6522->write_byte(MOS6522::ACR, 0x08);    // Shift in under control of φ2
     mos6522->write_byte(MOS6522::IER, 0xff);    // Enable interrupts for bit 0-6.
     mos6522->write_byte(MOS6522::SR, 0x00);
     mos6522->get_state().cb1 = false;
@@ -266,7 +299,6 @@ TEST_F(MOS6522TestSR, Shift_in_by_o2_correct_value)
         value <<= 1;
 
         mos6522->exec();
-        mos6522->exec();
     }
 
     ASSERT_EQ(mos6522->get_state().sr, 0x42);
@@ -274,7 +306,7 @@ TEST_F(MOS6522TestSR, Shift_in_by_o2_correct_value)
 
 TEST_F(MOS6522TestSR, Shift_in_by_o2_stops_after_8_bits)
 {
-    mos6522->write_byte(MOS6522::ACR, 0x08);    // Shift in under control of O2
+    mos6522->write_byte(MOS6522::ACR, 0x08);    // Shift in under control of φ2
     mos6522->write_byte(MOS6522::IER, 0xff);    // Enable interrupts for bit 0-6.
     mos6522->write_byte(MOS6522::SR, 0x00);
     mos6522->get_state().cb1 = false;
@@ -287,7 +319,6 @@ TEST_F(MOS6522TestSR, Shift_in_by_o2_stops_after_8_bits)
         value <<= 1;
 
         mos6522->exec();
-        mos6522->exec();
     }
 
     ASSERT_EQ(mos6522->get_state().sr, 0x42);
@@ -295,14 +326,13 @@ TEST_F(MOS6522TestSR, Shift_in_by_o2_stops_after_8_bits)
     // Try to shift in another bit. It should not work.
     mos6522->get_state().cb2 = false;
     mos6522->exec();
-    mos6522->exec();
 
     ASSERT_EQ(mos6522->get_state().sr, 0x42);
 }
 
 TEST_F(MOS6522TestSR, Shift_in_by_o2_interrupt_when_done)
 {
-    mos6522->write_byte(MOS6522::ACR, 0x08);    // Shift in under control of O2
+    mos6522->write_byte(MOS6522::ACR, 0x08);    // Shift in under control of φ2
     mos6522->write_byte(MOS6522::IER, 0xff);    // Enable interrupts for bit 0-6.
     mos6522->write_byte(MOS6522::SR, 0x00);
     mos6522->get_state().cb1 = false;
@@ -317,7 +347,6 @@ TEST_F(MOS6522TestSR, Shift_in_by_o2_interrupt_when_done)
         mos6522->get_state().cb2 = value & 0x80;
         value <<= 1;
 
-        mos6522->exec();
         mos6522->exec();
     }
 
@@ -339,21 +368,59 @@ TEST_F(MOS6522TestSR, Shift_out_freerunning)
 
     ASSERT_EQ(mos6522->get_state().cb2, false);
 
-    // Count down to 0. But first time it is positive transition. No shift.
-    for (uint8_t i = 0; i < 4; i++) {
-        mos6522->exec();
-        ASSERT_EQ(mos6522->get_state().cb2, false);
-    }
+    // Load cycle for T2
+    mos6522->exec();
 
-    // Count down again, but now it is negative transition. Shift!
     for (uint8_t i = 0; i < 3; i++) {
         mos6522->exec();
-        ASSERT_EQ(mos6522->get_state().cb2, false);
+    }
+    ASSERT_EQ(mos6522->get_state().cb2, true);
+
+    for (uint8_t i = 0; i < 3; i++) {
+        mos6522->exec();
+    }
+    ASSERT_EQ(mos6522->get_state().cb2, false);
+}
+
+
+TEST_F(MOS6522TestSR, ShiftOutFreeRunning)
+{
+    // Set SR mode to shift out free-running at T2 rate (ACR bits 4-2 = 100)
+    mos6522->write_byte(MOS6522::ACR, 0x10);
+
+    // Enable SR interrupt
+    mos6522->write_byte(MOS6522::IER, 0x80 | MOS6522::IRQ_SR);
+
+    // Set T2 rate - load with value 2
+    mos6522->write_byte(MOS6522::T2C_L, 0x02);
+    mos6522->write_byte(MOS6522::T2C_H, 0x00);
+
+    // Load cycle for T2
+    mos6522->exec();
+
+    // Write test pattern to SR
+    mos6522->write_byte(MOS6522::SR, 0xA5); // 10100101
+
+    bool initial_cb2 = mos6522->get_state().cb2;
+
+    // First shift should output MSB (1)
+    for (int i = 0; i < 3; i++) {
+        mos6522->exec();
     }
 
-    mos6522->exec();  // Initial load
-    ASSERT_EQ(mos6522->get_state().cb2, true);
+    EXPECT_TRUE(mos6522->get_state().cb2); // Should be high (MSB = 1)
+
+    // Continue shifting for remaining bits
+    for (int bit = 1; bit < 8; bit++) {
+        for (int i = 0; i < 3; i++) {
+            mos6522->exec();
+        }
+    }
+
+    // Check interrupt after 8 shifts
+    EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_SR, 0);
 }
+
 
 TEST_F(MOS6522TestSR, Shift_out_freerunning_cb1_toggles)
 {
@@ -363,12 +430,15 @@ TEST_F(MOS6522TestSR, Shift_out_freerunning_cb1_toggles)
     mos6522->write_byte(MOS6522::SR, 0xaa);
     mos6522->get_state().cb1 = false;
 
-    for (uint8_t i = 0; i < 4; i++) {
+    // Load cycle for T2
+    mos6522->exec();
+
+    for (uint8_t i = 0; i < 3; i++) {
         mos6522->exec();
     }
     ASSERT_EQ(mos6522->get_state().cb1, true);
 
-    for (uint8_t i = 0; i < 4; i++) {
+    for (uint8_t i = 0; i < 3; i++) {
         mos6522->exec();
     }
     ASSERT_EQ(mos6522->get_state().cb1, false);
@@ -383,9 +453,11 @@ TEST_F(MOS6522TestSR, Shift_out_freerunning_correct_value)
 
     uint8_t result = 0x00;
 
+    // Load cycle for T2
+    mos6522->exec();
+
     for (uint8_t b = 0; b < 8; b++) {
-        // Double amount of execs since we only shift on negative transition.
-        for (uint8_t i = 0; i < 8; i++) {
+        for (uint8_t i = 0; i < 3; i++) {
             mos6522->exec();
         }
 
@@ -405,10 +477,12 @@ TEST_F(MOS6522TestSR, Shift_out_freerunning_do_not_stop_after_8_bits)
 
     uint8_t result = 0x00;
 
+    // Load cycle for T2
+    mos6522->exec();
+
     // First shift out 8 bits.
     for (uint8_t b = 0; b < 8; b++) {
-        // Double amount of execs since we only shift on negative transition.
-        for (uint8_t i = 0; i < 8; i++) {
+        for (uint8_t i = 0; i < 3; i++) {
             mos6522->exec();
         }
 
@@ -422,7 +496,7 @@ TEST_F(MOS6522TestSR, Shift_out_freerunning_do_not_stop_after_8_bits)
 
     // Make sure cb2 changes by continuing shifting.
     for (uint8_t b = 0; b < 8; b++) {
-        for (uint8_t i = 0; i < 8; i++) {
+        for (uint8_t i = 0; i < 4; i++) {
             mos6522->exec();
         }
 
@@ -440,24 +514,22 @@ TEST_F(MOS6522TestSR, Shift_out_by_t2)
     mos6522->write_byte(MOS6522::ACR, 0x14);    // Shift out under control of T2
     mos6522->write_byte(MOS6522::IER, 0xff);    // Enable interrupts for bit 0-6.
     mos6522->write_byte(MOS6522::T2C_L, 0x03);
-    mos6522->write_byte(MOS6522::SR, 0xaa);
+    mos6522->write_byte(MOS6522::SR, 0xaa);     // 10101010
 
     ASSERT_EQ(mos6522->get_state().cb2, false);
 
-    // Count down to 0. But first time it is positive transition. No shift.
-    for (uint8_t i = 0; i < 4; i++) {
-        mos6522->exec();
-        ASSERT_EQ(mos6522->get_state().cb2, false);
-    }
+    // Load cycle for T2
+    mos6522->exec();
 
-    // Count down again, but now it is negative transition. Shift!
     for (uint8_t i = 0; i < 3; i++) {
         mos6522->exec();
-        ASSERT_EQ(mos6522->get_state().cb2, false);
     }
-
-    mos6522->exec();  // Initial load
     ASSERT_EQ(mos6522->get_state().cb2, true);
+
+    for (uint8_t i = 0; i < 3; i++) {
+        mos6522->exec();
+    }
+    ASSERT_EQ(mos6522->get_state().cb2, false);
 }
 
 TEST_F(MOS6522TestSR, Shift_out_by_t2_cb1_toggles)
@@ -465,15 +537,18 @@ TEST_F(MOS6522TestSR, Shift_out_by_t2_cb1_toggles)
     mos6522->write_byte(MOS6522::ACR, 0x14);    // Shift out under control of T2
     mos6522->write_byte(MOS6522::IER, 0xff);    // Enable interrupts for bit 0-6.
     mos6522->write_byte(MOS6522::T2C_L, 0x03);
-    mos6522->write_byte(MOS6522::SR, 0xaa);
+    mos6522->write_byte(MOS6522::SR, 0xaa);     // 10101010
     mos6522->get_state().cb1 = false;
 
-    for (uint8_t i = 0; i < 4; i++) {
+    // Load cycle for T2
+    mos6522->exec();
+
+    for (uint8_t i = 0; i < 3; i++) {
         mos6522->exec();
     }
     ASSERT_EQ(mos6522->get_state().cb1, true);
 
-    for (uint8_t i = 0; i < 4; i++) {
+    for (uint8_t i = 0; i < 3; i++) {
         mos6522->exec();
     }
     ASSERT_EQ(mos6522->get_state().cb1, false);
@@ -488,9 +563,11 @@ TEST_F(MOS6522TestSR, Shift_out_by_t2_correct_value)
 
     uint8_t result = 0x00;
 
+    // Load cycle for T2
+    mos6522->exec();
+
     for (uint8_t b = 0; b < 8; b++) {
-        // Double amount of execs since we only shift on negative transition.
-        for (uint8_t i = 0; i < 8; i++) {
+        for (uint8_t i = 0; i < 3; i++) {
             mos6522->exec();
         }
 
@@ -510,10 +587,12 @@ TEST_F(MOS6522TestSR, Shift_out_by_t2_stops_after_8_bits)
 
     uint8_t result = 0x00;
 
+    // Load cycle for T2
+    mos6522->exec();
+
     // First shift out 8 bits.
     for (uint8_t b = 0; b < 8; b++) {
-        // Double amount of execs since we only shift on negative transition.
-        for (uint8_t i = 0; i < 8; i++) {
+        for (uint8_t i = 0; i < 3; i++) {
             mos6522->exec();
         }
 
@@ -526,8 +605,7 @@ TEST_F(MOS6522TestSR, Shift_out_by_t2_stops_after_8_bits)
 
     // Ensure cb2 does not change from execs, i.e. shifting has stopped.
     for (uint8_t b = 0; b < 8; b++) {
-        // Double amount of execs since we only shift on negative transition.
-        for (uint8_t i = 0; i < 8; i++) {
+        for (uint8_t i = 0; i < 3; i++) {
             mos6522->exec();
         }
 

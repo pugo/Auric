@@ -84,8 +84,6 @@ public:
         bool ca2_do_pulse;
 
         bool cb1;
-        bool cb1_do_pulse;
-
         bool cb2;
         bool cb2_do_pulse;
 
@@ -111,13 +109,15 @@ public:
         bool t2_run;
         bool t2_reload;
 
-        uint8_t sr;         // Shift register
-        uint8_t sr_counter; // Modulo 8 counter for current bit
-        uint8_t sr_timer;   // Time countdown
-        bool sr_run;        // Set true by read/write to SR
-        bool sr_first;      // Used to handle differences in shift cycles.
+        uint8_t sr;              // Shift register
+        uint8_t sr_counter;      // Modulo 8 counter for current bit
+        uint16_t sr_timer;       // Time countdown
+        bool sr_run;             // Set true by read/write to SR
+        bool sr_first;           // Used to handle differences in shift cycles.
+        bool sr_out_started;     // Used to handle initial shift out delay.
+        bool sr_out_gap_pending; // Used to handle adding another counter period after each shift out byte.
 
-        uint8_t acr;		// Auxilliary control register (shift mode, etc)
+        uint8_t acr;		    // Auxilliary control register (shift mode, etc)
         // |  7  |  6  |    5    |  4  |  3  |  2  |      1       |      0       |
         // |  T1 ctrl  | T2 ctrl |     SR  ctrl    | PB latch en. | PA latch en. |
 
@@ -131,8 +131,9 @@ public:
         void reset();
         void print() const;
 
-        void sr_shift_in();
-        void sr_shift_out();
+        inline void sr_shift_in();
+        inline void sr_shift_out();
+        void sr_stop();
     };
 
     typedef void (*f_orb_changed_handler)(Machine &machine, uint8_t orb);
@@ -266,7 +267,7 @@ private:
     void irq_check();
     void irq_set(uint8_t bits);
     void irq_clear(uint8_t bits);
-    void sr_handle_counter();
+    bool sr_handle_counter();
 
     Machine& machine;
     MOS6522::State state;
