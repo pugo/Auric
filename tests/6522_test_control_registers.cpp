@@ -49,6 +49,29 @@ TEST_F(MOS6522TestCR, CA1_input_positive_transition)
     ASSERT_EQ(mos6522->read_byte(MOS6522::IFR), MOS6522::IRQ_CA1 | 0x80);		// Should have CA1 + IRQ (0x80).
 }
 
+TEST_F(MOS6522TestCR, CA1InterruptOnPositiveEdge)
+{
+    // Set CA1 for positive edge interrupt (PCR bit 0 = 1)
+    mos6522->write_byte(MOS6522::PCR, 0x01);
+
+    // Enable CA1 interrupt
+    mos6522->write_byte(MOS6522::IER, 0x80 | MOS6522::IRQ_CA1);
+
+    // CA1 low initially
+    mos6522->write_ca1(false);
+    mos6522->exec();
+    EXPECT_EQ(mos6522->get_state().ifr & MOS6522::IRQ_CA1, 0);
+
+    // Rising edge should trigger interrupt
+    mos6522->write_ca1(true);
+    mos6522->exec();
+    EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_CA1, 0);
+
+    // Clear interrupt by reading ORA
+    mos6522->read_byte(MOS6522::ORA);
+    EXPECT_EQ(mos6522->get_state().ifr & MOS6522::IRQ_CA1, 0);
+}
+
 TEST_F(MOS6522TestCR, CA1_input_negative_transition_no_interrupt_on_positive)
 {
     mos6522->write_ca1(true);
@@ -67,6 +90,25 @@ TEST_F(MOS6522TestCR, CA1_input_negative_transition)
     mos6522->write_ca1(false);
 
     ASSERT_EQ(mos6522->read_byte(MOS6522::IFR), MOS6522::IRQ_CA1 | 0x80);		// Should have CA1 + IRQ (0x80).
+}
+
+TEST_F(MOS6522TestCR, CA1InterruptOnNegativeEdge)
+{
+    // Set CA1 for negative edge interrupt (PCR bit 0 = 0)
+    mos6522->write_byte(MOS6522::PCR, 0x00);
+
+    // Enable CA1 interrupt
+    mos6522->write_byte(MOS6522::IER, 0x80 | MOS6522::IRQ_CA1);
+
+    // CA1 high initially
+    mos6522->write_ca1(true);
+    mos6522->exec();
+    EXPECT_EQ(mos6522->get_state().ifr & MOS6522::IRQ_CA1, 0);
+
+    // Falling edge should trigger interrupt
+    mos6522->write_ca1(false);
+    mos6522->exec();
+    EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_CA1, 0);
 }
 
 // --- CA2 ---
@@ -177,6 +219,39 @@ TEST_F(MOS6522TestCR, CA2_pulse_output_mode)
     ASSERT_EQ(mos6522->get_state().ca2, true);
 }
 
+TEST_F(MOS6522TestCR, CA2OutputModeManual)
+{
+    // Set CA2 to manual output low (PCR bits 3-1 = 110)
+    mos6522->write_byte(MOS6522::PCR, 0x0C);
+
+    EXPECT_FALSE(mos6522->get_state().ca2);
+
+    // Set CA2 to manual output high (PCR bits 3-1 = 111)
+    mos6522->write_byte(MOS6522::PCR, 0x0E);
+
+    EXPECT_TRUE(mos6522->get_state().ca2);
+}
+
+TEST_F(MOS6522TestCR, CA2OutputModePulse)
+{
+    // Set CA2 to pulse output (PCR bits 3-1 = 101)
+    mos6522->write_byte(MOS6522::PCR, 0x0A);
+
+    // CA2 should be high initially
+    EXPECT_TRUE(mos6522->get_state().ca2);
+
+    // Reading/writing ORA should cause pulse
+    mos6522->write_byte(MOS6522::ORA, 0x55);
+
+    // CA2 should go low for one cycle
+    EXPECT_TRUE(mos6522->get_state().ca2_do_pulse);
+
+    // After exec, CA2 should return high
+    mos6522->exec();
+    EXPECT_TRUE(mos6522->get_state().ca2);
+    EXPECT_FALSE(mos6522->get_state().ca2_do_pulse);
+}
+
 
 // --- CB1 ---
 
@@ -218,6 +293,28 @@ TEST_F(MOS6522TestCR, CB1_input_negative_transition)
     mos6522->write_cb1(false);
 
     ASSERT_EQ(mos6522->read_byte(MOS6522::IFR), MOS6522::IRQ_CB1 | 0x80);		// Should have CB1 + IRQ (0x80).
+}
+
+
+TEST_F(MOS6522TestCR, CB1InterruptTapeInput)
+{
+    // Set CB1 for positive edge interrupt (for tape input)
+    mos6522->write_byte(MOS6522::PCR, 0x10);
+
+    // Enable CB1 interrupt
+    mos6522->write_byte(MOS6522::IER, 0x80 | MOS6522::IRQ_CB1);
+
+    // Simulate tape signal rising edge
+    mos6522->write_cb1(false);
+    mos6522->exec();
+    mos6522->write_cb1(true);
+    mos6522->exec();
+
+    EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_CB1, 0);
+
+    // Clear interrupt by reading ORB
+    mos6522->read_byte(MOS6522::ORB);
+    EXPECT_EQ(mos6522->get_state().ifr & MOS6522::IRQ_CB1, 0);
 }
 
 // --- CB2 ---
@@ -262,7 +359,6 @@ TEST_F(MOS6522TestCR, CB2_input_mode_negative_transition)
 
     ASSERT_EQ(mos6522->read_byte(MOS6522::IFR), MOS6522::IRQ_CB2 | 0x80);		// Should have CA2 + IRQ (0x80).
 }
-
 
 TEST_F(MOS6522TestCR, CB2_input_mode_clear_interrupt_on_ORA_read)
 {
@@ -330,9 +426,18 @@ TEST_F(MOS6522TestCR, CB2_pulse_output_mode)
     ASSERT_EQ(mos6522->get_state().cb2, true);
 }
 
+TEST_F(MOS6522TestCR, CB2PSGControl)
+{
+    mos6522->write_byte(MOS6522::PCR, 0xC0);    // Set CB2 to manual output for PSG BDIR control
 
+    mos6522->exec();
+    EXPECT_FALSE(mos6522->get_state().cb2);
 
+    mos6522->write_byte(MOS6522::PCR, 0xE0);    // Set CB2 high for PSG write operation
 
+    mos6522->exec();
+    EXPECT_TRUE(mos6522->get_state().cb2);
+}
 
 TEST_F(MOS6522TestCR, WriteIER)
 {
@@ -357,5 +462,6 @@ TEST_F(MOS6522TestCR, WriteIORA2)
     mos6522->write_byte(MOS6522::IORA2, 0xff);
     ASSERT_EQ(mos6522->read_byte(MOS6522::IORA2), 0xff);
 }
+
 
 } // Unittest

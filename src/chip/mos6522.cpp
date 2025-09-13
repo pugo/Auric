@@ -369,7 +369,11 @@ uint8_t MOS6522::read_byte(uint16_t offset)
             }
             return (state.orb & state.ddrb) | (state.irb & ~state.ddrb);
         case ORA:
-            irq_clear(IRQ_CA1);
+        {
+            const bool use_latch = (state.acr & ACR_PA_LATCH_ENABLE) && (state.ifr & IRQ_CA1);
+            uint8_t inputs = use_latch ? state.ira_latch : state.ira;
+            uint8_t result = (state.ora & state.ddra) | (inputs & ~state.ddra);
+
             switch (state.pcr & PCR_MASK_CA2) {
                 case 0x00:
                 case 0x04:
@@ -388,10 +392,9 @@ uint8_t MOS6522::read_byte(uint16_t offset)
                     break;
             }
 
-            if (state.acr & ACR_PA_LATCH_ENABLE) {
-                return (state.ora & state.ddra) | (state.ira_latch & ~state.ddra);
-            }
-            return (state.ora & state.ddra) | (state.ira & ~state.ddra);
+            irq_clear(IRQ_CA1);
+            return result;
+        }
         case DDRB:
             return state.ddrb;
         case DDRA:
@@ -544,12 +547,18 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
             state.pcr = value;
             // Manual output modes
 
-            if ((state.pcr & 0x0e) == 0x0c) {
-                state.ca2 = false;
-                state.ca2_do_pulse = false;
-            }
-            else if ((state.pcr & 0x0e) == 0x0e) {
-                state.ca2 = true;
+            switch (value & 0x0e) {
+                case 0x0a:
+                    state.ca2 = true;
+                    state.cb2_do_pulse = true;
+                    break;
+                case 0x0c:
+                    state.ca2 = false;
+                    state.ca2_do_pulse = false;
+                    break;
+                case 0x0e:
+                    state.ca2 = true;
+                    break;
             }
 
             if ((state.pcr & 0xe0) == 0xc0) {
@@ -598,6 +607,7 @@ void MOS6522::set_ira_bit(uint8_t bit, bool value)
     uint8_t b = 1 << bit;
 
     state.ira = (state.ira & ~b) | (value ? b : 0);
+    std::println("set_ira_bit: {}, value now: {:02x}\n", bit, state.ira);
 }
 
 void MOS6522::set_irb_bit(uint8_t bit, bool value)
@@ -675,21 +685,35 @@ bool MOS6522::sr_handle_counter()
     return false;
 }
 
-void MOS6522::write_ca1(bool value)
+void MOS6522::write_ca1(bool level)
 {
-    if (state.ca1 != value) {
-        state.ca1 = value;
 
-        // Transitions only if enabled in PCR.
-        if ((state.ca1 && (state.pcr & PCR_MASK_CA1)) || (!state.ca1 && !(state.pcr & PCR_MASK_CA1))) {
-            irq_set(IRQ_CA1);
-        }
+    if (level == state.ca1) return;          // no edge
 
-        // Handshake mode, set ca2 on pos transition of ca1.
-        if (state.ca1 && !state.ca2 && (state.pcr & PCR_MASK_CA2) == 0x08) {
-            state.ca2 = true;
-            if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
-        }
+    const bool prev = state.ca1;
+    state.ca1 = level;
+
+    const bool rising  = (!prev && level);
+    const bool falling = ( prev && !level);
+
+    // In your VIA, PCR_MASK_CA1 selects the active edge:
+    //   0 -> falling edge active
+    //   1 -> rising  edge active
+    const bool want_rising = (state.pcr & PCR_MASK_CA1) != 0;
+    const bool active = want_rising ? rising : falling;
+
+    fprintf(stderr, "CA1 prev=%d new=%d PCR=%02X want_rising=%d active=%d ACR=%02X ira=%02X\n",
+            prev, level, state.pcr, want_rising, active, state.acr, state.ira);
+
+    if (active) {
+        // Set CA1 flag (this may also assert IRQ depending on IER)
+        irq_set(IRQ_CA1);
+    }
+
+    // Handshake: CA2 goes high on positive CA1 if configured (your existing logic)
+    if (rising && !state.ca2 && (state.pcr & PCR_MASK_CA2) == 0x08) {
+        state.ca2 = true;
+        if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
     }
 }
 
@@ -707,20 +731,27 @@ void MOS6522::write_ca2(bool value)
     }
 }
 
-void MOS6522::write_cb1(bool value)
+void MOS6522::write_cb1(bool level)
 {
-    if (state.cb1 != value) {
-        // Transitions only if enabled in PCR.
-        state.cb1 = value;
-        if ((state.cb1 && (state.pcr & PCR_MASK_CB1)) || (!state.cb1 && !(state.pcr & PCR_MASK_CB1))) {
-            irq_set(IRQ_CB1);
-        }
+    if (level == state.cb1) return;  // no transition
 
-        // Handshake mode, set cb2 on pos transition of cb1.
-        if (state.cb1 && !state.cb2 && (state.pcr & PCR_MASK_CB2) == 0x80) {
-            state.cb2 = true;
-            if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
-        }
+    const bool prev = state.cb1;
+    state.cb1 = level;
+
+    const bool rising  = (!prev && level);
+    const bool falling = ( prev && !level);
+
+    const bool want_rising = (state.pcr & PCR_MASK_CB1) != 0x00; // check spec; often 0=falling,1=rising
+    const bool active = want_rising ? rising : falling;
+
+    if (active) {
+        irq_set(IRQ_CB1);   // irq_set does latching
+    }
+
+    // Handshake mode: set CB2 on pos transition of CB1
+    if (rising && !state.cb2 && (state.pcr & PCR_MASK_CB2) == 0x80) {
+        state.cb2 = true;
+        if (cb2_changed_handler) cb2_changed_handler(machine, state.cb2);
     }
 }
 

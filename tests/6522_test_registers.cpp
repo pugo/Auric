@@ -29,7 +29,7 @@ using namespace testing;
 class MOS6522TestRegisters : public MOS6522Test
 {};
 
-// === PA =================================================================================
+// === Port A =================================================================================
 
 // Set and read data direction register A. Expect equal value.
 TEST_F(MOS6522TestRegisters, WriteReadDDRA)
@@ -41,11 +41,8 @@ TEST_F(MOS6522TestRegisters, WriteReadDDRA)
 // Set data direction to input for all bits. Expect no result from ORA.
 TEST_F(MOS6522TestRegisters, ReadORAAllInputs)
 {
-    std::cout << "-- 1" << std::endl;
     mos6522->write_byte(MOS6522::DDRA, 0x00);
-    std::cout << "-- 2" << std::endl;
     mos6522->write_byte(MOS6522::ORA, 0xff);
-    std::cout << "-- 3" << std::endl;
     ASSERT_EQ(mos6522->read_byte(MOS6522::ORA), 0x00);
 }
 
@@ -57,23 +54,79 @@ TEST_F(MOS6522TestRegisters, ReadORAAllOutputs)
     ASSERT_EQ(mos6522->read_byte(MOS6522::ORA), 0xff);
 }
 
-// Ensure latching of ORB is controlled by interrupt if enabled.
 TEST_F(MOS6522TestRegisters, ReadORALatching)
 {
-    mos6522->write_byte(MOS6522::IER, 0xff);            // Enable interrupts for bit 0-6.
-    mos6522->write_byte(MOS6522::DDRA, 0x00);
-    mos6522->get_state().ora = 0x00;
-    mos6522->get_state().ca1 = true;                    // Start with ca1 high as CA1 ctrl = 0 means high to low interrupt
-    mos6522->write_byte(MOS6522::ACR, 0x01);            // Enable PA latching
+    mos6522->write_byte(MOS6522::ACR, 0x01);   // enable PA latching
+    mos6522->write_byte(MOS6522::DDRA, 0x00);  // all inputs
 
-    mos6522->set_ira_bit(0, true);                      // Set ira bit 1 high. This should not be latched until interrupt
-    ASSERT_EQ(mos6522->read_byte(MOS6522::ORA), 0x00);  // Expect no change
+    // Default PCR=0 → CA1 active on falling edge.
+    // Baseline CA1 high (no IRQ yet).
+    mos6522->write_ca1(true);
 
-    mos6522->write_ca1(false);                          // Interrupt by high -> low transition
-    ASSERT_EQ(mos6522->read_byte(MOS6522::ORA), 0x01);  // Now expect value to be latched by interrupt.
+    // Ensure pins are 0 before the edge so the latch will capture 0.
+    mos6522->set_ira_bit(0, false);
+
+    // Active falling edge → IFR(CA1)=1 and latch = 0.
+    mos6522->write_ca1(false);
+
+    // Now change the live pin to 1. The latch must still read 0 until CA1 is cleared.
+    mos6522->set_ira_bit(0, true);
+
+    // First ORA read uses the latch (0) and clears IFR(CA1):
+    EXPECT_EQ(mos6522->read_byte(MOS6522::ORA), 0x00);
+
+    // Second ORA read uses live pins (1):
+    EXPECT_EQ(mos6522->read_byte(MOS6522::ORA), 0x01);
 }
 
-// === PB =================================================================================
+TEST_F(MOS6522TestRegisters, PortALatchingEnabled)
+{
+    mos6522->write_byte(MOS6522::ACR, 0x01);    // enable PA latching
+    mos6522->write_byte(MOS6522::DDRA, 0x00);   // all inputs
+    mos6522->write_byte(MOS6522::PCR, 0x01);    // CA1 rising active
+
+    mos6522->write_ca1(false);
+
+    // Put pins at 0x55
+    for (int i = 0; i < 8; ++i) mos6522->set_ira_bit(i, !(i & 1));
+
+    // Generate the *active* edge now -> latch should capture 0x55 here
+    mos6522->write_ca1(true);
+
+    ASSERT_EQ(mos6522->get_state().ira_latch, 0x55)           << "Latch didn't capture 0x55";
+
+    // Change pins to 0xAA (should not affect the latched value)
+    for (int i = 0; i < 8; ++i) mos6522->set_ira_bit(i, i & 1);
+
+    // First ORA read returns latched 0x55, second returns live 0xAA
+    EXPECT_EQ(mos6522->read_byte(MOS6522::ORA), 0x55);
+    EXPECT_EQ(mos6522->read_byte(MOS6522::ORA), 0xAA);
+}
+
+TEST_F(MOS6522TestRegisters, PortAInputOutput)
+{
+    // Set PA 0-3 as outputs, PA 4-7 as inputs
+    mos6522->write_byte(MOS6522::DDRA, 0x0F);
+
+    // Write to ORA
+    mos6522->write_byte(MOS6522::ORA, 0xFF);
+
+    // Only lower 4 bits should be output
+    EXPECT_EQ(mos6522->read_ora(), 0x0F);
+
+    // Set input data on upper bits
+    mos6522->set_ira_bit(4, true);
+    mos6522->set_ira_bit(5, false);
+    mos6522->set_ira_bit(6, true);
+    mos6522->set_ira_bit(7, false);
+
+    // Reading ORA should combine output and input data
+    uint8_t combined = mos6522->read_byte(MOS6522::ORA);
+    EXPECT_EQ(combined & 0x0F, 0x0F); // Output bits
+    EXPECT_EQ((combined >> 4) & 0x0F, 0x05); // Input bits (0101)
+}
+
+// === Port B =================================================================================
 
 // Set and read data direction register B. Expect equal value.
 TEST_F(MOS6522TestRegisters, WriteReadDDRB)
@@ -113,6 +166,54 @@ TEST_F(MOS6522TestRegisters, ReadORBLatching)
     mos6522->write_cb1(false);                          // Interrupt by high -> low transition
     ASSERT_EQ(mos6522->read_byte(MOS6522::ORB), 0x02);  // Now expect value to be latched by interrupt.
 }
+
+
+TEST_F(MOS6522TestRegisters, PortBLatchingEnabled)
+{
+    // Enable PB latching (ACR bit 1 = 1)
+    mos6522->write_byte(MOS6522::ACR, 0x02);
+
+    // Set PB3 as input (keyboard sense)
+    mos6522->write_byte(MOS6522::DDRB, 0xF7);
+
+    mos6522->write_byte(MOS6522::PCR, 0x10); // set CB1 control: rising edge active
+
+    // Set initial keyboard state
+    mos6522->set_irb_bit(3, true);
+
+    // Trigger CB1 to latch data
+    mos6522->write_cb1(true);
+    mos6522->exec();
+
+    // Change keyboard state
+    mos6522->set_irb_bit(3, false);
+
+    // Reading ORB should return latched state
+    uint8_t latched = mos6522->read_byte(MOS6522::ORB);
+    EXPECT_NE(latched & 0x08, 0); // Bit 3 should still be high (latched)
+}
+
+TEST_F(MOS6522TestRegisters, PortBInputOutput)
+{
+    // Set PB 0-2 as outputs (keyboard demux), PB 3 as input
+    mos6522->write_byte(MOS6522::DDRB, 0x07);
+
+    // Write keyboard row selection
+    mos6522->write_byte(MOS6522::ORB, 0x03); // Select row 3
+
+    // Only lower 3 bits should be output
+    EXPECT_EQ(mos6522->read_orb(), 0x03);
+
+    // Simulate keyboard input on PB3
+    mos6522->set_irb_bit(3, true); // Key pressed
+
+    // Reading ORB should show combined data
+    uint8_t combined = mos6522->read_byte(MOS6522::ORB);
+    EXPECT_EQ(combined & 0x07, 0x03); // Output bits
+    EXPECT_EQ((combined >> 3) & 0x01, 0x01); // Input bit
+}
+
+// === Control lines ======================================================================
 
 // === T1 =================================================================================
 
