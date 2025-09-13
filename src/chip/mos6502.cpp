@@ -410,6 +410,8 @@ uint8_t MOS6502::time_instruction()
 
 bool MOS6502::exec(bool break_on_brk, bool& do_break)
 {
+    constexpr uint8_t P_BIT5_ALWAYS1 = 0x20; // status bit 5 is always 1 on the stack
+
     if (instruction_load) {
         instruction_load = false;
 
@@ -419,9 +421,10 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
         if (do_interrupt) {
             do_interrupt = false;
 
+
             PUSH_BYTE_STACK(PC >> 8);
             PUSH_BYTE_STACK(PC & 0xff);
-            PUSH_BYTE_STACK(get_p());
+            PUSH_BYTE_STACK((get_p() & ~FLAG_B) | P_BIT5_ALWAYS1);
 
             if (nmi_flag) {
                 PC = memory_read_word_handler(machine, NMI_VECTOR_L);
@@ -1113,9 +1116,8 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
         case BRK:
             PUSH_BYTE_STACK((PC+1) >> 8); // Byte after BRK will not be executed on return!
             PUSH_BYTE_STACK(PC+1);
-            PUSH_BYTE_STACK(get_p() | FLAG_B);
+            PUSH_BYTE_STACK(get_p() | FLAG_B | P_BIT5_ALWAYS1);
             I = true;
-            D = false;
             PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
             if (break_on_brk) {
                 do_break = true;
@@ -1158,7 +1160,7 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
             SET_FLAG_NZ(A = Y);
             break;
         case TXS:  // Transfer X to SP
-            SET_FLAG_NZ(SP = X);
+            SP = X;
             break;
         case TSX:  // Transfer SP to X
             SET_FLAG_NZ(X = SP);

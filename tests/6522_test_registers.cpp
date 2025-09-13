@@ -151,22 +151,26 @@ TEST_F(MOS6522TestRegisters, ReadORBAllOutputs)
     ASSERT_EQ(mos6522->read_byte(MOS6522::ORB), 0xff);
 }
 
-// Ensure latching of ORB is controlled by interrupt if enabled.
-TEST_F(MOS6522TestRegisters, ReadORBLatching)
+TEST_F(MOS6522TestRegisters, ReadORBLatching_NoLatchUntilIRQ)
 {
-    mos6522->write_byte(MOS6522::IER, 0xff);            // Enable interrupts for bit 0-6.
-    mos6522->write_byte(MOS6522::DDRB, 0x00);
-    mos6522->get_state().orb = 0x00;
-    mos6522->get_state().cb1 = true;                    // Start with cb1 high as CB1 ctrl = 0 means high to low interrupt
-    mos6522->write_byte(MOS6522::ACR, 0x02);            // Enable PB latching
+    mos6522->write_byte(MOS6522::IER, 0xFF);
+    mos6522->write_byte(MOS6522::ACR, 0x02);     // PB latching enable
+    mos6522->write_byte(MOS6522::DDRB, 0x00);    // all inputs
 
-    mos6522->set_irb_bit(1, true);                      // Set irb bit 1 high. This should not be latched until interrupt
-    ASSERT_EQ(mos6522->read_byte(MOS6522::ORB), 0x00);  // Expect no change
+    // Default PCR=0 → CB1 active on falling. Baseline high (no IRQ yet).
+    mos6522->write_cb1(true);
 
-    mos6522->write_cb1(false);                          // Interrupt by high -> low transition
-    ASSERT_EQ(mos6522->read_byte(MOS6522::ORB), 0x02);  // Now expect value to be latched by interrupt.
+    mos6522->set_irb_bit(1, true);               // live = 0x02
+    EXPECT_EQ(mos6522->read_byte(MOS6522::ORB), 0x02);  // live (no latch yet)
+
+    // Falling edge → latch current (=0x02)
+    mos6522->write_cb1(false);
+    EXPECT_EQ(mos6522->read_byte(MOS6522::ORB), 0x02);  // latched, and clears IFR(CB1)
+
+    // After flag clear, reads are live again:
+    mos6522->set_irb_bit(1, false);
+    EXPECT_EQ(mos6522->read_byte(MOS6522::ORB), 0x00);
 }
-
 
 TEST_F(MOS6522TestRegisters, PortBLatchingEnabled)
 {

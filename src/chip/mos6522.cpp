@@ -16,9 +16,6 @@
 // =========================================================================
 
 #include <utility>
-
-#include <boost/assign.hpp>
-
 #include <machine.hpp>
 #include "mos6522.hpp"
 
@@ -137,14 +134,12 @@ MOS6522::MOS6522(Machine& a_Machine) :
     cb2_changed_handler(nullptr),
     psg_changed_handler(nullptr),
     irq_handler(nullptr),
-    irq_clear_handler(nullptr)
+    irq_clear_handler(nullptr),
+    register_names{{ORB, "ORB"}, {ORA, "ORA"}, {DDRB, "DDRB"}, {DDRA, "DDRA"},
+                   {T1C_L, "T1C_L"}, {T1C_H, "T1C_H"}, {T1L_L, "T1L_L"}, {T1L_H, "T1L_H"},
+                   {T2C_L, "T2C_L"}, {T2C_H, "T2C_H"}, {SR, "SR"}, {ACR, "ACR"},
+                   {PCR, "PCR"}, {IFR, "IFR"}, {IER, "IER"}, {IORA2, "IORA2"}}
 {
-    boost::assign::insert(register_names)
-        (ORB, "ORB")(ORA, "ORA")(DDRB, "DDRB")(DDRA, "DDRA")
-        (T1C_L, "T1C_L")(T1C_H, "T1C_H")(T1L_L, "T1L_L")(T1L_H, "T1L_H")
-        (T2C_L, "T2C_L")(T2C_H, "T2C_H")(SR, "SR")(ACR, "ACR")
-        (PCR, "PCR")(IFR, "IFR")(IER, "IER")(IORA2, "IORA2");
-
     state.reset();
 }
 
@@ -345,7 +340,11 @@ uint8_t MOS6522::read_byte(uint16_t offset)
     switch(offset & 0x000f)
     {
         case ORB:
-            irq_clear(IRQ_CB1);
+        {
+            const bool use_latch = (state.acr & ACR_PB_LATCH_ENABLE) && (state.ifr & IRQ_CB1);
+            const uint8_t inputs = use_latch ? state.irb_latch : state.irb;
+            const uint8_t result = (state.orb & state.ddrb) | (inputs & ~state.ddrb);
+
             switch (state.pcr & PCR_MASK_CB2) {
                 case 0x00:
                 case 0x40:
@@ -364,10 +363,9 @@ uint8_t MOS6522::read_byte(uint16_t offset)
                     break;
             }
 
-            if (state.acr & ACR_PB_LATCH_ENABLE) {
-                return (state.orb & state.ddrb) | (state.irb_latch & ~state.ddrb);
-            }
-            return (state.orb & state.ddrb) | (state.irb & ~state.ddrb);
+            irq_clear(IRQ_CB1);
+            return result;
+        }
         case ORA:
         {
             const bool use_latch = (state.acr & ACR_PA_LATCH_ENABLE) && (state.ifr & IRQ_CA1);
@@ -550,7 +548,7 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
             switch (value & 0x0e) {
                 case 0x0a:
                     state.ca2 = true;
-                    state.cb2_do_pulse = true;
+                    state.ca2_do_pulse = true;
                     break;
                 case 0x0c:
                     state.ca2 = false;
@@ -605,9 +603,7 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
 void MOS6522::set_ira_bit(uint8_t bit, bool value)
 {
     uint8_t b = 1 << bit;
-
     state.ira = (state.ira & ~b) | (value ? b : 0);
-    std::println("set_ira_bit: {}, value now: {:02x}\n", bit, state.ira);
 }
 
 void MOS6522::set_irb_bit(uint8_t bit, bool value)
@@ -722,8 +718,8 @@ void MOS6522::write_ca2(bool value)
     if (state.ca2 != value) {
         state.ca2 = value;
         // Set interrupt on pos/neg transition if 0 or 4 in pcr.
-        if ((state.ca2 && ((state.pcr & 0x0E) == 0x04 || (state.pcr & 0x0E) == 0x06)) ||
-            (!state.ca2 && ((state.pcr & 0x0E) == 0x00) || (state.pcr & 0x0E) == 0x02)) {
+        if ((state.ca2 && (((state.pcr & 0x0E) == 0x04) || ((state.pcr & 0x0E) == 0x06))) ||
+            (!state.ca2 && (((state.pcr & 0x0E) == 0x00) || ((state.pcr & 0x0E) == 0x02)))) {
             irq_set(IRQ_CA2);
         }
 
