@@ -230,56 +230,69 @@ void MOS6502::set_p(uint8_t p)
 
 void MOS6502::ADC(uint8_t value)
 {
+    uint16_t sum = A + value + (C ? 1 : 0);
+
     if (D) { // Decimal mode
-        uint16_t low = (A & 0x0f) + (value & 0x0f) + (C ? 1 : 0);
-        if (low > 9) low += 6;    // 11 + 6 = (0xb + 6) = 0x11
-        uint16_t high = (A >> 4) + (value >> 4) + (low > 0x0f);	// remainder from low figure -> high
+        // V from binary sum (before BCD adjust)
+        V = (~(A ^ value) & (A ^ sum) & 0x80) != 0;
 
-        Z_INTERN = (A + value + (C ? 1 : 0)) & 0xff;
-        N_INTERN = (high & 0x08) ? FLAG_N : 0;
-        V = ~(A ^ value) & (A ^ (high << 4)) & 0x80;
+        uint16_t adj = sum;
 
-        if (high > 9) high += 6;  // 11 + 6 = (0xb + 6) = 0x11
-        C = high > 0x0f;
-        A = (high << 4) | (low & 0x0f);
+        // low-nibble adjust
+        if ( ((A & 0x0F) + (value & 0x0F) + (C ? 1 : 0)) > 9 ) {
+            adj += 0x06;
+        }
+
+        // high-nibble / carry adjust
+        if ( adj > 0x99 ) {
+            adj += 0x60;
+        }
+
+        C = adj > 0x99;           // BCD carry out
+        A = static_cast<uint8_t>(adj & 0xFF);
+        SET_FLAG_NZ(A);           // N/Z from final (adjusted) result
     }
     else { // Normal mode
-        uint16_t w = A + value + (C ? 1 : 0);
-        C = w > 0xff;
-        V = ~(A ^ value) & (A ^ w) & 0x80;
-        SET_FLAG_NZ(A = w);
+        C = sum > 0xFF;
+        V = (~(A ^ value) & (A ^ sum) & 0x80) != 0;
+        A = static_cast<uint8_t>(sum);
+        SET_FLAG_NZ(A);
     }
 }
 
 void MOS6502::SBC(uint8_t value)
 {
-    if (D) {
-        uint16_t low = (A & 0x0f) - (value & 0x0f) - (C ? 0 : 1);
-        uint16_t high = (A >> 4) - (value >> 4);
+    uint16_t diff = A - value - (C ? 0 : 1);
 
-        if (low & 0x10) { // Fix negative
-            low -= 6;
-            --high;
+    if (D) { // Decimal mode
+        // V from binary diff (before BCD adjust)
+        V = ((A ^ value) & (A ^ diff) & 0x80) != 0;
+
+        // Start from the binary result in 8 bits
+        uint16_t adj = diff & 0xFF;
+
+        // low nibble borrow adjust
+        if ( ((A & 0x0F) - (C ? 0 : 1)) < (value & 0x0F) ) {
+            adj = (adj - 0x06) & 0xFF;
         }
-        if (high & 0x10) { // Fix negative
-            high -= 6;
+
+        // high nibble borrow / 100 adjust
+        if ( diff > 0xFF ) {
+            // borrow occurred (i.e., negative in 9-bit)
+            adj = (adj - 0x60) & 0xFF;
         }
 
-        uint16_t w = SET_FLAG_NZ(A - value - (C ? 0 : 1));
-        C = w < 0x100;
-        V = (A ^ value) & (A ^ w) & 0x80;
-        A = (high << 4) | (low & 0x0f);
+        C = diff < 0x100;                    // set if no borrow
+        A = static_cast<uint8_t>(adj);
+        SET_FLAG_NZ(A);                      // N/Z from final (adjusted) result
     }
-    else {
-        uint16_t w = A - value - (C ? 0 : 1);
-        C = w < 0x100;
-        V = (A ^ value) & (A ^ w) & 0x80;
-        SET_FLAG_NZ(A = w);
+    else { // Normal mode
+        C = diff < 0x100;
+        V = ((A ^ value) & (A ^ diff) & 0x80) != 0;
+        A = static_cast<uint8_t>(diff);
+        SET_FLAG_NZ(A);
     }
-
-    //std::cout << "A now: " << hex << A << std::std::endl;
 }
-
 
 #define PEEK_ADDR_ABS()     (memory_read_byte_handler(machine, _pc + 1) | memory_read_byte_handler(machine, _pc + 2) << 8)
 
