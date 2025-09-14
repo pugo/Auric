@@ -179,6 +179,7 @@ public:
     f_memory_read_byte_zp_handler memory_read_byte_zp_handler;
 
     f_memory_read_word_handler memory_read_word_handler;
+    f_memory_read_word_handler memory_read_word_buggy_handler;
     f_memory_read_word_zp_handler memory_read_word_zp_handler;
 
     f_memory_write_byte_handler memory_write_byte_handler;
