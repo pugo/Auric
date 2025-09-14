@@ -215,6 +215,13 @@
 #define TXS         0x9A
 #define TYA         0x98
 
+#define ILL_LAX_ZP      0xA7
+#define ILL_LAX_ZP_Y    0xB7
+#define ILL_LAX_ABS     0xAF
+#define ILL_LAX_ABS_Y   0xBF
+#define ILL_LAX_IND_X   0xA3
+#define ILL_LAX_IND_Y   0xB3   // <-- the one you hit
+
 #define ILL_NOP_IMP_1A  0x1A
 #define ILL_NOP_IMP_3A  0x3A
 #define ILL_NOP_IMP_5A  0x5A

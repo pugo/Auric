@@ -423,6 +423,18 @@ uint8_t MOS6502::time_instruction()
                 extra += PAGECHECK2(addr, (_pc + 2)) ? 2 : 1;
             }
             break;
+        case ILL_LAX_ABS_Y:
+            // ABS,X / ABS,Y page-cross penalties
+            addr = PEEK_ADDR_ABS();
+            extra += PAGECHECK(Y) ? 1 : 0;
+            break;
+
+        case ILL_LAX_IND_Y:
+            // (zp),Y page-cross penalty
+            addr = memory_read_word_zp_handler(machine, memory_read_byte_handler(machine, _pc + 1));
+            extra += PAGECHECK(Y) ? 1 : 0;
+            break;
+
         default:
             break;
     }
@@ -1195,6 +1207,43 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
 //            C = i >= 0;
 //            X = i;
 //            break;
+
+        case ILL_LAX_ZP: {
+            uint16_t a = READ_ADDR_ZP();
+            uint8_t v = memory_read_byte_zp_handler(machine, a);
+            A = X = v; SET_FLAG_NZ(A);
+            break;
+        }
+        case ILL_LAX_ZP_Y: {
+            uint16_t a = READ_ADDR_ZP_Y();
+            uint8_t v = memory_read_byte_zp_handler(machine, a);
+            A = X = v; SET_FLAG_NZ(A);
+            break;
+        }
+        case ILL_LAX_ABS: {
+            READ_BYTE_ABS(b1);
+            A = X = b1; SET_FLAG_NZ(A);
+            break;
+        }
+        case ILL_LAX_ABS_Y: {
+            READ_ADDR_ABS_Y();
+            uint8_t v = memory_read_byte_handler(machine, addr);
+            A = X = v; SET_FLAG_NZ(A);
+            break;
+        }
+        case ILL_LAX_IND_X: {
+            uint16_t a = READ_ADDR_IND_X();
+            uint8_t v = memory_read_byte_handler(machine, a);
+            A = X = v; SET_FLAG_NZ(A);
+            break;
+        }
+        case ILL_LAX_IND_Y: {              // $B3
+            uint16_t a = READ_ADDR_IND_Y();
+            uint8_t v = memory_read_byte_handler(machine, a);
+            A = X = v; SET_FLAG_NZ(A);
+            break;
+        }
+
 
         case ILL_SLO_IND_X:
             b1 = memory_read_byte_handler(machine, addr = READ_ADDR_IND_X());
