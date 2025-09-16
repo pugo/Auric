@@ -81,6 +81,8 @@ protected:
     int32_t delay;
     int32_t duplicate_bytes;
 
+    bool stopped_mid_byte;
+
     uint32_t tape_pos;
     uint8_t bit_count;
     uint8_t current_bit;
