@@ -28,6 +28,17 @@
 
 class TapeTap : public Tape
 {
+    enum class TapeState {
+        Idle,
+        ParseHeader,
+        Leader,
+        Header,
+        Gap,
+        Body,
+        EndOfBlock,
+        Fail
+    };
+
 public:
     TapeTap(MOS6522& via, const std::string& path);
 
@@ -53,7 +64,7 @@ public:
      * Set motor state.
      * @param motor_on true if motor is on
      */
-    void set_motor(bool motor_on) override;
+    void motor_on(bool motor_on) override;
 
     /**
      * Execute one cycle.
@@ -65,31 +76,36 @@ protected:
      * Read tape header.
      * @return true if header is valid
      */
-    bool read_header();
+    bool parse_header();
 
     /**
      * Get current bit value.
      * @return current bit value
      */
-    uint8_t get_current_bit();
+    uint8_t next_bit();
 
     std::string path;
     MOS6522& via;
-    size_t size;
-    size_t body_start;
+    size_t tape_size;
 
-    int32_t delay;
-    int32_t duplicate_bytes;
+    TapeState tape_state;
 
+    uint32_t sync_end;
+    uint32_t body_start;
+    uint32_t body_remaining;
     bool stopped_mid_byte;
 
+    uint16_t leader_count;
+    uint8_t  gap_bits_remaining;
+
     uint32_t tape_pos;
-    uint8_t bit_count;
+    uint8_t bit_index;
+    uint8_t current_byte;
     uint8_t current_bit;
     uint8_t parity;
 
-    int16_t tape_cycles_counter;
-    uint8_t tape_pulse;
+    int16_t tape_cycle_counter;
+    uint8_t line_out;
 
     std::vector<uint8_t> memory_vector;
     uint8_t* data;

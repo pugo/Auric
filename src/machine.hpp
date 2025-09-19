@@ -30,8 +30,7 @@
 #include "memory.hpp"
 #include "snapshot.hpp"
 
-#include "tape/tape_tap.hpp"
-#include "tape/tape_blank.hpp"
+#include "tape/tape.hpp"
 
 class Oric;
 class Frontend;

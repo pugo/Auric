@@ -39,7 +39,7 @@ void TapeBlank::print_stat()
     std::cout << "Blank Tape." << std::endl;
 }
 
-void TapeBlank::set_motor(bool motor_on)
+void TapeBlank::motor_on(bool motor_on)
 {
     motor_running = motor_on;
 }

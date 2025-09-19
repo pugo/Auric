@@ -26,6 +26,9 @@
 #include "oric.hpp"
 #include "frontends/sdl/frontend.hpp"
 #include "frontends/flags.hpp"
+#include "tape/tape_tap.hpp"
+#include "tape/tape_blank.hpp"
+
 
 // VIA Lines        Oric usage
 // ----------       ---------------------------------
@@ -238,7 +241,7 @@ void Machine::via_orb_changed(uint8_t orb)
 {
     bool motor_on = orb & 0x40;
     if (motor_on != tape->is_motor_running()) {
-        tape->set_motor(motor_on);
+        tape->motor_on(motor_on);
         frontend->get_status_bar().set_flag(StatusbarFlags::loading, motor_on);
     }
 }

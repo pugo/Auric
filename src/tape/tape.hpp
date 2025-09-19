@@ -49,9 +49,9 @@ public:
 
     /**
      * Set motor state.
-     * @param motor_on true if motor is on
+     * @param motor_on true if motor is set to on
      */
-    virtual void set_motor(bool motor_on) = 0;
+    virtual void motor_on(bool motor_on) = 0;
 
     /**
      * Execute one cycle.

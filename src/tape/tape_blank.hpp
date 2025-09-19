@@ -52,7 +52,7 @@ public:
      * Set motor state.
      * @param motor_on true if motor is on
      */
-    void set_motor(bool motor_on) override;
+    void motor_on(bool motor_on) override;
 
     /**
      * Execute one cycle.

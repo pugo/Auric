@@ -15,7 +15,6 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
@@ -30,17 +29,20 @@
 TapeTap::TapeTap(MOS6522& via, const std::string& path) :
     via(via),
     path(path),
-    size(0),
+    tape_size(0),
+    tape_state(TapeState::Idle),
+    sync_end(0),
     body_start(0),
-    delay(0),
-    duplicate_bytes(0),
+    body_remaining(0),
     stopped_mid_byte(false),
+    leader_count(0),
     tape_pos(0),
-    bit_count(0),
+    bit_index(0),
+    current_byte(0),
     current_bit(0),
-    parity(1),
-    tape_cycles_counter(2),
-    tape_pulse(0),
+    parity(0),
+    tape_cycle_counter(0),
+    line_out(0),
     data(nullptr)
 {
 }
@@ -48,15 +50,19 @@ TapeTap::TapeTap(MOS6522& via, const std::string& path) :
 void TapeTap::reset()
 {
     motor_running = false;
-    delay = 0;
-    duplicate_bytes = 0;
+    tape_state = TapeState::Idle;
+    sync_end = 0;
+    body_start = 0;
+    body_remaining = 0;
     stopped_mid_byte = false;
+    leader_count = 0;
     tape_pos = 0;
-    bit_count = 0;
+    bit_index = 0;
+    current_byte = 0;
     current_bit = 0;
-    tape_cycles_counter = 2;
-    tape_pulse = 0;
-    parity = 1;
+    parity = 0;
+    tape_cycle_counter = 0;
+    line_out = 0;
 }
 
 
@@ -68,12 +74,12 @@ bool TapeTap::init()
     std::ifstream file (path, std::ios::in | std::ios::binary | std::ios::ate);
     if (file.is_open())
     {
-        size = file.tellg();
-        memory_vector = std::vector<uint8_t>(size);
+        tape_size = file.tellg();
+        memory_vector = std::vector<uint8_t>(tape_size);
         data = memory_vector.data();
 
         file.seekg(0, std::ios::beg);
-        file.read(reinterpret_cast<char*>(data), size);
+        file.read(reinterpret_cast<char*>(data), tape_size);
         file.close();
     }
     else {
@@ -84,13 +90,174 @@ bool TapeTap::init()
     return true;
 }
 
-bool TapeTap::read_header()
+
+void TapeTap::print_stat()
+{
+    std::println("Current Tape pos: {}", tape_pos);
+}
+
+
+void TapeTap::motor_on(bool motor_on)
+{
+    if (motor_on == motor_running) {
+        return;
+    }
+    std::println("Tape: motor {}", (motor_on ? "on" : "off"));
+
+    motor_running = motor_on;
+
+    if (motor_on) {
+        if (stopped_mid_byte) {
+            ++tape_pos;
+            stopped_mid_byte = false;
+        }
+        tape_state = TapeState::ParseHeader;
+    }
+    else {
+        if (bit_index > 0) {
+            // stopped mid-byte: drop the partial byte on resume
+            std::println("Skipped one byte at resume (pos now {})", tape_pos);
+            stopped_mid_byte = true;
+            bit_index = 0;
+        }
+    }
+}
+
+
+void TapeTap::exec()
+{
+    if (!motor_running) {
+        return;
+    }
+
+    if (tape_state == TapeState::Idle || tape_state == TapeState::Fail) {
+        return;
+    }
+
+    if (tape_state == TapeState::ParseHeader) {
+        if (!parse_header()) {
+            std::println("Tape: failed to read header, stopping.");
+            motor_running = false;
+            tape_state = TapeState::Fail;
+            return;
+        }
+        via.write_cb1(true);
+        line_out = 1;
+        tape_state = TapeState::Leader;
+        return;
+    }
+
+    // End-of-block: hold idle high
+    if (tape_state == TapeState::EndOfBlock) {
+        via.write_cb1(true);
+        line_out = 1;
+        tape_cycle_counter = Pulse_1;
+        return;
+    }
+
+    // Count down the cycle counter. This ensures that the line_out toggles according to expected bit output.
+    if (tape_cycle_counter > 1) {
+        --tape_cycle_counter;
+        return;
+    }
+
+    // At the end of the above cycle count, toggle the output line.
+    line_out ^= 0x01;
+    via.write_cb1(line_out);
+
+    // In state Gap we emit a series of bits to allow the reader routine to catch up.
+    if (tape_state == TapeState::Gap) {
+        if (line_out) {
+            tape_cycle_counter = Pulse_1;
+            return;
+        } else {
+            tape_cycle_counter = Pulse_1;
+            if (--gap_bits_remaining == 0) {
+                tape_state = TapeState::Body;
+            }
+            return;
+        }
+    }
+
+    if (line_out) {
+        // Start of bit, pulse up.
+        if (bit_index == 0) {
+            switch (tape_state) {
+                case TapeState::Leader:
+                    current_byte = 0x16;
+                    break;
+                case TapeState::Header:
+                    current_byte = data[tape_pos];
+                    break;
+                case TapeState::Gap:
+                    current_byte = 0xFF;
+                    break;
+                case TapeState::Body:
+                    current_byte = data[tape_pos];
+                    break;
+                default:
+                    current_byte = 0xFF;
+                    break;
+            }
+        }
+
+        // Get next bit to be output and update cycle counter accordingly.
+        current_bit = next_bit();
+        tape_cycle_counter = Pulse_1;
+
+        // Update tape position and possibly switch state.
+        if (bit_index == 0) {
+            switch (tape_state) {
+                case TapeState::Leader:
+                    if (tape_pos < sync_end) {
+                        // consumed one real 0x16 from file
+                        ++tape_pos;
+                    }
+                    else if (leader_count > 0) {
+                        // emitted a duplicated 0x16; stay on same tape_pos
+                        --leader_count;
+                    }
+
+                    if (tape_pos >= sync_end && leader_count == 0) {
+                        tape_state = TapeState::Header;
+                    }
+                    break;
+
+                case TapeState::Header:
+                    ++tape_pos;  // consumed one header/filename byte
+                    if (tape_pos == body_start) {
+                        gap_bits_remaining   = 10;   // emit 10 full '1' bits (tap2wav-style)
+                        tape_state = TapeState::Gap;
+                    }
+                    break;
+
+                case TapeState::Body:
+                    ++tape_pos;       // consumed one body byte
+                    if (--body_remaining == 0) {
+                        // Body done: go idle-high and wait for next motor off/on
+                        tape_state = TapeState::EndOfBlock;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+    else {
+        // Second part of bit, differently long down period.
+        tape_cycle_counter = current_bit ? Pulse_1 : Pulse_0;
+    }
+}
+
+
+bool TapeTap::parse_header()
 {
     size_t i{0};
 
     while (true)
     {
-        if (tape_pos + i >= size) {
+        if (tape_pos + i >= tape_size) {
             return false;
         }
 
@@ -102,6 +269,8 @@ bool TapeTap::read_header()
     }
 
     std::println("Tape: found {} sync bytes (0x16)", i);
+    uint16_t sync_len = i;
+    sync_end = tape_pos + i;
 
     if (i < 3) {
         std::println("Tape: too few sync bytes, failing.");
@@ -113,9 +282,9 @@ bool TapeTap::read_header()
         return false;
     }
 
-    i++;
+    ++i;
 
-    if (i + 9 >= size) {
+    if (i + 9 >= tape_size) {
         std::println("Tape: too short (no specs and addresses).");
         return false;
     }
@@ -123,7 +292,8 @@ bool TapeTap::read_header()
     // Skip reserved bytes.
     i += 2;
 
-    uint8_t file_type = data[tape_pos + i];
+    auto
+    file_type = data[tape_pos + i];
     switch(file_type)
     {
         case 0x00:
@@ -154,9 +324,7 @@ bool TapeTap::read_header()
     i++;
 
     const bool basic_mode = (file_type == 0x00) || (auto_flag == 0x80);
-    size_t desired_sync = basic_mode ? 160 : 96;
-
-    duplicate_bytes = (i < desired_sync) ? (desired_sync - i) : 0;
+    size_t desired_sync = basic_mode ? 192 : 112;
 
     uint16_t start_address;
     uint16_t end_address;
@@ -176,7 +344,7 @@ bool TapeTap::read_header()
     std::string name;
     while (true)
     {
-        if (tape_pos + i >= size) {
+        if (tape_pos + i >= tape_size) {
             return false;
         }
 
@@ -191,157 +359,56 @@ bool TapeTap::read_header()
 
     // Store where body starts, to allow delay after header.
     body_start = tape_pos + i + 1;
+    body_remaining = uint32_t(end_address) - size_t(start_address) + 1;
+
+    leader_count = (sync_len < desired_sync) ? (desired_sync - sync_len) : 0;
 
     return true;
 }
 
+// Tape output is a delicate thing on the Oric. The below is not exactly what the ROM routines expect,
+// but since many games use their own loader routined and expect slightly different timings and bit output
+// this is a pattern that seems to work. The use of two initial bits is influenced by Oricutron.
 
-void TapeTap::print_stat()
+uint8_t TapeTap::next_bit()
 {
-    std::println("Current Tape pos: {}", tape_pos);
-}
-
-
-void TapeTap::set_motor(bool motor_on)
-{
-    if (motor_on == motor_running) {
-        return;
-    }
-    std::println("Tape: motor {}", (motor_on ? "on" : "off"));
-
-    motor_running = motor_on;
-
-    if (!motor_running) {
-        if (bit_count > 0) {
-            stopped_mid_byte = true;
-            bit_count = 0;
-        }
-        else {
-            stopped_mid_byte = false;
-        }
-    }
-    else {
-        if (stopped_mid_byte) {
-            if (tape_pos < size) {
-                ++tape_pos;
-            }
-            stopped_mid_byte = false;
-        }
-
-        if (!read_header()) {
-            motor_running = false;
-            return;
-        }
-    }
-}
-
-
-void TapeTap::exec()
-{
-    if (!motor_running) {
-        return;
-    }
-
-    if (tape_cycles_counter > 1) {
-        tape_cycles_counter--;
-
-//        if (delay > 0) {
-//            --delay;
-//        }
-        return;
-    }
-
-    if (delay > 0) {
-        if(--delay == 0)
-        {
-//            if (tape_pulse) {
-//                delay = 1;
-//            }
-//            else {
-//                delay = 0;
-//            }
-        }
-
-        tape_cycles_counter = Pulse_1;
-        return;
-    }
-
-    tape_pulse ^= 0x01;
-    via.write_cb1(tape_pulse);
-
-    if (tape_pulse) {
-        // Start of bit, pulse up.
-        current_bit = get_current_bit();
-        tape_cycles_counter = Pulse_1;
-    }
-    else {
-        // Second part of bit, differently long down period.
-        tape_cycles_counter = current_bit ? Pulse_1 : Pulse_0;
-    }
-}
-
-
-uint8_t TapeTap::get_current_bit()
-{
-    if (tape_pos >= size) {
-        // Idle the line high and stop “playing”
-        motor_running = false;
+    if (bit_index == 0) {
+        // Start bit (always 0).
+        parity=1;
+        bit_index = 1;
         return 1;
     }
 
-    const uint8_t current_byte = data[tape_pos];
-    uint8_t result{1};
-
-    switch (bit_count) {
-        case 0:
-            // Start bit (always 0).
-            result = 0;
-            parity = 0;
-            bit_count = 1;
-            break;
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-            result = (current_byte & (0x01 << (bit_count - 1))) ? 1 : 0;
-            parity ^= result;
-            bit_count++;
-            break;
-        case 9:
-            // Parity.
-            result = parity ^ 1;
-            bit_count++;
-            break;
-        case 10:
-        case 11:
-        case 12:
-            // 3 stop bits (always 1).
-            result = 1;
-
-            bit_count = (bit_count + 1) % 13;
-
-            if (bit_count == 0) {
-                if (tape_pos + 1 == body_start) {
-                    std::println("---- DELAY ----");
-                    delay = 20;
-                }
-
-                if (duplicate_bytes > 0) {
-                    --duplicate_bytes;
-                }
-                else {
-                    ++tape_pos;
-                }
-
-            }
-            break;
+    if (bit_index == 1) {
+        bit_index = 2;
+        return 0;
     }
 
-    return result;
+    if (bit_index <= 9) {
+        uint8_t b = (current_byte >> (bit_index - 2)) & 0x01;
+        parity ^= b;
+        bit_index++;
+        return b;
+    }
+
+    if (bit_index == 10) {
+        // Parity bit calculated over data bits.
+        bit_index++;
+        return parity;
+    }
+
+    if (bit_index == 11) {
+        bit_index++;
+        return 1;
+    }
+
+    if (bit_index == 12) {
+        bit_index++;
+        return 1;
+    }
+
+    bit_index = 0;
+    return 1; // last stop bit, next call starts new frame
 }
 
 
