@@ -51,15 +51,22 @@ public:
     bool start_in_monitor() const { return _start_in_monitor; }
 
     /**
-     * Check if emulator should start in Oric Atmos mode.
-     * @return true if emulator should start in Oric Atmos mode
+     * Check if emulator should start in Oric 1 mode.
+     * @return true if emulator should start in Oric 1 mode
      */
-    bool use_atmos_rom() const { return _use_atmos_rom; }
+    bool use_oric1_rom() const { return _use_oric1_rom; }
+
+    /**
+     * Return window zoom level.
+     * @return window zoom level
+     */
+    uint8_t zoom() const { return _zoom; }
 
 protected:
     bool _start_in_monitor;
-    bool _use_atmos_rom;
+    bool _use_oric1_rom;
     std::filesystem::path _tape_path;
+    uint8_t _zoom;
 };
 
 #endif // CONFIG_H

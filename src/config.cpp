@@ -18,9 +18,11 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include <sstream>
+#include <algorithm>
 #include <cstdlib>
+#include <print>
 #include <vector>
+#include <sstream>
 #include <string>
 
 #include <boost/program_options.hpp>
@@ -35,7 +37,7 @@ namespace po = boost::program_options;
 
 Config::Config() :
     _start_in_monitor(false),
-    _use_atmos_rom(false)
+    _use_oric1_rom(false)
 {
 }
 
@@ -45,24 +47,32 @@ bool Config::parse(int argc, char **argv)
     try {
         po::options_description desc("Allowed options");
 
+        int zoom_arg;
+
         desc.add_options()
             ("help,?", "produce help message")
+            ("zoom,z", po::value<int>(&zoom_arg)->default_value(3), "window zoom 1-10 (default: 3)")
             ("monitor,m", po::bool_switch(&_start_in_monitor), "start in monitor mode")
-            ("atmos,a", po::bool_switch(&_use_atmos_rom), "use Atmos ROM")
-            ("tape,t", po::value<std::filesystem::path>(&_tape_path), "Tape file to use");
+            ("oric1,1", po::bool_switch(&_use_oric1_rom), "use Oric 1 mode (default: Atmos mode)")
+            ("tape,t", po::value<std::filesystem::path>(&_tape_path), "tape file to use");
 
         po::variables_map vm;
         po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
+        po::notify(vm);
 
         if (vm.count("help")) {
             std::cout << "Usage: oric [options]" << std::endl << desc;
             return false;
         }
 
-        po::notify(vm);
+        zoom_arg = std::clamp<int>(zoom_arg, 1, 10);
+        _zoom = static_cast<uint8_t>(zoom_arg);
+        std::println("Used zoom: {}.", _zoom);
+
     }
     catch(std::exception& e)
     {
+        std::println("Argument error: {}", e.what());
         std::cout << e.what() << std::endl;
         return false;
     }

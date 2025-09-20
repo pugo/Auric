@@ -102,10 +102,11 @@ $ ./build/oric -?
 
 Usage: oric [options]
 Allowed options:
-  --help                produce help message
-  -m [ --monitor ]      start in monitor mode
-  -a [ --atmos ]        use Atmos ROM
-  -t [ --tape ] arg     Tape file to use
+  -? [ --help ]          produce help message
+  -z [ --zoom ] arg (=3) window zoom 1-10 (default: 3)
+  -m [ --monitor ]       start in monitor mode
+  -1 [ --oric1 ]         use Oric 1 mode (default: Atmos mode)
+  -t [ --tape ] arg      tape file to use
 ```
 
 ### Control keys
@@ -200,10 +201,10 @@ The timeline is something like:
 
 ## Contribution
 
-Since this is a pet project I work on only when I like to and because I feel that
-I should implement all by myself I am reluctant to accept any contributions. But 
-the licence is GPL v3, so feel free to fork it and do what you like as long as
-you follow that license.
+Since this is a pet project I work on it only when I like to. Up to this point
+noone has wanted to contribute, but at this stage it could be fun to cooperate!
+
+The project exists on GitHub: https://github.com/pugo/Pugo-Oric
 
 ## License
 

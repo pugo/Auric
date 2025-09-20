@@ -41,7 +41,7 @@ Frontend::Frontend(Oric& oric) :
     sdl_window(nullptr),
     sdl_renderer(nullptr),
     oric_texture(texture_width, texture_height, texture_bpp),
-    status_bar(texture_width*3, 16, texture_bpp),
+    status_bar(texture_width * oric.get_config().zoom(), 16, texture_bpp),
     sound_audio_device_id(),
     audio_locked(false)
 {
@@ -51,6 +51,7 @@ Frontend::Frontend(Oric& oric) :
         }
     }
 
+    // Note: It is possible that this breaks for some keyboard layouts. Should rework this.
     boost::assign::insert(key_translations)
         (std::make_pair(0xe4, false), std::make_pair('/', false))
         (std::make_pair(0xe4, true), std::make_pair('/', false))
@@ -84,7 +85,7 @@ bool Frontend::init_graphics()
         std::cout <<  "Warning: Linear texture filtering not enabled!" << std::endl;
     }
 
-    oric_texture.set_render_zoom(3);
+    oric_texture.set_render_zoom(oric.get_config().zoom());
     status_bar.set_render_zoom(1);
     status_bar.render_rect.y = oric_texture.render_rect.h;
 

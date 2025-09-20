@@ -69,12 +69,12 @@ void Oric::init()
     machine->cpu->set_quiet(true);
 
     try {
-        if (config.use_atmos_rom()) {
-            machine->memory.load(rom_basic11b, 0xc000);
-        }
-        else {
+        if (config.use_oric1_rom()) {
 //    	machine->memory.load("ROMS/test108k.rom", 0xc000);
             machine->memory.load(rom_basic10, 0xc000);
+        }
+        else {
+            machine->memory.load(rom_basic11b, 0xc000);
         }
     }
     catch (const std::runtime_error& err) {
