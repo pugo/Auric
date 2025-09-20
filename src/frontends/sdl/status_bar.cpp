@@ -16,7 +16,6 @@
 // =========================================================================
 
 #include <filesystem>
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -24,6 +23,7 @@
 #include <condition_variable>
 
 #include <SDL_image.h>
+#include <boost/log/trivial.hpp>
 
 #include "frontend.hpp"
 
@@ -93,7 +93,7 @@ StatusBar::~StatusBar()
 
 bool StatusBar::init(SDL_Renderer* sdl_renderer)
 {
-    std::cout << "Status bar: Reading font: '" << font_path << "'" << std::endl;
+    BOOST_LOG_TRIVIAL(debug) << "Status bar: Reading font: '" << font_path << "'";
 
     std::ifstream file (font_path, std::ios::in | std::ios::binary | std::ios::ate);
     if (file.is_open())

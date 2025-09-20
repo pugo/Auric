@@ -62,11 +62,19 @@ public:
      */
     uint8_t zoom() const { return _zoom; }
 
+    /**
+     * Return verbose mode.
+     * @return true if verbose mode is enabled
+     */
+    bool verbose() const { return _verbose; }
+
+
 protected:
     bool _start_in_monitor;
     bool _use_oric1_rom;
     std::filesystem::path _tape_path;
     uint8_t _zoom;
+    bool _verbose;
 };
 
 #endif // CONFIG_H

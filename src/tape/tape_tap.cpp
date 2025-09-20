@@ -15,9 +15,11 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <boost/log/trivial.hpp>
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <format>
 #include <print>
 #include <vector>
 #include <string>
@@ -69,7 +71,7 @@ void TapeTap::reset()
 bool TapeTap::init()
 {
     reset();
-    std::println("Tape: Reading TAP file '{}'", path);
+    BOOST_LOG_TRIVIAL(info) << "Tape: Reading TAP file '" << path << "'";
 
     std::ifstream file (path, std::ios::in | std::ios::binary | std::ios::ate);
     if (file.is_open())
@@ -83,7 +85,7 @@ bool TapeTap::init()
         file.close();
     }
     else {
-        std::println("Tape: unable to open TAP file");
+        BOOST_LOG_TRIVIAL(warning) << "Tape: unable to open TAP file";
         return false;
     }
 
@@ -102,7 +104,7 @@ void TapeTap::motor_on(bool motor_on)
     if (motor_on == motor_running) {
         return;
     }
-    std::println("Tape: motor {}", (motor_on ? "on" : "off"));
+    BOOST_LOG_TRIVIAL(debug) << "Tape: motor " << (motor_on ? "on" : "off");
 
     motor_running = motor_on;
 
@@ -116,7 +118,7 @@ void TapeTap::motor_on(bool motor_on)
     else {
         if (bit_index > 0) {
             // stopped mid-byte: drop the partial byte on resume
-            std::println("Skipped one byte at resume (pos now {})", tape_pos);
+            BOOST_LOG_TRIVIAL(debug) << "Skipped one byte at resume (pos now " << tape_pos << ")";
             stopped_mid_byte = true;
             bit_index = 0;
         }
@@ -136,7 +138,7 @@ void TapeTap::exec()
 
     if (tape_state == TapeState::ParseHeader) {
         if (!parse_header()) {
-            std::println("Tape: failed to read header, stopping.");
+            BOOST_LOG_TRIVIAL(error) << "Tape: failed to read header, stopping.";
             motor_running = false;
             tape_state = TapeState::Fail;
             return;
@@ -268,24 +270,24 @@ bool TapeTap::parse_header()
         ++i;
     }
 
-    std::println("Tape: found {} sync bytes (0x16)", i);
+    BOOST_LOG_TRIVIAL(debug) << "Tape: found " << i << " sync bytes (0x16)";
     uint16_t sync_len = i;
     sync_end = tape_pos + i;
 
     if (i < 3) {
-        std::println("Tape: too few sync bytes, failing.");
+        BOOST_LOG_TRIVIAL(warning) << "Tape: too few sync bytes, failing.";
         return false;
     }
 
     if (data[tape_pos + i] != 0x24) {
-        std::println("Tape: missing end of sync bytes (0x24), failing.");
+        BOOST_LOG_TRIVIAL(warning) << "Tape: missing end of sync bytes (0x24), failing.";
         return false;
     }
 
     ++i;
 
     if (i + 9 >= tape_size) {
-        std::println("Tape: too short (no specs and addresses).");
+        BOOST_LOG_TRIVIAL(warning) << "Tape: too short (no specs and addresses).";
         return false;
     }
 
@@ -297,13 +299,13 @@ bool TapeTap::parse_header()
     switch(file_type)
     {
         case 0x00:
-            std::println("Tape: file is BASIC.");
+            BOOST_LOG_TRIVIAL(debug) << "Tape: file is BASIC.";
             break;
         case 0x80:
-            std::println("Tape: file is machine code.");
+            BOOST_LOG_TRIVIAL(debug) << "Tape: file is machine code.";
             break;
         default:
-            std::println("Tape: file is unknown.");
+            BOOST_LOG_TRIVIAL(debug) << "Tape: file is unknown.";
             break;
     }
     i++;
@@ -312,13 +314,13 @@ bool TapeTap::parse_header()
     switch(auto_flag)
     {
         case 0x80:
-            std::println("Tape: run automatically as BASIC.");
+            BOOST_LOG_TRIVIAL(debug) << "Tape: run automatically as BASIC.";
             break;
         case 0xc7:
-            std::println("Tape: run automatically as machine code.");
+            BOOST_LOG_TRIVIAL(debug) << "Tape: run automatically as machine code.";
             break;
         default:
-            std::println("Tape: Don't run automatically.");
+            BOOST_LOG_TRIVIAL(debug) << "Tape: Don't run automatically.";
             break;
     }
     i++;
@@ -335,8 +337,8 @@ bool TapeTap::parse_header()
     start_address = data[tape_pos + i] << 8 | data[tape_pos + i + 1];
     i += 2;
 
-    std::println("Tape: start address: ${:04x}", start_address);
-    std::println("Tape:   end address: ${:04x}", end_address);
+    BOOST_LOG_TRIVIAL(debug) << std::format("Tape: start address: ${:04x}", start_address);
+    BOOST_LOG_TRIVIAL(debug) << std::format("Tape:   end address: ${:04x}", end_address);
 
     // Skip one reserved byte.
     i++;
@@ -355,7 +357,7 @@ bool TapeTap::parse_header()
         name += data[tape_pos + i];
         ++i;
     }
-    std::println("Tape: file name: {}", name);
+    BOOST_LOG_TRIVIAL(info) << "Tape: file name: " << name;
 
     // Store where body starts, to allow delay after header.
     body_start = tape_pos + i + 1;

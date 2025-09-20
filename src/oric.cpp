@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/log/trivial.hpp>
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 

@@ -197,6 +197,7 @@ The timeline is something like:
 * 2020: Tape loading
 * 2023: AY3-8912 sound
 * 2024: Cycle bug fixing, new monitor, blink mode, snapshots
+* 2025: Satus bar, new tape loading, zoom, 
 
 
 ## Contribution

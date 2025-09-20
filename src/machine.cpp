@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include <boost/assign.hpp>
+#include <boost/log/trivial.hpp>
 
 #include "machine.hpp"
 #include "oric.hpp"
@@ -138,7 +139,7 @@ void Machine::init_tape()
         }
     }
     else {
-        std::cout << "No tape specified." << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "No tape specified.";
         tape = std::make_unique<TapeBlank>();
     }
 }
@@ -288,6 +289,6 @@ bool Machine::toggle_warp_mode()
         frontend->get_status_bar().set_flag(StatusbarFlags::warp_mode, true);
     }
 
-    std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Warp mode: " << (warpmode_on ? "on" : "off");
     return warpmode_on;
 }

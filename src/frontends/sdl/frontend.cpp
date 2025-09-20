@@ -16,6 +16,8 @@
 // =========================================================================
 
 #include <boost/assign.hpp>
+#include <boost/log/trivial.hpp>
+
 #include <SDL_image.h>
 
 #include "frontend.hpp"
@@ -71,21 +73,24 @@ bool Frontend::init_graphics()
 {
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        std::cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
+        BOOST_LOG_TRIVIAL(error) << "SDL could not initialize! SDL_Error: " << SDL_GetError();
         return false;
     }
 
     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
-        fprintf(stderr, "could not initialize sdl2_image: %s\n", IMG_GetError());
+        BOOST_LOG_TRIVIAL(error) << "Could not initialize sdl2_image: " << IMG_GetError();
         return false;
     }
 
     // Set texture filtering to linear
     if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
-        std::cout <<  "Warning: Linear texture filtering not enabled!" << std::endl;
+        BOOST_LOG_TRIVIAL(warning) << "Linear texture filtering not enabled!";
     }
 
-    oric_texture.set_render_zoom(oric.get_config().zoom());
+    auto zoom = oric.get_config().zoom();
+    BOOST_LOG_TRIVIAL(debug) << "Setting zoom to: " << static_cast<int>(zoom);
+
+    oric_texture.set_render_zoom(zoom);
     status_bar.set_render_zoom(1);
     status_bar.render_rect.y = oric_texture.render_rect.h;
 
@@ -94,7 +99,7 @@ bool Frontend::init_graphics()
     sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   oric_texture.render_rect.w, height, SDL_WINDOW_SHOWN);
     if (sdl_window == nullptr) {
-        std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+        BOOST_LOG_TRIVIAL(error) << "Window could not be created! SDL_Error: " << SDL_GetError();
         return false;
     }
 
@@ -108,7 +113,7 @@ bool Frontend::init_graphics()
     sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
 
     if (sdl_renderer == nullptr) {
-        std::cout <<  "Renderer could not be created! SDL Error: " << SDL_GetError() << std::endl;
+        BOOST_LOG_TRIVIAL(error) << "Renderer could not be created! SDL Error: " << SDL_GetError();
         return false;
     }
 
@@ -127,11 +132,11 @@ bool Frontend::init_graphics()
 
 bool Frontend::init_sound()
 {
-    std::cout << "Initializing sound.." << std::endl;
+    BOOST_LOG_TRIVIAL(debug) << "Initializing sound..";
 
     if (SDL_Init(SDL_INIT_AUDIO) < 0)
     {
-        std::cout << "Error: failed initializing SDL: " << SDL_GetError() << std::endl;
+        BOOST_LOG_TRIVIAL(error) << "Error: failed initializing SDL: " << SDL_GetError();
         return false;
     }
 
@@ -150,19 +155,20 @@ bool Frontend::init_sound()
 
     if (!sound_audio_device_id)
     {
-        std::cout << "Error: creating SDL audio device: " << SDL_GetError() << std::endl;
+        BOOST_LOG_TRIVIAL(error) << "Error: creating SDL audio device: " << SDL_GetError();
         return false;
     }
 
     if (audio_spec_want.format != audio_spec.format) {
-        SDL_LogError(SDL_LOG_CATEGORY_AUDIO, "Failed to get the desired AudioSpec");
+        BOOST_LOG_TRIVIAL(error) << "Failed to get the desired AudioSpec";
     }
 
-    std::cout << "Freq: " << std::dec << (int) audio_spec.freq << std::endl;
-    std::cout << "Silence: " << (int) audio_spec.silence << std::endl;
-    std::cout << "format: " << (int) audio_spec.format << std::endl;
-    std::cout << "channels: " << (int) audio_spec.channels << std::endl;
-    std::cout << "samples: " << (int) audio_spec.samples << std::endl;
+    BOOST_LOG_TRIVIAL(debug) << "PAP provisioning operation: OK!";
+    BOOST_LOG_TRIVIAL(debug) << "Freq: " << std::dec << (int) audio_spec.freq;
+    BOOST_LOG_TRIVIAL(debug) << "Silence: " << (int) audio_spec.silence;
+    BOOST_LOG_TRIVIAL(debug) << "format: " << (int) audio_spec.format;
+    BOOST_LOG_TRIVIAL(debug) << "channels: " << (int) audio_spec.channels;
+    BOOST_LOG_TRIVIAL(debug) << "samples: " << (int) audio_spec.samples;
 
     return true;
 }
