@@ -46,8 +46,20 @@ ULA::ULA(Machine& machine, Memory& memory, uint8_t texture_width, uint8_t textur
     frame_count(0)
 {
     pixels = std::vector<uint8_t>(texture_width * texture_height * texture_bpp, 0);
-}
 
+    // Precalculate an array of all bit combinations for a char (6 bits) and six 32 bit values
+    // packed into three 64 bit values. Each such 32 bit value is a mask, 0 or 0xffffffff, that
+    // will be blended with the correct color value while painting.
+    for (int pat = 0; pat < 64; ++pat) {
+        auto laneMask = [&](int bit) -> uint64_t {
+            return (pat & (1 << bit)) ? 0xFFFFFFFFull : 0ull;
+        };
+
+        char_mask[pat][0] = laneMask(5) | (laneMask(4) << 32); // pixels 0,1
+        char_mask[pat][1] = laneMask(3) | (laneMask(2) << 32); // pixels 2,3
+        char_mask[pat][2] = laneMask(1) | (laneMask(0) << 32); // pixels 4,5
+    }
+}
 
 bool ULA::paint_raster()
 {
@@ -127,16 +139,7 @@ void ULA::update_graphics(uint8_t raster_line)
             }
         }
 
-        uint32_t _fg_col = fg_col;
-        uint32_t _bg_col = bg_col;
-
         uint8_t mask = frame_count & 0x10 ? 0x3f : blink;
-
-        // Inverse colors if upper bit is set in char code.
-        if (ch & 0x80) {
-            _fg_col = _fg_col ^ 0x00ffffff;
-            _bg_col = _bg_col ^ 0x00ffffff;
-        }
 
         uint8_t chr_dat = 0;
         if (!ctrl_char) {
@@ -153,13 +156,28 @@ void ULA::update_graphics(uint8_t raster_line)
             }
         }
 
-        // Copy 6 pixels.
-        *texture_line++ = (chr_dat & 0x20) ? _fg_col : _bg_col;
-        *texture_line++ = (chr_dat & 0x10) ? _fg_col : _bg_col;
-        *texture_line++ = (chr_dat & 0x08) ? _fg_col : _bg_col;
-        *texture_line++ = (chr_dat & 0x04) ? _fg_col : _bg_col;
-        *texture_line++ = (chr_dat & 0x02) ? _fg_col : _bg_col;
-        *texture_line++ = (chr_dat & 0x01) ? _fg_col : _bg_col;
+        // Apply per-char inversion to colors.
+        const uint32_t inv = (ch & 0x80) ? 0x00FFFFFFu : 0u;   // preserve alpha
+        const uint32_t fg_eff = fg_col ^ inv;
+        const uint32_t bg_eff = bg_col ^ inv;
+
+        // Pack colors into [col,col] 64-bit lanes (two 32-bit pixels per word).
+        const uint64_t fg64 = (uint64_t)fg_eff | ((uint64_t)fg_eff << 32);
+        const uint64_t bg64 = (uint64_t)bg_eff | ((uint64_t)bg_eff << 32);
+
+        // Look up 6-pixel mask (3 words) for this 6-bit pattern.
+        const uint64_t* m = char_mask[chr_dat & 0x3F];
+
+        // Branchless blend: out = bg ^ (mask & (fg ^ bg))
+        const uint64_t fx = fg64 ^ bg64;
+
+        uint64_t* out64 = reinterpret_cast<uint64_t*>(texture_line);
+        out64[0] = bg64 ^ (m[0] & fx);
+        out64[1] = bg64 ^ (m[1] & fx);
+        out64[2] = bg64 ^ (m[2] & fx);
+
+        // advance by 6 pixels (24 bytes)
+        texture_line += 6;
     }
 }
 

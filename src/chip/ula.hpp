@@ -80,6 +80,10 @@ private:
     uint32_t frame_count;
 
     std::vector<uint8_t> pixels;
+
+    // Lookup table for masks corresponding to all bit combinations of character bits.
+    // 6 pixels per char pack 3 words, each word = 2 pixels (2 * 32-bit).
+    uint64_t char_mask[64][3];
 };
 
 
