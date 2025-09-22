@@ -48,7 +48,9 @@ static const char* severity_color(logging::trivial::severity_level lvl) {
 
 Config::Config() :
     _start_in_monitor(false),
-    _use_oric1_rom(false)
+    _use_oric1_rom(false),
+    _zoom(3),
+    _verbose(false)
 {
 }
 
