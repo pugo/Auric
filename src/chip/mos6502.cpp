@@ -41,7 +41,7 @@
 #define PAGECHECK(n) (((addr + n) & 0xff00) != (addr & 0xff00))
 #define PAGECHECK2(a, b) ((a & 0xff00) != (b & 0xff00))
 
-#define READ_ADDR_IND_X()   (memory_read_word_zp_handler(machine, READ_BYTE_IMM() + X))
+#define READ_ADDR_IND_X()   (memory_read_word_zp_handler(machine, (READ_BYTE_IMM() + X) & 0xff))
 #define READ_ADDR_IND_Y()   (memory_read_word_zp_handler(machine, READ_BYTE_IMM()) + Y)
 
 #define READ_JUMP_ADDR()    (b1 = READ_BYTE_IMM(), b1 & 0x80 ? (PC - ((b1 ^ 0xff)+1)) : (PC + b1))
@@ -482,17 +482,14 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
     }
 
     if (++current_cycle < instruction_cycles) {
-//        std::cout << " -- current cycle: " << (int)current_cycle << std::endl;
         return false;
     }
 
-//    std::cout << " -- Exec (" << (int)instruction_cycles << " cycles)" << std::endl;
     uint8_t b1, b2;
     uint16_t addr;
     int i;
 
     uint16_t pc_initial = PC;
-//    uint8_t instruction = READ_BYTE_IMM();
 
     instruction_load = true;
     ++PC;

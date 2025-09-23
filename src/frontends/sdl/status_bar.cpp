@@ -106,7 +106,7 @@ bool StatusBar::init(SDL_Renderer* sdl_renderer)
         file.close();
     }
     else {
-        std::cout << "Status bar: unable to open font file";
+        BOOST_LOG_TRIVIAL(error) << "Status bar: unable to open font file";
         return false;
     }
 
