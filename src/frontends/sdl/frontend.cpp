@@ -191,38 +191,49 @@ bool Frontend::handle_frame()
             case SDL_KEYUP:
             {
                 auto sym = event.key.keysym.sym;
+                bool special_pressed{false};
 
                 if (event.type == SDL_KEYDOWN) {
-                    if (event.key.keysym.sym == SDLK_F12) {
-                        oric.get_machine().toggle_warp_mode();
-                    }
+                    if (event.key.keysym.mod & KMOD_CTRL) {
+                        if (event.key.keysym.sym == SDLK_w) {
+                            oric.get_machine().toggle_warp_mode();
+                            special_pressed = true;
+                        }
 
-                    else if (event.key.keysym.sym == SDLK_F10) {
-                        oric.get_machine().cpu->NMI();
-                    }
+                        else if (event.key.keysym.sym == SDLK_r) {
+                            oric.get_machine().cpu->NMI();
+                            special_pressed = true;
+                        }
 
-                    else if (event.key.keysym.sym == SDLK_F1) {
-                        oric.get_machine().save_snapshot();
+                        else if (event.key.keysym.sym == SDLK_b) {
+                            oric.get_machine().stop();
+                            oric.do_break();
+                            special_pressed = true;
+                        }
                     }
+                    else {
+                        if (event.key.keysym.sym == SDLK_F1) {
+                            oric.get_machine().save_snapshot();
+                            special_pressed = true;
+                        }
 
-                    else if (event.key.keysym.sym == SDLK_F2) {
-                        oric.get_machine().load_snapshot();
-                    }
-
-                    else if (event.key.keysym.sym == SDLK_b && event.key.keysym.mod & KMOD_CTRL) {
-                        oric.get_machine().stop();
-                        oric.do_break();
+                        else if (event.key.keysym.sym == SDLK_F2) {
+                            oric.get_machine().load_snapshot();
+                            special_pressed = true;
+                        }
                     }
                 }
 
-                auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
-                if (trans != key_translations.end()) {
-                    sym = trans->second.first;
-                }
+                if (! special_pressed) {
+                    auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
+                    if (trans != key_translations.end()) {
+                        sym = trans->second.first;
+                    }
 
-                auto key = key_map.find(sym);
-                if (key != key_map.end()) {
-                    oric.get_machine().key_press(key->second, event.type == SDL_KEYDOWN);
+                    auto key = key_map.find(sym);
+                    if (key != key_map.end()) {
+                        oric.get_machine().key_press(key->second, event.type == SDL_KEYDOWN);
+                    }
                 }
                 break;
             }

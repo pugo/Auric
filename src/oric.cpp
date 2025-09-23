@@ -18,6 +18,7 @@
 
 #include <cstdlib>
 #include <format>
+#include <print>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -42,7 +43,6 @@ Oric::Oric(Config& config) :
     state(STATE_RUN),
     frontend(nullptr),
     machine(nullptr),
-    last_command(),
     last_address(0)
 {
     if (config.start_in_monitor()) {
@@ -52,7 +52,6 @@ Oric::Oric(Config& config) :
 
 Oric::~Oric()
 {
-    std::cout << "oric stopping"  << std::endl;
 }
 
 
@@ -125,15 +124,15 @@ void Oric::do_break()
     last_address = 0;
 
     if (state == STATE_MON) {
-        std::cout << std::endl << std::endl << " - Bye! -" << std::endl << std::endl;
+        std::println("\n\n - Bye! - \n\n");
     }
     else
     {
-        std::cout << std::endl;
-        std::cout << "* Oric Monitor *" << std::endl << std::endl;
-        std::cout << "        Ctrl-c : to exit the emulator" << std::endl;
-        std::cout << "    g <return> : to continue the emulation" << std::endl;
-        std::cout << "    h <return> : for help" << std::endl << std::endl;
+        std::println();
+        std::println("* Oric Monitor *\n");
+        std::println("        Ctrl-c : to exit the emulator");
+        std::println("    g <return> : to continue the emulation");
+        std::println("    h <return> : for help (more commands)\n");
     }
 
     state = STATE_MON;
@@ -176,14 +175,14 @@ Oric::State Oric::handle_command(std::string& command_line)
         std::cout << "Available monitor commands:" << std::endl << std::endl;
         std::cout << "ay              : print AY-3-8912 sound chip info" << std::endl;
         std::cout << "bs <address>    : set breakpoint for address" << std::endl;
-        std::cout << "d               : disassemble from PC" << std::endl;
-        std::cout << "d <address> <n> : disassemble from address and n bytes ahead" << std::endl;
+        std::cout << "d               : disassemble from last address or PC" << std::endl;
+        std::cout << "d <address> <n> : disassemble from address and n bytes ahead (example: d c000 10)" << std::endl;
         std::cout << "debug           : show debug output at run time" << std::endl;
         std::cout << "g               : go (continue)" << std::endl;
-        std::cout << "g <address>     : go to address and run" << std::endl;
+        std::cout << "g <address>     : go to address and run (example: g 1f00)" << std::endl;
         std::cout << "h               : help (showing this text)" << std::endl;
         std::cout << "i               : print machine info" << std::endl;
-        std::cout << "m <address> <n> : dump memory from address and n bytes ahead" << std::endl;
+        std::cout << "m <address> <n> : dump memory from address and n bytes ahead (example: m 1f00 20)" << std::endl;
         std::cout << "pc <address>    : set program counter to address" << std::endl;
         std::cout << "quiet           : prevent debug output at run time" << std::endl;
         std::cout << "q               : quit" << std::endl;

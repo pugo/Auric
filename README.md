@@ -115,8 +115,8 @@ The following control keys can alter the emulator behavior.
 
 * `F1`: Save snapshot (to RAM)
 * `F2`: Load snapshot (from RAM)
-* `F10`: Soft reset the emulator (NMI)
-* `F12`: Toggle warp mode (go as fast as possible).
+* `CTRL-W`: Toggle warp mode (go as fast as possible, speed up tape loading, etc.)
+* `CTRL-R`: Soft reset the emulator (NMI)
 * `CTRL-B`: Break to debugger (in console).
 
 

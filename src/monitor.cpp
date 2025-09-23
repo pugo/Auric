@@ -15,6 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <boost/log/trivial.hpp>
 #include <iostream>
 #include <iomanip>
 
@@ -247,13 +248,21 @@ Monitor::Monitor(Memory& memory) :
 
 }
 
+
 uint16_t Monitor::disassemble(uint16_t address, size_t bytes)
 {
-    uint16_t orig_address = address;
+    BOOST_LOG_TRIVIAL(debug) << "Disassembling from $" << std::hex << address << " for " << bytes << " bytes";
 
-    while(address <= orig_address + bytes) {
-        address = disassemble(address);
+    uint32_t end = static_cast<uint32_t>(address) + static_cast<uint32_t>(bytes);
+
+    while (static_cast<uint32_t>(address) < end) {
+        uint16_t next = disassemble(address);
         std::cout << std::endl;
+
+        if (next <= address) {
+            break;
+        }
+        address = next;
     }
 
     return address;
