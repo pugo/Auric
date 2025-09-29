@@ -65,7 +65,7 @@ bool ULA::paint_raster()
 {
     bool render_screen = false;
 
-    if ((raster_current >= raster_visible_first) && (raster_current <= raster_visible_last)) {
+    if ((raster_current >= raster_visible_first) && (raster_current < raster_visible_last)) {
         update_graphics(raster_current - raster_visible_first);
     }
 
