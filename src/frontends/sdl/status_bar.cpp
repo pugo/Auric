@@ -87,6 +87,11 @@ StatusBar::~StatusBar()
     if (back_surface) {
         SDL_FreeSurface(back_surface);
     }
+
+    if (texture) {
+        SDL_DestroyTexture(texture);
+        texture = nullptr;
+    }
 }
 
 
@@ -109,16 +114,29 @@ bool StatusBar::init(SDL_Renderer* sdl_renderer)
         return false;
     }
 
-    front_surface = SDL_CreateRGBSurfaceWithFormat(0xff, width, height, 32, SDL_PIXELFORMAT_RGBA32);
-    back_surface = SDL_CreateRGBSurfaceWithFormat(0xff, width, height, 32, SDL_PIXELFORMAT_RGBA32);
+    front_surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_ARGB8888);
+    back_surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_ARGB8888);
     if (front_surface == nullptr || back_surface == nullptr) {
         return false;
     }
 
+    // Clear front surface to opaque black
+    SDL_FillRect(front_surface, NULL, 0xff000000);
+    SDL_FillRect(back_surface, NULL, 0xff000000);
+
+    texture = SDL_CreateTexture(sdl_renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+    if (!texture) {
+        BOOST_LOG_TRIVIAL(error) << "Status bar: failed to create texture: " << SDL_GetError();
+        return false;
+    }
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_NONE);
+
     update_thread = std::thread(&StatusBar::thread_main, this);
 
     paint();
-    return update_texture(sdl_renderer);
+    update_texture(sdl_renderer);
+
+    return true;
 }
 
 
@@ -137,7 +155,11 @@ void StatusBar::set_flag(uint16_t flag, bool on)
 {
     uint16_t old_flags = active_flags;
 
-    active_flags += on ? flag : -flag;
+    if (on) {
+        active_flags |= flag;
+    } else {
+        active_flags &= ~flag;
+    }
 
     if (active_flags != old_flags) {
         paint();
@@ -153,11 +175,13 @@ void StatusBar::paint()
 }
 
 
-bool StatusBar::update_texture(SDL_Renderer* sdl_renderer)
+void StatusBar::update_texture(SDL_Renderer* sdl_renderer)
 {
+    std::lock_guard<std::mutex> guard(update_mutex);
+
+    SDL_UpdateTexture(texture, NULL, front_surface->pixels, front_surface->pitch);
+
     has_updated = false;
-    texture = SDL_CreateTextureFromSurface(sdl_renderer, front_surface);
-    return texture != nullptr;
 }
 
 
@@ -238,7 +262,7 @@ void StatusBar::thread_main()
         }
 
         if (update_requested) {
-            SDL_FillRect(back_surface, NULL, 0x000000ff);
+            SDL_FillRect(back_surface, NULL, 0xff000000);
             update_requested = false;
             lock.unlock();
 
@@ -247,7 +271,7 @@ void StatusBar::thread_main()
 
             lock.lock();
             std::swap(front_surface, back_surface);
-            has_updated = true;
+            has_updated = true; // signal that main thread should upload texture
         }
     }
 }

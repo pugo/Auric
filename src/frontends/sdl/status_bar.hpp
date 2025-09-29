@@ -26,6 +26,9 @@
 #include <vector>
 #include <SDL.h>
 #include <SDL_audio.h>
+#include <atomic>
+#include <mutex>
+#include <optional>
 
 #include "frontends/flags.hpp"
 
@@ -53,9 +56,8 @@ public:
     /**
      * Update the texture from status bar surface.
      * @param sdl_renderer SDL renderer
-     * @return true on success
      */
-    bool update_texture(SDL_Renderer* sdl_renderer);
+    void update_texture(SDL_Renderer* sdl_renderer);
 
     /**
      * True if a requested update is finished.
@@ -109,7 +111,7 @@ private:
 
     bool do_stop_thread;
     bool update_requested;
-    bool has_updated;
+    std::atomic<bool> has_updated;
     std::mutex update_mutex;
     std::thread update_thread;
 
