@@ -18,8 +18,9 @@
 #ifndef FRONTENDS_SDL_STATUSBAR_H
 #define FRONTENDS_SDL_STATUSBAR_H
 
-#include <memory>
+#include <condition_variable>
 #include <iostream>
+#include <memory>
 #include <ostream>
 #include <thread>
 #include <vector>

@@ -20,7 +20,6 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
-#include <condition_variable>
 
 #include <SDL_image.h>
 #include <boost/log/trivial.hpp>
