@@ -18,7 +18,6 @@
 #include <csignal>
 
 #include <print>
-#include <sstream>
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>

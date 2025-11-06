@@ -16,10 +16,7 @@
 // =========================================================================
 
 #include <boost/log/trivial.hpp>
-#include <iostream>
-#include <iomanip>
 
-#include <map>
 #include <vector>
 
 #include "oric.hpp"
@@ -257,7 +254,7 @@ uint16_t Monitor::disassemble(uint16_t address, size_t bytes)
 
     while (static_cast<uint32_t>(address) < end) {
         uint16_t next = disassemble(address);
-        std::cout << std::endl;
+        std::println();
 
         if (next <= address) {
             break;
@@ -272,97 +269,95 @@ uint16_t Monitor::disassemble(uint16_t address, size_t bytes)
 /* This function disassembles the opcode at the PC and outputs it in *output */
 uint16_t Monitor::disassemble(uint16_t address)
 {
-    std::cout << std::hex << std::setfill('0') << std::uppercase
-              << "$" << std::setw(4) << address << "\t";
+    std::print("${:04X}\t", address);
 
     uint8_t op = memory.mem[address++];
-
-    std::cout << "$" << std::setw(2) << (int)op << "\t";
+    std::print("${:02X}\t", op);
 
     if (auto it = opcodes.find(op); it != opcodes.end())
     {
-        std::cout << it->second.name;
+        std::print("{} ", it->second.name);
 
         switch(it->second.addressing)
         {
             case Addressing::immediate:
             {
                 uint8_t value = memory.mem[address++];
-                std::cout << " #$" << std::setw(2) << (int)value << "\t";
+                std::print("#${:02X}\t", value);
                 break;
             }
             case Addressing::zero_page:
             {
                 uint8_t value = memory.mem[address++];
-                std::cout << " $" << std::setw(2) << (int)value << "\t\t";
+                std::print("${:02X}\t", value);
                 break;
             }
             case Addressing::zero_page_indexed_x:
             {
                 uint8_t value = memory.mem[address++];
-                std::cout << " $" << std::setw(2) << (int)value << ",X\t";
+                std::print("${:02X},X\t", value);
                 break;
             }
             case Addressing::zero_page_indexed_y:
             {
                 uint8_t value = memory.mem[address++];
-                std::cout << " $" << std::setw(2) << (int)value << ",Y\t";
+                std::print("${:02X},Y\t", value);
                 break;
             }
             case Addressing::implied:
             {
-                std::cout << "\t\t";
+                std::print("\t\t");
                 break;
             }
             case Addressing::indirect_absolute:
             {
                 uint16_t value = memory.mem[address++];
                 value += memory.mem[address++] << 8;
-                std::cout << " ($" << std::setw(4) << (int)value << ")\t";
+                std::print("(${:04X})\t", value);
                 break;
             }
             case Addressing::absolute:
             {
                 uint16_t value = memory.mem[address++];
                 value += memory.mem[address++] << 8;
-                std::cout << " $" << std::setw(4) << (int)value << "\t";
+                std::print("${:04X}\t", value);
                 break;
             }
             case Addressing::absolute_indexed_x:
             {
                 uint16_t value = memory.mem[address++];
                 value += memory.mem[address++] << 8;
-                std::cout << " $" << std::setw(4) << (int)value << ",X\t";
+                std::print("${:04X},X\t", value);
                 break;
             }
             case Addressing::absolute_indexed_y:
             {
                 uint16_t value = memory.mem[address++];
                 value += memory.mem[address++] << 8;
-                std::cout << " $" << std::setw(4) << (int)value << ",Y\t";
+                std::print("${:04X},Y\t", value);
                 break;
             }
             case Addressing::indexed_indirect_x:
             {
                 uint8_t value = memory.mem[address++];
-                std::cout << " ($" << std::setw(2) << (int)value << ",X)\t";
+                std::print("(${:02X},X)\t", value);
                 break;
             }
             case Addressing::indirect_indexed_y:
             {
                 uint8_t value = memory.mem[address++];
-                std::cout << " ($" << std::setw(2) << (int)value << "),Y\t";
+                std::print("(${:02X},Y)\t", value);
                 break;
             }
             case Addressing::relative:
             {
                 uint8_t rel = memory.mem[address++];
                 uint16_t addr = rel & 0x80 ? (address - ((rel ^ 0xff)+1)) : (address + rel);
-                std::cout << " $" << std::setw(4) << (int)addr << "\t";
+                std::print("${:04X}\t", addr);
                 break;
             }
             case Addressing::accumulator:
-                std::cout << " A\t\t";
+                std::print("A\t\t");
                 break;
         }
 

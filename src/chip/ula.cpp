@@ -16,9 +16,6 @@
 // =========================================================================
 
 #include <vector>
-#include <stack>
-#include <utility>
-
 #include <boost/assign.hpp>
 
 #include <machine.hpp>

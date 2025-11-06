@@ -19,11 +19,8 @@
 #define FRONTENDS_SDL_STATUSBAR_H
 
 #include <condition_variable>
-#include <iostream>
 #include <memory>
-#include <ostream>
 #include <thread>
-#include <vector>
 #include <SDL.h>
 #include <SDL_audio.h>
 #include <atomic>

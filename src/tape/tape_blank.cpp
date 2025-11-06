@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <iostream>
+#include <print>
 
 #include "tape_blank.hpp"
 
@@ -36,7 +36,7 @@ bool TapeBlank::init()
 
 void TapeBlank::print_stat()
 {
-    std::cout << "Blank Tape." << std::endl;
+    std::println("Blank Tape.");;
 }
 
 void TapeBlank::motor_on(bool motor_on)

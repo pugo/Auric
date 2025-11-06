@@ -20,9 +20,8 @@
 
 #include <map>
 #include <memory>
-#include <iostream>
-#include <ostream>
 #include <vector>
+
 #include <SDL.h>
 #include <SDL_audio.h>
 

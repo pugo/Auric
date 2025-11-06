@@ -31,7 +31,6 @@
 #include "monitor.hpp"
 #include "snapshot.hpp"
 
-#include <memory>
 #include <set>
 
 

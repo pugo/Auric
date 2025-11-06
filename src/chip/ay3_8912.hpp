@@ -18,8 +18,7 @@
 #ifndef AY3_8912_H
 #define AY3_8912_H
 
-#include <memory>
-#include <array>
+#include <print>
 #include <boost/circular_buffer.hpp>
 
 class Snapshot;
@@ -39,15 +38,15 @@ public:
     void reset();
 
     void print_status(uint8_t channel) const {
-        std::cout << " ------- Channel " << (int)channel << " -------------------------" << std::endl;
-        std::cout << "    -         Volume: " << (int)volume << std::endl;
-        std::cout << "    -    Tome period: " << (int)tone_period << std::endl;
-        std::cout << "    -        Counter: " << (int)counter << std::endl;
-        std::cout << "    -          Value: " << (int)value << std::endl;
-        std::cout << "    -       Disabled: " << (disabled ? "true" : "false") << std::endl;
-        std::cout << "    - Noise disabled: " << (noise_diabled ? "true" : "false") << std::endl;
-        std::cout << "    -   Use envelope: " << (use_envelope ? "true" : "false") << std::endl;
-        std::cout << std::endl;
+        std::println(" ------- Channel {} -------------------------", channel);
+        std::println("           Volume: {} ", volume);
+        std::println("      Tone period: {} ", tone_period);
+        std::println("          Counter: {} ", counter);
+        std::println("            Value: {} ", value);
+        std::println("         Disabled: {} ", disabled);
+        std::println("   Noise disabled: {} ", noise_diabled);
+        std::println("     Use envelope: {} ", use_envelope);
+        std::println();
     }
 
     uint16_t volume;
@@ -68,12 +67,12 @@ public:
     void reset();
 
     void print_status() const {
-        std::cout << " ------- Noise -------------------------" << std::endl;
-        std::cout << "    -  Period: " << (int)period << std::endl;
-        std::cout << "    - Counter: " << (int)counter << std::endl;
-        std::cout << "    -     Bit: " << (int)bit << std::endl;
-        std::cout << "    -     Rng: " << (int)rng << std::endl;
-        std::cout << std::endl;
+        std::println(" ------- Noise -------------------------");
+        std::println("     Period: {}", period);
+        std::println("    Counter: {}", counter);
+        std::println("        Bit: {}", bit);
+        std::println("        Rng: {}", rng);
+        std::println();
     }
 
     uint16_t period;

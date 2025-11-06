@@ -19,7 +19,6 @@
 #include <fcntl.h>
 #include <format>
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <print>
 #include <stdexcept>
@@ -84,11 +83,13 @@ void Memory::show(uint32_t pos, uint32_t length) const
 
     for (uint32_t i=0; i < length; i++) {
         if ((i % 16) == 0) {
-            std::cout << "    " << chars.str() << std::endl << "[" << pos + i << "] " << std::hex;
+            std::println("    {}", chars.str());
+            std::print("[{:04X}] ", pos + i);
             chars.str("");
         }
 
-        std::cout << std::setw(2) << std::setfill('0') << (unsigned int)mem[pos + i] << " ";
+        std::print("{:02x} ", (unsigned int)mem[pos + i]);
+
         if ((mem[pos + i] & 0x7f) >= 32) {
             chars << (char)(mem[pos + i] & 0x7f) << " ";
         }
@@ -96,7 +97,7 @@ void Memory::show(uint32_t pos, uint32_t length) const
             chars << "  ";
         }
     }
-    std::cout << std::endl;
+    std::println();
 }
 
 

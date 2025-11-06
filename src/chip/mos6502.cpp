@@ -15,11 +15,9 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <iostream>
-#include <cstdio>
+#include <print>
 
 #include "machine.hpp"
-
 #include "mos6502.hpp"
 #include "mos6502_opcodes.hpp"
 #include "mos6502_cycles.hpp"
@@ -195,7 +193,7 @@ void MOS6502::set_breakpoint(uint16_t address)
 {
     breakpoints.insert(address);
     has_breakpoints = true;
-    std::cout << "Set breakpoint at $" << std::hex << address << std::endl;
+    std::println("Set breakpoint at ${:04X}", address);
 }
 
 void MOS6502::PrintStat()
@@ -205,9 +203,8 @@ void MOS6502::PrintStat()
 
 void MOS6502::PrintStat(uint16_t address)
 {
-    std::cout << monitor.disassemble(address) << " ";
-    printf("A: %02X, X: %02X, Y: %02X  |  N: %d, Z: %d, C: %d, V: %d  |  SP: %02X\n",
-           A, X, Y, N, Z, C, V, SP);
+    std::print("${} ", monitor.disassemble(address));
+    std::println("\t\t[A: {:02X}, X: {:02X}, Y: {:02X}  |  N: {}, Z: {}, C: {}, V: {}  |  SP: {:02X}]", A, X, Y, (int)N, (int)Z, (int)C, (int)V, SP);
 }
 
 //   7                           0
@@ -465,7 +462,7 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
             if (nmi_flag) {
                 PC = memory_read_word_handler(machine, NMI_VECTOR_L);
                 nmi_flag = false;
-                std::cout << "NMI interrupt" << std::endl;
+                std::println("NMI interrupt");
             }
 
             else if (irq_flag) {
@@ -475,7 +472,7 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
         }
 
         if (has_breakpoints && breakpoints.contains(PC)) {
-            std::cout << "Found breakpoint at $" << std::hex << PC << std::endl;
+            std::println("Found breakpoint at ${:04X}", PC);
             do_break = true;
             return false;
         }
@@ -1313,7 +1310,7 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
             break;
 
         default:
-            std::cout << "Unhandled illegal opcode: $" << std::hex << (int)current_instruction << std::endl << std::endl;
+            std::println("Unhandled illegal opcode: ${:02X}\n", current_instruction);
 //            PrintStat(pc_initial);
             do_break = true;
             break;

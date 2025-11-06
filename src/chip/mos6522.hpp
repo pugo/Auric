@@ -19,9 +19,7 @@
 #define CHIP_MOS6522_H
 
 #include <map>
-#include <memory>
 #include <string>
-#include <iostream>
 
 class Machine;
 class Memory;

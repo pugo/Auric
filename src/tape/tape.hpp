@@ -18,9 +18,6 @@
 #ifndef TAPE_H
 #define TAPE_H
 
-#include <iostream>
-#include <memory>
-#include <map>
 
 class Tape
 {

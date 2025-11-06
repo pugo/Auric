@@ -18,9 +18,7 @@
 #ifndef TAPE_TAP_H
 #define TAPE_TAP_H
 
-#include <iostream>
 #include <memory>
-#include <map>
 
 #include "chip/mos6522.hpp"
 #include "tape.hpp"

@@ -18,11 +18,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <iostream>
-#include <memory>
 #include <filesystem>
-
-#include "machine.hpp"
 
 
 class Config

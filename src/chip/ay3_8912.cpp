@@ -15,10 +15,6 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <iostream>
-#include <bitset>
-#include <numeric>
-
 #include <machine.hpp>
 
 #include "ay3_8912.hpp"
@@ -240,7 +236,7 @@ void AY3_8912::SoundState::reset()
 
 void AY3_8912::SoundState::print_status()
 {
-    std::cout << "AY-3-8912 state:" << std::endl;
+    std::println("AY-3-8912 state:");
     for(uint8_t c=0; c < 3; c++) {
         channels[c].print_status(c);
     }

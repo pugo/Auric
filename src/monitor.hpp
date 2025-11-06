@@ -18,9 +18,8 @@
 #ifndef MONITOR_H
 #define MONITOR_H
 
-#include <iostream>
 #include <map>
-#include <vector>
+#include <string_view>
 
 #include "memory.hpp"
 
@@ -46,7 +45,7 @@ enum class Addressing
 struct Opcode
 {
     uint8_t opcode;
-    std::string name;
+    std::string_view name;
     Addressing addressing;
 };
 

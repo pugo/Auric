@@ -19,8 +19,6 @@
 #define MEMORY_H
 
 #include <filesystem>
-#include <iostream>
-#include <ostream>
 #include <cstdint>
 #include <vector>
 

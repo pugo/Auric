@@ -18,13 +18,7 @@
 #ifndef ULA_H
 #define ULA_H
 
-#include <map>
-#include <memory>
-#include <string>
-#include <iostream>
-
 #include "frontends/sdl/frontend.hpp"
-#include "machine.hpp"
 
 
 class ULA

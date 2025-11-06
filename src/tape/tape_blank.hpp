@@ -18,11 +18,6 @@
 #ifndef TAPE_BLANK_H
 #define TAPE_BLANK_H
 
-#include <iostream>
-#include <memory>
-#include <map>
-
-#include "chip/mos6522.hpp"
 #include "tape.hpp"
 
 

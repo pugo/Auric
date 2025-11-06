@@ -15,10 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <cstdlib>
 #include <print>
-#include <sstream>
-#include <string>
 
 #include <boost/log/trivial.hpp>
 #include <boost/log/core.hpp>
@@ -27,7 +24,6 @@
 #include <boost/program_options.hpp>
 
 #include "oric.hpp"
-#include "memory.hpp"
 
 namespace po = boost::program_options;
 namespace logging = boost::log;
@@ -75,7 +71,8 @@ bool Config::parse(int argc, char **argv)
         po::notify(vm);
 
         if (vm.count("help")) {
-            std::cout << "Usage: oric [options]" << std::endl << desc;
+            std::println("Usage: oric [options]\n");
+            desc.print(std::cout);
             return false;
         }
 
@@ -104,7 +101,6 @@ bool Config::parse(int argc, char **argv)
     catch(std::exception& e)
     {
         std::println("Argument error: {}", e.what());
-        std::cout << e.what() << std::endl;
         return false;
     }
     return true;

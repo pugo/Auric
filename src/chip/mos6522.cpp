@@ -16,11 +16,11 @@
 // =========================================================================
 
 #include <utility>
+#include <print>
+
 #include <machine.hpp>
 #include "mos6522.hpp"
 
-
-using namespace std;
 
 // VIA Lines        Oric usage
 // ----------       ---------------------------------
@@ -85,23 +85,23 @@ void MOS6522::State::reset()
 
 void MOS6522::State::print() const
 {
-    std::cout << "VIA stats:" << std::endl;
-    std::cout << "  -   ORA: " << (int)ora << std::endl;
-    std::cout << "  -  DDRA: " << (int)ddra << std::endl;
-    std::cout << "  -   ORB: " << (int)orb << std::endl;
-    std::cout << "  -  DDRB: " << (int)ddrb << std::endl;
-    std::cout << "  - T1C_L: " << (int)(t1_counter & 0x00ff) << std::endl;
-    std::cout << "  - T1C_H: " << (int)(t1_counter >> 8) << std::endl;
-    std::cout << "  - T1L_L: " << (int)t1_latch_low << std::endl;
-    std::cout << "  - T1L_H: " << (int)t1_latch_high << std::endl;
-    std::cout << "  - T2C_L: " << (int)(t2_counter & 0x00ff) << std::endl;
-    std::cout << "  - T2C_H: " << (int)(t2_counter >> 8) << std::endl;
-    std::cout << "  -    SR: " << (int)sr << std::endl;
-    std::cout << "  -   ACR: " << (int)acr << std::endl;
-    std::cout << "  -   PCR: " << (int)pcr << std::endl;
-    std::cout << "  -   IFR: " << (int)ifr << std::endl;
-    std::cout << "  -   IER: " << (int)ier << std::endl;
-    std::cout << "  - IORA2: " << (int)ora << std::endl;
+    std::println("VIA status:");
+    std::println("      ORA: {:02X}", ora);
+    std::println("     DDRA: {:02X}", ddra);
+    std::println("      ORB: {:02X}", orb);
+    std::println("     DDRB: {:02X}", ddrb);
+    std::println("    T1C_L: {:02X}", t1_counter & 0x00ff);
+    std::println("    T1C_H: {:02X}", t1_counter >> 8);
+    std::println("    T1L_L: {:02X}", t1_latch_low);
+    std::println("    T1L_H: {:02X}", t1_latch_high);
+    std::println("    T2C_L: {:02X}", t2_counter & 0x00ff);
+    std::println("    T2C_H: {:02X}", t2_counter >> 8);
+    std::println("       SR: {:02X}", sr);
+    std::println("      ACR: {:02X}", acr);
+    std::println("      PCR: {:02X}", pcr);
+    std::println("      IFR: {:02X}", ifr);
+    std::println("      IER: {:02X}", ier);
+    std::println("    IORA2: {:02X}", ora);
 }
 
 void MOS6522::State::sr_shift_in()
@@ -456,7 +456,6 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
                     if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
                     break;
             }
-//            machine.update_key_output();
             if (orb_changed_handler) { orb_changed_handler(machine, state.orb); }
             break;
         case ORA:

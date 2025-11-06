@@ -18,7 +18,6 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
-#include <iostream>
 #include <memory>
 #include <chrono>
 #include <optional>
