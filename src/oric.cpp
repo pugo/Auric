@@ -36,6 +36,7 @@ namespace po = boost::program_options;
 
 const std::string_view rom_basic10{"ROMS/basic10.rom"};
 const std::string_view rom_basic11b{"ROMS/basic11b.rom"};
+const std::string_view rom_microdisk{"ROMS/microdis.rom"};
 
 
 Oric::Oric(Config& config) :
@@ -54,7 +55,6 @@ Oric::~Oric()
 {
 }
 
-
 void Oric::init()
 {
     machine = std::make_unique<Machine>(*this);
@@ -70,7 +70,7 @@ void Oric::init()
 
     try {
         if (config.use_oric1_rom()) {
-//    	machine->memory.load("ROMS/test108k.rom", 0xc000);
+            //    	machine->memory.load("ROMS/test108k.rom", 0xc000);
             machine->memory.load(rom_basic10, 0xc000);
         }
         else {
@@ -79,6 +79,13 @@ void Oric::init()
     }
     catch (const std::runtime_error& err) {
         throw(std::runtime_error(std::format("Failed loading ROM: {}", err.what())));
+    }
+
+    try {
+        machine->disk_rom.load(rom_microdisk, 0x0000);
+    }
+    catch (const std::runtime_error& err) {
+        throw(std::runtime_error(std::format("Failed loading disk drive ROM: {}", err.what())));
     }
 }
 

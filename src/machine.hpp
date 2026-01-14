@@ -139,9 +139,18 @@ public:
 
     static uint8_t read_byte(Machine& machine, uint16_t address)
     {
-        if (address >= 0x300 && address < 0x400) {
+        if (address >= 0x310 && address <= 0x314) {
+            std::println("WD1793 read");
+            return 0xff;
+        }
+        else if (address >= 0x300 && address < 0x400) {
             return machine.mos_6522->read_byte(address);
         }
+
+        if (address >= 0xc000 && machine.disk_rom_enabled) {
+            return machine.disk_rom.mem[(address - 0xc000) & 0x1fff];
+        }
+
         return machine.memory.mem[address];
     }
 
@@ -152,12 +161,19 @@ public:
 
     static uint16_t read_word(Machine &machine, uint16_t address)
     {
+        // If the low byte is inside the disk ROM overlay, return a word from disk ROM
+        if (address >= 0xc000 && address < 0xc000 + 0x2000) {
+            if (machine.disk_rom_enabled) {
+                return machine.disk_rom.mem[(address - 0xc000) & 0x1fff] | (machine.disk_rom.mem[(address + 1 - 0xc000) & 0x1fff] << 8);
+            }
+        }
+
         return machine.memory.mem[address] | machine.memory.mem[address + 1] << 8;
     }
 
     static uint16_t read_word_zp(Machine &machine, uint8_t address)
     {
-        return machine.memory.mem[address] | machine.memory.mem[address + 1 & 0xff] << 8;
+        return machine.memory.mem[address] | (machine.memory.mem[address + 1 & 0xff] << 8);
     }
 
     static void write_byte(Machine &machine, uint16_t address, uint8_t val)
@@ -166,7 +182,10 @@ public:
             return;
         }
 
-        if (address >= 0x300 && address < 0x400) {
+        if (address >= 0x310 && address <= 0x314) {
+            std::println("WD1793 write: {:02x}", val);
+        }
+        else if (address >= 0x300 && address < 0x400) {
             machine.mos_6522->write_byte(address, val);
         }
 
@@ -212,6 +231,8 @@ public:
 
     bool break_exec;
     Memory memory;
+    Memory disk_rom;
+    bool disk_rom_enabled;
     Frontend* frontend;
     bool warpmode_on;
 
