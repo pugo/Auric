@@ -105,7 +105,7 @@ MOS6502::MOS6502(Machine& a_Machine) :
     instruction_cycles(0),
     current_instruction(0),
     current_cycle(0),
-    monitor(memory),
+    monitor(machine),
     has_breakpoints(false)
 {
 }
@@ -125,6 +125,7 @@ void MOS6502::Reset()
     C = false;
 
     PC = memory_read_byte_handler(machine, RESET_VECTOR_L) + (memory_read_byte_handler(machine, RESET_VECTOR_H) << 8);
+    std::print("PC: ${:04X}\t", PC);
     SP = 0xff;
     irq_flag = false;
     nmi_flag = false;
@@ -135,6 +136,8 @@ void MOS6502::Reset()
     instruction_cycles = 0;
     current_instruction = 0;
     current_cycle = 0;
+
+    monitor.memory_read_byte_handler = memory_read_byte_handler;
 }
 
 void MOS6502::save_to_snapshot(Snapshot& snapshot) const

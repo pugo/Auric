@@ -22,6 +22,7 @@
 #include <string_view>
 
 #include "memory.hpp"
+#include "chip/memory_interface.hpp"
 
 
 enum class Addressing
@@ -53,7 +54,7 @@ struct Opcode
 class Monitor
 {
 public:
-    explicit Monitor(Memory& memory);
+    explicit Monitor(Machine& machine);
 
     /**
      * Disassemble the instruction at given address.
@@ -70,8 +71,10 @@ public:
      */
     uint16_t disassemble(uint16_t address, size_t bytes);
 
+    f_memory_read_byte_handler memory_read_byte_handler;
+
 private:
-    Memory& memory;
+    Machine& machine;
 
     std::map<uint8_t, Opcode> opcodes;
 };

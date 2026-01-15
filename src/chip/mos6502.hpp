@@ -27,6 +27,7 @@
 #ifndef MOS6502_H
 #define MOS6502_H
 
+#include "memory_interface.hpp"
 #include "mos6502_opcodes.hpp"
 #include "monitor.hpp"
 #include "snapshot.hpp"
@@ -49,15 +50,6 @@ class Machine;
 class MOS6502;
 class Memory;
 
-typedef uint8_t (*f_memory_read_byte_handler)(Machine &oric, uint16_t address);
-typedef uint8_t (*f_memory_read_byte_zp_handler)(Machine &oric, uint8_t address);
-
-typedef uint16_t (*f_memory_read_word_handler)(Machine &oric, uint16_t address);
-typedef uint16_t (*f_memory_read_word_zp_handler)(Machine &oric, uint8_t address);
-
-typedef void (*f_memory_write_byte_handler)(Machine &oric, uint16_t address, uint8_t val);
-typedef void (*f_memory_write_byte_zp_handler)(Machine &oric, uint8_t address, uint8_t val);
-
 
 class MOS6502
 {
@@ -69,7 +61,10 @@ public:
      * Get debug monitor.
      * @return reference to debug monitor
      */
-    Monitor& get_monitor() { return monitor; }
+    Monitor& get_monitor()
+    {
+        return monitor;
+    }
 
     /**
      * Set program counter address.
@@ -184,6 +179,8 @@ public:
     f_memory_write_byte_handler memory_write_byte_handler;
     f_memory_write_byte_zp_handler memory_write_byte_zp_handler;
 
+    uint16_t PC;
+
 protected:
     /**
      * Print status and instruction at given address.
@@ -206,7 +203,6 @@ protected:
     Machine& machine;
     Memory& memory;
 
-    uint16_t PC;
     uint8_t SP;
     bool quiet;
 

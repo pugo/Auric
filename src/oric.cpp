@@ -71,10 +71,10 @@ void Oric::init()
     try {
         if (config.use_oric1_rom()) {
             //    	machine->memory.load("ROMS/test108k.rom", 0xc000);
-            machine->memory.load(rom_basic10, 0xc000);
+            machine->oric_rom.load(rom_basic10, 0x0000);
         }
         else {
-            machine->memory.load(rom_basic11b, 0xc000);
+            machine->oric_rom.load(rom_basic11b, 0x0000);
         }
     }
     catch (const std::runtime_error& err) {

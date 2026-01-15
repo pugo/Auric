@@ -236,13 +236,12 @@ std::vector<Opcode> opcodes_list = {
 };
 
 
-Monitor::Monitor(Memory& memory) :
-    memory(memory)
+Monitor::Monitor(Machine& machine) :
+    machine(machine)
 {
     for (auto& opcode : opcodes_list) {
         opcodes[opcode.opcode] = opcode;
     }
-
 }
 
 
@@ -271,7 +270,7 @@ uint16_t Monitor::disassemble(uint16_t address)
 {
     std::print("${:04X}\t", address);
 
-    uint8_t op = memory.mem[address++];
+    uint8_t op = memory_read_byte_handler(machine, address++);
     std::print("${:02X}\t", op);
 
     if (auto it = opcodes.find(op); it != opcodes.end())
@@ -282,25 +281,25 @@ uint16_t Monitor::disassemble(uint16_t address)
         {
             case Addressing::immediate:
             {
-                uint8_t value = memory.mem[address++];
+                uint8_t value = memory_read_byte_handler(machine, address++);
                 std::print("#${:02X}\t", value);
                 break;
             }
             case Addressing::zero_page:
             {
-                uint8_t value = memory.mem[address++];
+                uint8_t value = memory_read_byte_handler(machine, address++);
                 std::print("${:02X}\t", value);
                 break;
             }
             case Addressing::zero_page_indexed_x:
             {
-                uint8_t value = memory.mem[address++];
+                uint8_t value = memory_read_byte_handler(machine, address++);
                 std::print("${:02X},X\t", value);
                 break;
             }
             case Addressing::zero_page_indexed_y:
             {
-                uint8_t value = memory.mem[address++];
+                uint8_t value = memory_read_byte_handler(machine, address++);
                 std::print("${:02X},Y\t", value);
                 break;
             }
@@ -311,47 +310,47 @@ uint16_t Monitor::disassemble(uint16_t address)
             }
             case Addressing::indirect_absolute:
             {
-                uint16_t value = memory.mem[address++];
-                value += memory.mem[address++] << 8;
+                uint16_t value = memory_read_byte_handler(machine, address++);
+                value += memory_read_byte_handler(machine, address++) << 8;
                 std::print("(${:04X})\t", value);
                 break;
             }
             case Addressing::absolute:
             {
-                uint16_t value = memory.mem[address++];
-                value += memory.mem[address++] << 8;
+                uint16_t value = memory_read_byte_handler(machine, address++);
+                value += memory_read_byte_handler(machine, address++) << 8;
                 std::print("${:04X}\t", value);
                 break;
             }
             case Addressing::absolute_indexed_x:
             {
-                uint16_t value = memory.mem[address++];
-                value += memory.mem[address++] << 8;
+                uint16_t value = memory_read_byte_handler(machine, address++);
+                value += memory_read_byte_handler(machine, address++) << 8;
                 std::print("${:04X},X\t", value);
                 break;
             }
             case Addressing::absolute_indexed_y:
             {
-                uint16_t value = memory.mem[address++];
-                value += memory.mem[address++] << 8;
+                uint16_t value = memory_read_byte_handler(machine, address++);
+                value += memory_read_byte_handler(machine, address++) << 8;
                 std::print("${:04X},Y\t", value);
                 break;
             }
             case Addressing::indexed_indirect_x:
             {
-                uint8_t value = memory.mem[address++];
+                uint8_t value = memory_read_byte_handler(machine, address++);
                 std::print("(${:02X},X)\t", value);
                 break;
             }
             case Addressing::indirect_indexed_y:
             {
-                uint8_t value = memory.mem[address++];
+                uint8_t value = memory_read_byte_handler(machine, address++);
                 std::print("(${:02X},Y)\t", value);
                 break;
             }
             case Addressing::relative:
             {
-                uint8_t rel = memory.mem[address++];
+                uint8_t rel = memory_read_byte_handler(machine, address++);
                 uint16_t addr = rel & 0x80 ? (address - ((rel ^ 0xff)+1)) : (address + rel);
                 std::print("${:04X}\t", addr);
                 break;

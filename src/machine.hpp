@@ -139,16 +139,24 @@ public:
 
     static uint8_t read_byte(Machine& machine, uint16_t address)
     {
-        if (address >= 0x310 && address <= 0x314) {
-            std::println("WD1793 read");
-            return 0xff;
+        if (!machine.oric_rom_enabled) {
+            if (machine.disk_rom_enabled && address >= 0xe000) {
+                return machine.disk_rom.mem[address - 0xe000];
+            }
         }
-        else if (address >= 0x300 && address < 0x400) {
-            return machine.mos_6522->read_byte(address);
+        else {
+            if (address >= 0xc000) {
+                return machine.oric_rom.mem[address - 0xc000];
+            }
         }
 
-        if (address >= 0xc000 && machine.disk_rom_enabled) {
-            return machine.disk_rom.mem[(address - 0xc000) & 0x1fff];
+        if (address >= 0x300 && address < 0x400) {
+            if (address >= 0x310 && address < 0x31c) {
+                std::println("WD1793 read");
+                return 0x0;
+            }
+
+            return machine.mos_6522->read_byte(address);
         }
 
         return machine.memory.mem[address];
@@ -159,16 +167,23 @@ public:
         return machine.memory.mem[address];
     }
 
-    static uint16_t read_word(Machine &machine, uint16_t address)
-    {
-        // If the low byte is inside the disk ROM overlay, return a word from disk ROM
-        if (address >= 0xc000 && address < 0xc000 + 0x2000) {
-            if (machine.disk_rom_enabled) {
-                return machine.disk_rom.mem[(address - 0xc000) & 0x1fff] | (machine.disk_rom.mem[(address + 1 - 0xc000) & 0x1fff] << 8);
-            }
-        }
+    // static uint16_t read_word(Machine &machine, uint16_t address)
+    // {
+    //     // If the low byte is inside the disk ROM overlay, return a word from disk ROM
+    //     if (address >= 0xc000) {
+    //         if (machine.disk_rom_enabled) {
+    //             return machine.disk_rom.mem[(address - 0xc000) & 0x1fff] | (machine.disk_rom.mem[(address + 1 - 0xc000) & 0x1fff] << 8);
+    //         }
+    //     }
+    //
+    //     return machine.memory.mem[address] | machine.memory.mem[address + 1] << 8;
+    // }
 
-        return machine.memory.mem[address] | machine.memory.mem[address + 1] << 8;
+    static uint16_t read_word(Machine& m, uint16_t addr)
+    {
+        uint8_t lo = read_byte(m, addr);
+        uint8_t hi = read_byte(m, addr + 1);
+        return uint16_t(lo) | (uint16_t(hi) << 8);
     }
 
     static uint16_t read_word_zp(Machine &machine, uint8_t address)
@@ -178,15 +193,28 @@ public:
 
     static void write_byte(Machine &machine, uint16_t address, uint8_t val)
     {
-        if (address >= 0xc000) {
-            return;
+        if (! machine.oric_rom_enabled) {
+            if (machine.disk_rom_enabled && address >= 0xe000) {
+                return;
+            }
+        }
+        else {
+            if (address >= 0xc000) {
+                return;
+            }
         }
 
-        if (address >= 0x310 && address <= 0x314) {
-            std::println("WD1793 write: {:02x}", val);
-        }
-        else if (address >= 0x300 && address < 0x400) {
+        if (address >= 0x300 && address < 0x400) {
+            if (address >= 0x310 && address < 0x31c) {
+                std::println("WD1793 write: {:04x} <- {:02x}", address, val);
+                if (address == 0x314) {
+                    machine.oric_rom_enabled = val & 0x02;
+                }
+                return;
+            }
+
             machine.mos_6522->write_byte(address, val);
+            return;
         }
 
         machine.memory.mem[address] = val;
@@ -231,8 +259,11 @@ public:
 
     bool break_exec;
     Memory memory;
+    Memory oric_rom;
     Memory disk_rom;
+    bool oric_rom_enabled;
     bool disk_rom_enabled;
+
     Frontend* frontend;
     bool warpmode_on;
 
