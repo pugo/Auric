@@ -22,6 +22,7 @@
 #include <boost/log/trivial.hpp>
 
 #include "machine.hpp"
+#include "chip/memory_interface.hpp"
 #include "oric.hpp"
 #include "frontends/sdl/frontend.hpp"
 #include "frontends/flags.hpp"
@@ -63,12 +64,14 @@ Machine::Machine(Oric& oric) :
     frontend(nullptr),
     ula(*this, memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
     oric(oric),
+    monitor(*this, Machine::read_byte),
     memory(oric_ram_size),
     oric_rom(oric_rom_size),
     disk_rom(disk_rom_size),
-    oric_rom_enabled(false),
-    disk_rom_enabled(true),
+    oric_rom_enabled(true),
+    disk_rom_enabled(false),
     tape(nullptr),
+    disassemble_execution(false),
     cycle_count(0),
     warpmode_on(false),
     break_exec(false),
@@ -181,6 +184,10 @@ void Machine::run(Oric* oric)
 
             if (cpu->exec(false, break_exec)) {
                 update_key_output();
+
+                if (disassemble_execution) {
+                    PrintStat(cpu->get_current_instruction_addr());
+                }
             }
 
             if (break_exec) {
@@ -295,4 +302,14 @@ bool Machine::toggle_warp_mode()
 
     BOOST_LOG_TRIVIAL(info) << "Warp mode: " << (warpmode_on ? "on" : "off");
     return warpmode_on;
+}
+
+void Machine::PrintStat()
+{
+    PrintStat(cpu->PC);
+}
+
+void Machine::PrintStat(uint16_t address)
+{
+    std::println("${}\t\t{} ", monitor.disassemble(address), cpu->get_register_summary());
 }

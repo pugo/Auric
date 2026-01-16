@@ -66,7 +66,7 @@ void Oric::init()
 
     frontend->get_status_bar().show_text_for("Starting ORIC!", std::chrono::seconds(3));
 
-    machine->cpu->set_quiet(true);
+    machine->set_disassemble_execution(false);
 
     try {
         if (config.use_oric1_rom()) {
@@ -212,17 +212,17 @@ Oric::State Oric::handle_command(std::string& command_line)
     else if (cmd == "d") { // info
         if (parts.size() == 1) {
             uint16_t addr = (last_address == 0) ? machine->cpu->get_pc() : last_address;
-            last_address = machine->cpu->get_monitor().disassemble(addr, 30);
+            last_address = machine->get_monitor().disassemble(addr, 30);
             return STATE_MON;
         }
         if (parts.size() < 3) {
             std::println("Use: d <start address> <length>");
             return STATE_MON;
         }
-        last_address = machine->cpu->get_monitor().disassemble(string_to_word(parts[1]), string_to_word(parts[2]));
+        last_address = machine->get_monitor().disassemble(string_to_word(parts[1]), string_to_word(parts[2]));
     }
     else if (cmd == "debug") {
-        machine->cpu->set_quiet(false);
+        machine->set_disassemble_execution(true);
         std::println("Debug mode enabled");
     }
     else if (cmd == "g") { // go <address>
@@ -230,7 +230,7 @@ Oric::State Oric::handle_command(std::string& command_line)
     }
     else if (cmd == "i") { // info
         std::println("PC: ${:04X}", machine->cpu->get_pc());
-        machine->cpu->PrintStat();
+        machine->PrintStat();
     }
     else if (cmd == "m") { // info
         if (parts.size() < 3) {
@@ -246,14 +246,14 @@ Oric::State Oric::handle_command(std::string& command_line)
         }
         uint16_t addr = string_to_word(parts[1]);
         machine->cpu->set_pc(addr);
-        machine->cpu->PrintStat();
+        machine->PrintStat();
     }
     else if (cmd == "q") { // quit
         std::println("quit");
         return STATE_QUIT;
     }
     else if (cmd == "quiet") {
-        machine->cpu->set_quiet(true);
+        machine->set_disassemble_execution(false);
         std::println("Quiet mode enabled");
     }
     else if (cmd == "s") { // step
@@ -267,7 +267,7 @@ Oric::State Oric::handle_command(std::string& command_line)
                 std::println("Instruction BRK executed.");
             }
         }
-        machine->cpu->PrintStat();
+        machine->PrintStat();
     }
     else if (cmd == "sr" || cmd == "softreset") {
         machine->cpu->NMI();

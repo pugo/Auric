@@ -264,9 +264,15 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 
 void Frontend::close_graphics()
 {
-    SDL_DestroyRenderer(sdl_renderer);
-    SDL_DestroyWindow(sdl_window);
-    sdl_window = nullptr;
+    if (sdl_renderer != nullptr) {
+        SDL_DestroyRenderer(sdl_renderer);
+        sdl_renderer = nullptr;
+    }
+
+    if (sdl_window != nullptr) {
+        SDL_DestroyWindow(sdl_window);
+        sdl_window = nullptr;
+    }
 }
 
 

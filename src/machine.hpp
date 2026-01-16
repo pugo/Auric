@@ -27,8 +27,8 @@
 #include "chip/ay3_8912.hpp"
 #include "chip/ula.hpp"
 #include "memory.hpp"
+#include "monitor.hpp"
 #include "snapshot.hpp"
-
 #include "tape/tape.hpp"
 
 class Oric;
@@ -72,6 +72,15 @@ public:
      * Reset the machine.
      */
     void reset() const;
+
+    /**
+     * Get debug monitor.
+     * @return reference to debug monitor
+     */
+    Monitor& get_monitor()
+    {
+        return monitor;
+    }
 
     /**
      * Run the machine.
@@ -134,6 +143,20 @@ public:
      * @return true if warp mode is on
      */
     bool toggle_warp_mode();
+
+    /**
+     * Set whether to disassemble executed instructions.
+     * @param disassemble true to disassemble executed instructions
+     */
+    void set_disassemble_execution(bool disassemble)
+    {
+        disassemble_execution = disassemble;
+    }
+
+    /**
+     * Print CPU status.
+     */
+    void PrintStat();
 
     // --- Memory functions -------------------
 
@@ -206,7 +229,8 @@ public:
 
         if (address >= 0x300 && address < 0x400) {
             if (address >= 0x310 && address < 0x31c) {
-                std::println("WD1793 write: {:04x} <- {:02x}", address, val);
+                std::println
+                ("WD1793 write: {:04x} <- {:02x}", address, val);
                 if (address == 0x314) {
                     machine.oric_rom_enabled = val & 0x02;
                 }
@@ -268,10 +292,19 @@ public:
     bool warpmode_on;
 
 protected:
+    /**
+     * Print status and instruction at given address.
+     * @param address
+     */
+    void PrintStat(uint16_t address);
+
     ULA ula;
     Oric& oric;
+    Monitor monitor;
+
     std::unique_ptr<Tape> tape;
 
+    bool disassemble_execution;
     int32_t cycle_count;
     std::chrono::high_resolution_clock::time_point next_frame_tp;
 

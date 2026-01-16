@@ -16,6 +16,7 @@
 // =========================================================================
 
 #include <print>
+#include <format>
 
 #include "machine.hpp"
 #include "mos6502.hpp"
@@ -88,7 +89,6 @@ MOS6502::MOS6502(Machine& a_Machine) :
     C(false),
     PC(0),
     SP(0),
-    quiet(true),
     machine(a_Machine),
     irq_flag(false),
     nmi_flag(false),
@@ -105,7 +105,6 @@ MOS6502::MOS6502(Machine& a_Machine) :
     instruction_cycles(0),
     current_instruction(0),
     current_cycle(0),
-    monitor(machine),
     has_breakpoints(false)
 {
 }
@@ -136,8 +135,6 @@ void MOS6502::Reset()
     instruction_cycles = 0;
     current_instruction = 0;
     current_cycle = 0;
-
-    monitor.memory_read_byte_handler = memory_read_byte_handler;
 }
 
 void MOS6502::save_to_snapshot(Snapshot& snapshot) const
@@ -199,16 +196,12 @@ void MOS6502::set_breakpoint(uint16_t address)
     std::println("Set breakpoint at ${:04X}", address);
 }
 
-void MOS6502::PrintStat()
+std::string MOS6502::get_register_summary()
 {
-    PrintStat(PC);
+    return std::format("[A: {:02X}, X: {:02X}, Y: {:02X}  |  N: {}, Z: {}, C: {}, V: {}  |  SP: {:02X}]",
+                       A, X, Y, (int)N, (int)Z, (int)C, (int)V, SP);
 }
 
-void MOS6502::PrintStat(uint16_t address)
-{
-    std::print("${} ", monitor.disassemble(address));
-    std::println("\t\t[A: {:02X}, X: {:02X}, Y: {:02X}  |  N: {}, Z: {}, C: {}, V: {}  |  SP: {:02X}]", A, X, Y, (int)N, (int)Z, (int)C, (int)V, SP);
-}
 
 //   7                           0
 // +---+---+---+---+---+---+---+---+
@@ -454,7 +447,6 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
         if (do_interrupt) {
             do_interrupt = false;
 
-
             PUSH_BYTE_STACK(PC >> 8);
             PUSH_BYTE_STACK(PC & 0xff);
             PUSH_BYTE_STACK((get_p() & ~FLAG_B) | 0x20);  // B=0, bit5=1
@@ -489,8 +481,7 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
     uint16_t addr;
     int i;
 
-    uint16_t pc_initial = PC;
-
+    current_instruction_addr = PC;
     instruction_load = true;
     ++PC;
 
@@ -1314,13 +1305,8 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
 
         default:
             std::println("Unhandled illegal opcode: ${:02X}\n", current_instruction);
-//            PrintStat(pc_initial);
             do_break = true;
             break;
-    }
-
-    if (! quiet) {
-        PrintStat(pc_initial);
     }
 
     return true;

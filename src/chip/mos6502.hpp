@@ -29,7 +29,6 @@
 
 #include "memory_interface.hpp"
 #include "mos6502_opcodes.hpp"
-#include "monitor.hpp"
 #include "snapshot.hpp"
 
 #include <set>
@@ -56,15 +55,6 @@ class MOS6502
 public:
     explicit MOS6502(Machine& a_Machine);
     ~MOS6502() = default;
-
-    /**
-     * Get debug monitor.
-     * @return reference to debug monitor
-     */
-    Monitor& get_monitor()
-    {
-        return monitor;
-    }
 
     /**
      * Set program counter address.
@@ -97,20 +87,9 @@ public:
     void set_p(uint8_t p);
 
     /**
-     * Set quiet status.
-     * @param val new quiet value
-     */
-    void set_quiet(bool val) { quiet = val; }
-
-    /**
      * Reset the processor.
      */
     void Reset();
-
-    /**
-     * Print CPU status.
-     */
-    void PrintStat();
 
     /**
      * Calculate CPU cycles used by instruction at PC.
@@ -139,6 +118,11 @@ public:
     void load_from_snapshot(Snapshot& snapshot);
 
     void set_breakpoint(uint16_t address);
+
+    std::string get_register_summary();
+
+    uint16_t get_current_instruction_addr() const { return current_instruction_addr; }
+
 
     // The public exposure of variables like below is uncommon for normal projects,
     // but this is an emulator where the chips must be able to quickly access each
@@ -183,12 +167,6 @@ public:
 
 protected:
     /**
-     * Print status and instruction at given address.
-     * @param address
-     */
-    void PrintStat(uint16_t address);
-
-    /**
      * Implementation of ADC instruction.
      * @param value value to add
      */
@@ -204,7 +182,6 @@ protected:
     Memory& memory;
 
     uint8_t SP;
-    bool quiet;
 
     bool irq_flag;
     bool nmi_flag;
@@ -213,10 +190,9 @@ protected:
 
     bool instruction_load;
     uint8_t instruction_cycles;
+    uint16_t current_instruction_addr;
     uint8_t current_instruction;
     uint8_t current_cycle;
-
-    Monitor monitor;
 
     std::set<uint16_t> breakpoints;
     bool has_breakpoints;

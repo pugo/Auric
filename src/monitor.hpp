@@ -54,7 +54,7 @@ struct Opcode
 class Monitor
 {
 public:
-    explicit Monitor(Machine& machine);
+    explicit Monitor(Machine& machine, f_memory_read_byte_handler&& read_byte_handler);
 
     /**
      * Disassemble the instruction at given address.
@@ -71,10 +71,10 @@ public:
      */
     uint16_t disassemble(uint16_t address, size_t bytes);
 
-    f_memory_read_byte_handler memory_read_byte_handler;
 
 private:
     Machine& machine;
+    f_memory_read_byte_handler memory_read_byte_handler;
 
     std::map<uint8_t, Opcode> opcodes;
 };

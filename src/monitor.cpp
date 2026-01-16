@@ -236,8 +236,9 @@ std::vector<Opcode> opcodes_list = {
 };
 
 
-Monitor::Monitor(Machine& machine) :
-    machine(machine)
+Monitor::Monitor(Machine& machine, f_memory_read_byte_handler&& read_byte_handler) :
+    machine(machine),
+    memory_read_byte_handler(read_byte_handler)
 {
     for (auto& opcode : opcodes_list) {
         opcodes[opcode.opcode] = opcode;
