@@ -64,6 +64,11 @@ public:
     void init_ay3();
 
     /**
+     * Import the disk support.
+     */
+    void init_disk();
+
+    /**
      * Import the tape support.
      */
     void init_tape();
@@ -190,23 +195,9 @@ public:
         return machine.memory.mem[address];
     }
 
-    // static uint16_t read_word(Machine &machine, uint16_t address)
-    // {
-    //     // If the low byte is inside the disk ROM overlay, return a word from disk ROM
-    //     if (address >= 0xc000) {
-    //         if (machine.disk_rom_enabled) {
-    //             return machine.disk_rom.mem[(address - 0xc000) & 0x1fff] | (machine.disk_rom.mem[(address + 1 - 0xc000) & 0x1fff] << 8);
-    //         }
-    //     }
-    //
-    //     return machine.memory.mem[address] | machine.memory.mem[address + 1] << 8;
-    // }
-
     static uint16_t read_word(Machine& m, uint16_t addr)
     {
-        uint8_t lo = read_byte(m, addr);
-        uint8_t hi = read_byte(m, addr + 1);
-        return uint16_t(lo) | (uint16_t(hi) << 8);
+        return read_byte(m, addr) | (read_byte(m, addr + 1) << 8);
     }
 
     static uint16_t read_word_zp(Machine &machine, uint8_t address)

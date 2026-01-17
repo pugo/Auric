@@ -117,10 +117,22 @@ public:
      */
     void load_from_snapshot(Snapshot& snapshot);
 
+    /**
+     * Set breakpoint on specified address.
+     * @param address address to break on
+     */
     void set_breakpoint(uint16_t address);
 
+    /**
+     * Get string presenting the current register states.
+     * @return string with register states
+     */
     std::string get_register_summary();
 
+    /**
+     * Return address of the current instruction.
+     * @return address of current instruction
+     */
     uint16_t get_current_instruction_addr() const { return current_instruction_addr; }
 
 

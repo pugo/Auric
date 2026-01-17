@@ -63,7 +63,8 @@ bool Config::parse(int argc, char **argv)
             ("zoom,z", po::value<int>(&zoom_arg)->default_value(3), "window zoom 1-10 (default: 3)")
             ("monitor,m", po::bool_switch(&_start_in_monitor), "start in monitor mode")
             ("oric1,1", po::bool_switch(&_use_oric1_rom), "use Oric 1 mode (default: Atmos mode)")
-            ("tape,t", po::value<std::filesystem::path>(&_tape_path), "tape file to use")
+            ("disk,d", po::value<std::filesystem::path>(&_disk_path), "disk image file to use")
+            ("tape,t", po::value<std::filesystem::path>(&_tape_path), "tape image file to use")
             ("verbose,v", po::bool_switch(&_verbose), "verbose output");
 
         po::variables_map vm;

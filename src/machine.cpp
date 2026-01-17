@@ -91,6 +91,7 @@ void Machine::init(Frontend* frontend)
     init_cpu();
     init_mos6522();
     init_ay3();
+    init_disk();
     init_tape();
 }
 
@@ -135,6 +136,15 @@ void Machine::init_ay3()
     // AY data bus reads from VIA ORA (Output Register A).
     ay3->m_read_data_handler = read_via_ora;
     //	ay3->m_write_data_handler = write_vi
+}
+
+void Machine::init_disk()
+{
+    if (! oric.get_config().disk_path().empty()) {
+        BOOST_LOG_TRIVIAL(info) << "Starting disk drive";
+        oric_rom_enabled = false;
+        disk_rom_enabled = true;
+    }
 }
 
 void Machine::init_tape()

@@ -319,6 +319,7 @@ uint8_t MOS6502::time_instruction()
     uint8_t b1;
     uint16_t addr;
     current_instruction = memory_read_byte_handler(machine, _pc);
+    current_instruction_addr = PC;
 
     switch(current_instruction)
     {
@@ -481,7 +482,6 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
     uint16_t addr;
     int i;
 
-    current_instruction_addr = PC;
     instruction_load = true;
     ++PC;
 
