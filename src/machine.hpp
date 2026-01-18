@@ -30,6 +30,7 @@
 #include "monitor.hpp"
 #include "snapshot.hpp"
 #include "tape/tape.hpp"
+#include "disk/disk.hpp"
 
 class Oric;
 class Frontend;
@@ -85,6 +86,15 @@ public:
     Monitor& get_monitor()
     {
         return monitor;
+    }
+
+    /**
+     * Set whether the Oric ROM is enabled.
+     * @param enabled true to enable Oric ROM
+     */
+    void set_oric_rom_enabled(bool enabled)
+    {
+        oric_rom_enabled = enabled;
     }
 
     /**
@@ -220,11 +230,7 @@ public:
 
         if (address >= 0x300 && address < 0x400) {
             if (address >= 0x310 && address < 0x31c) {
-                std::println
-                ("WD1793 write: {:04x} <- {:02x}", address, val);
-                if (address == 0x314) {
-                    machine.oric_rom_enabled = val & 0x02;
-                }
+                machine.disk->write_byte(address - 0x310, val);
                 return;
             }
 
@@ -293,6 +299,7 @@ protected:
     Oric& oric;
     Monitor monitor;
 
+    std::unique_ptr<Disk> disk;
     std::unique_ptr<Tape> tape;
 
     bool disassemble_execution;

@@ -21,11 +21,13 @@
 #include <boost/assign.hpp>
 #include <boost/log/trivial.hpp>
 
-#include "machine.hpp"
 #include "chip/memory_interface.hpp"
-#include "oric.hpp"
+#include "disk/disk_microdrive.hpp"
+#include "disk/disk_none.hpp"
 #include "frontends/sdl/frontend.hpp"
 #include "frontends/flags.hpp"
+#include "machine.hpp"
+#include "oric.hpp"
 #include "tape/tape_tap.hpp"
 #include "tape/tape_blank.hpp"
 
@@ -141,9 +143,14 @@ void Machine::init_ay3()
 void Machine::init_disk()
 {
     if (! oric.get_config().disk_path().empty()) {
+        disk = std::make_unique<DiskMicrodrive>(*this);
+
         BOOST_LOG_TRIVIAL(info) << "Starting disk drive";
         oric_rom_enabled = false;
         disk_rom_enabled = true;
+    }
+    else {
+        disk = std::make_unique<DiskNone>();
     }
 }
 

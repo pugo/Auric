@@ -18,6 +18,7 @@
 #ifndef DISK_H
 #define DISK_H
 
+#include <memory>
 
 class Disk
 {
@@ -44,6 +45,20 @@ public:
      * Execute one cycle.
      */
     virtual void exec() = 0;
+
+    /**
+     * Read register value.
+     * @param offset register to read
+     * @return value of register
+     */
+    virtual uint8_t read_byte(uint16_t offset) = 0;
+
+    /**
+     * Write register value.
+     * @param offset register to write
+     * @param value new value
+     */
+    virtual void write_byte(uint16_t offset, uint8_t value) = 0;
 };
 
 #endif // DISK_H

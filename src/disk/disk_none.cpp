@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2026 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -15,56 +15,31 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <utility>
 #include <print>
 
-#include <machine.hpp>
-#include "wd1793.hpp"
+#include "disk_none.hpp"
 
 
-void WD1793::State::reset()
+bool DiskNone::init()
 {
-    data = 0x00;
-    track = 0x00;
-    sector = 0x00;
-    command = 0x00;
-    status = 0x00;
+    return true;
 }
 
-void WD1793::State::print() const
+void DiskNone::reset()
+{}
+
+void DiskNone::print_stat()
 {
+    std::println("Disk None");;
 }
 
-// ===== MOS6522 =====
+void DiskNone::exec()
+{}
 
-WD1793::WD1793(Machine& a_Machine) :
-    machine(a_Machine),
-    state()
+uint8_t DiskNone::read_byte(uint16_t offset)
 {
-    state.reset();
+    return 0x00;
 }
 
-void WD1793::save_to_snapshot(Snapshot& snapshot)
-{
-}
-
-void WD1793::load_from_snapshot(Snapshot& snapshot)
-{
-}
-
-void WD1793::exec()
-{
-
-}
-
-uint8_t WD1793::read_byte(uint16_t offset)
-{
-    std::println("WD1793::read_byte");
-
-    return 0;
-}
-
-void WD1793::write_byte(uint16_t offset, uint8_t value)
-{
-    std::println("WD1793::write_byte");
-}
+void DiskNone::write_byte(uint16_t offset, uint8_t value)
+{}

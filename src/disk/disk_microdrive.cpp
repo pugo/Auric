@@ -15,23 +15,51 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <machine.hpp>
 
-#include "disk_none.hpp"
+#include "disk_microdrive.hpp"
+
+#include <print>
+#include <random>
 
 
-bool DiskNone::init()
+DiskMicrodrive::DiskMicrodrive(Machine& machine) :
+    machine(machine),
+    wd1793(machine)
+{
+
+}
+
+
+bool DiskMicrodrive::init()
 {
     return true;
 }
 
-void DiskNone::reset()
+void DiskMicrodrive::reset()
 {}
 
-void DiskNone::print_stat()
+void DiskMicrodrive::print_stat()
 {
     std::println("Disk None");;
 }
 
-void TapeBlank::exec()
+void DiskMicrodrive::exec()
 {}
 
+uint8_t DiskMicrodrive::read_byte(uint16_t offset)
+{
+    std::println("DiskMicrodrive::read_byte");
+    return wd1793.read_byte(offset);
+}
+
+void DiskMicrodrive::write_byte(uint16_t offset, uint8_t value)
+{
+    std::println("Microdrive write: {:04x} <- {:02x}", offset, value);
+
+    if (offset == 0x4) {
+        machine.set_oric_rom_enabled(value & 0x02);
+    }
+
+    return wd1793.write_byte(offset, value);
+}

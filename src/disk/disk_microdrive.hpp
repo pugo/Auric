@@ -15,15 +15,19 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef DISK_NONE_H
-#define DISK_NONE_H
+#ifndef DISK_MICRODRIVE_H
+#define DISK_MICRODRIVE_H
 
+#include "chip/wd1793.hpp"
 #include "disk.hpp"
 
+class Machine;
 
-class DiskNone : public Disk
+class DiskMicrodrive : public Disk
 {
 public:
+    explicit DiskMicrodrive(Machine& machine);
+
     /**
      * Initialize disk.
      * @return true on success
@@ -61,6 +65,8 @@ public:
     void write_byte(uint16_t offset, uint8_t value) override;
 
 protected:
+    Machine& machine;
+    WD1793 wd1793;
 };
 
-#endif // DISK_NONE_H
+#endif // DISK_MICRODRIVE_H
