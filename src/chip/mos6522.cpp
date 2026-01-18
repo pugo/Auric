@@ -50,12 +50,12 @@ void MOS6522::State::reset()
     cb2 = false;
     cb2_do_pulse = false;
 
-    ira = 0x00;         // input register A
+    ira = 0xff;         // input register A
     ira_latch = 0x00;   // input register A - input latch
     ora = 0x00;         // output register A
     ddra = 0x00;        // data direction register A
 
-    irb = 0x00;         // input register B
+    irb = 0xff;         // input register B
     irb_latch = 0x00;   // input register B - input latch
     orb = 0x00;         // output register B
     ddrb = 0x00;        // data direction register B
@@ -593,7 +593,6 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
         case IORA2:
             state.ora = value;
             if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
-            if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
             if (psg_changed_handler) { psg_changed_handler(machine); }
             break;
     }
