@@ -61,10 +61,98 @@ uint8_t WD1793::read_byte(uint16_t offset)
 {
     std::println("WD1793::read_byte");
 
+    switch (offset)
+    {
+        case 0x00:
+            return state.status;
+        case 0x01:
+            return state.track;
+        case 0x02:
+            return state.sector;
+        case 0x03:
+            return state.data;
+        default:
+    };
+
     return 0;
 }
 
 void WD1793::write_byte(uint16_t offset, uint8_t value)
 {
     std::println("WD1793::write_byte");
+
+    switch (offset)
+    {
+        case 0x00:
+            do_command(value);
+        case 0x01:
+            state.track = value;
+        case 0x02:
+            state.sector = value;
+        case 0x03:
+            state.data = value;
+        default:
+    };
+}
+
+void WD1793::do_command(uint8_t command)
+{
+    state.command = command;
+
+    switch (command & 0xe0) {
+        case 0x00:
+            if (command & 0x10) {
+                // Seek [Type 1]: 0 0 1 0 h V r₁ r₀
+                std::println("WD1793 do command: Seek");
+            }
+            else {
+                // Restore [Type 1]: : 0 0 1 1 h V r₁ r₀
+                std::println("WD1793 do command: Restore");
+                state.reset();
+            }
+            break;
+        case 0x20:
+            // Step [Type 1]: 0 0 1 u h V r₁ r₀
+            std::println("WD1793 do command: Step");
+            break;
+        case 0x40:
+            // Step in [Type 1]: 0 1 0 u h V r₁ r₀
+            std::println("WD1793 do command: Step in");
+            break;
+        case 0x60:
+            // Step out [Type 1]: 0 1 1 u h V r₁ r₀
+            std::println("WD1793 do command: Step out");
+            break;
+        case 0x80:
+            // Read sector [Type 2]: 1 0 0 m F₂ E F₁ 0
+            std::println("WD1793 do command: Read sector");
+            break;
+        case 0xa0:
+            // Write sector [Type 2]: 1 0 1 F₂ E F₁ a₀
+            std::println("WD1793 do command: Write sector");
+            break;
+        case 0xc0:
+            if (command & 0x10) {
+                // Force int [Type 4]: 1 1 0 1 I₃ I₂ I₁ I₀
+                std::println("WD1793 do command: Force interrupt");
+                machine.cpu->irq();
+            }
+            else {
+                // Read address [Type 3]: 1 1 0 0 0 E 0 0
+                std::println("WD1793 do command: Read address");
+                state.reset();
+            }
+            break;
+        case 0xe0:
+            if (command & 0x10) {
+                // Write track [Type 3]: 1 1 1 1 0 E 0 0
+                std::println("WD1793 do command: Write track");
+            }
+            else {
+                // Read track [Type 3]: 1 1 1 0 0 E 0 0
+                std::println("WD1793 do command: Read track");
+                state.reset();
+            }
+            break;
+    }
 }

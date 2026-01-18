@@ -219,12 +219,12 @@ public:
     {
         if (! machine.oric_rom_enabled) {
             if (machine.disk_rom_enabled && address >= 0xe000) {
-                return;
+                return;  // Can't write into disk ROM.
             }
         }
         else {
             if (address >= 0xc000) {
-                return;
+                return;  // Can't write into BASIC ROM.
             }
         }
 

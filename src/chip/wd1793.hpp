@@ -91,6 +91,8 @@ public:
 
 
 private:
+    void do_command(uint8_t command);
+
     Machine& machine;
     WD1793::State state;
 
