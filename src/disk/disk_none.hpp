@@ -36,6 +36,13 @@ public:
     void reset() override;
 
     /**
+     * Insert disk image.
+     * @param path path to disk image
+     * @return true on success
+     */
+    bool insert_disk(const std::filesystem::path& path) override;
+
+    /**
      * Print disk status to console.
      */
     void print_stat() override;

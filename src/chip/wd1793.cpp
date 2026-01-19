@@ -63,15 +63,16 @@ uint8_t WD1793::read_byte(uint16_t offset)
 
     switch (offset)
     {
-        case 0x00:
+        case 0x0:
             return state.status;
-        case 0x01:
+        case 0x1:
             return state.track;
-        case 0x02:
+        case 0x2:
             return state.sector;
-        case 0x03:
+        case 0x3:
             return state.data;
         default:
+            break;
     };
 
     return 0;
@@ -92,6 +93,7 @@ void WD1793::write_byte(uint16_t offset, uint8_t value)
         case 0x03:
             state.data = value;
         default:
+            break;
     };
 }
 

@@ -40,6 +40,13 @@ public:
     void reset() override;
 
     /**
+     * Insert disk image.
+     * @param path path to disk image
+     * @return true on success
+     */
+    bool insert_disk(const std::filesystem::path& path) override;
+
+    /**
      * Print disk status to console.
      */
     void print_stat() override;
@@ -48,7 +55,6 @@ public:
      * Execute one cycle.
      */
     void exec() override;
-
 
     /**
      * Read register value.
@@ -67,6 +73,8 @@ public:
 protected:
     Machine& machine;
     WD1793 wd1793;
+
+    std::filesystem::path disk_image_path;
 };
 
 #endif // DISK_MICRODRIVE_H

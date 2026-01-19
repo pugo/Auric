@@ -145,6 +145,10 @@ void Machine::init_disk()
     if (! oric.get_config().disk_path().empty()) {
         disk = std::make_unique<DiskMicrodrive>(*this);
 
+        if (!disk->insert_disk(oric.get_config().disk_path())) {
+            BOOST_LOG_TRIVIAL(info) << "No disk in drive";
+        }
+
         BOOST_LOG_TRIVIAL(info) << "Starting disk drive";
         oric_rom_enabled = false;
         disk_rom_enabled = true;

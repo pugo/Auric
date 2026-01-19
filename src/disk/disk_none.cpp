@@ -25,6 +25,11 @@ bool DiskNone::init()
     return true;
 }
 
+bool DiskNone::insert_disk(const std::filesystem::path& path)
+{
+    return false;
+}
+
 void DiskNone::reset()
 {}
 

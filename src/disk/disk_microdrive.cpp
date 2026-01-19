@@ -15,6 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <boost/log/trivial.hpp>
 #include <machine.hpp>
 
 #include "disk_microdrive.hpp"
@@ -30,9 +31,19 @@ DiskMicrodrive::DiskMicrodrive(Machine& machine) :
 
 }
 
-
 bool DiskMicrodrive::init()
 {
+    return true;
+}
+
+bool DiskMicrodrive::insert_disk(const std::filesystem::path& path)
+{
+    if (!std::filesystem::exists(path)) {
+        BOOST_LOG_TRIVIAL(warning) << "Disk image not found: " << path.string();
+        return false;
+    }
+
+    disk_image_path = path;
     return true;
 }
 

@@ -18,7 +18,7 @@
 #ifndef DISK_H
 #define DISK_H
 
-#include <memory>
+#include <filesystem>
 
 class Disk
 {
@@ -35,6 +35,13 @@ public:
      * Reset disk.
      */
     virtual void reset() = 0;
+
+    /**
+     * Insert disk image.
+     * @param path path to disk image
+     * @return true on success
+     */
+    virtual bool insert_disk(const std::filesystem::path& path) = 0;
 
     /**
      * Print disk status to console.

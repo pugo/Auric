@@ -28,7 +28,7 @@
 #include "tape_tap.hpp"
 
 
-TapeTap::TapeTap(MOS6522& via, const std::string& path) :
+TapeTap::TapeTap(MOS6522& via, const std::filesystem::path& path) :
     via(via),
     path(path),
     tape_size(0),
@@ -292,10 +292,9 @@ bool TapeTap::parse_header()
     }
 
     // Skip reserved bytes.
-    i += 2;
+    i += 2clo;
 
-    auto
-    file_type = data[tape_pos + i];
+    auto file_type = data[tape_pos + i];
     switch(file_type)
     {
         case 0x00:
