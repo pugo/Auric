@@ -15,66 +15,57 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef DISK_MICRODRIVE_H
-#define DISK_MICRODRIVE_H
+#ifndef DRIVE_H
+#define DRIVE_H
 
-#include "chip/wd1793.hpp"
-#include "disk.hpp"
+#include <filesystem>
 
-class Machine;
-
-class DiskMicrodrive : public Disk
+class Drive
 {
 public:
-    explicit DiskMicrodrive(Machine& machine);
+    virtual ~Drive() = default;
 
     /**
-     * Initialize disk.
+     * Initialize drive.
      * @return true on success
      */
-    bool init() override;
+    virtual bool init() = 0;
 
     /**
-     * Reset disk.
+     * Reset drive.
      */
-    void reset() override;
+    virtual void reset() = 0;
 
     /**
      * Insert disk image.
      * @param path path to disk image
      * @return true on success
      */
-    bool insert_disk(const std::filesystem::path& path) override;
+    virtual bool insert_disk(const std::filesystem::path& path) = 0;
 
     /**
-     * Print disk status to console.
+     * Print drive status to console.
      */
-    void print_stat() override;
+    virtual void print_stat() = 0;
 
     /**
      * Execute one cycle.
      */
-    void exec() override;
+    virtual void exec() = 0;
 
     /**
      * Read register value.
      * @param offset register to read
      * @return value of register
      */
-    uint8_t read_byte(uint16_t offset) override;
+    virtual uint8_t read_byte(uint16_t offset) = 0;
 
     /**
      * Write register value.
      * @param offset register to write
      * @param value new value
      */
-    void write_byte(uint16_t offset, uint8_t value) override;
-
-protected:
-    Machine& machine;
-    WD1793 wd1793;
-
-    std::filesystem::path disk_image_path;
+    virtual void write_byte(uint16_t offset, uint8_t value) = 0;
 };
 
-#endif // DISK_MICRODRIVE_H
+#endif // DRIVE_H

@@ -1,7 +1,8 @@
 
 add_library(disk
-        disk_microdrive.cpp
-        disk_none.cpp
+        disk_image.cpp
+        drive_microdrive.cpp
+        drive_none.cpp
 )
 
 target_include_directories(disk PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

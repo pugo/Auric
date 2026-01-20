@@ -15,57 +15,59 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef DISK_H
-#define DISK_H
+#ifndef DRIVE_NONE_H
+#define DRIVE_NONE_H
 
-#include <filesystem>
+#include "drive.hpp"
 
-class Disk
+
+class DriveNone : public Drive
 {
 public:
-    virtual ~Disk() = default;
-
     /**
-     * Initialize disk.
+     * Initialize drive.
      * @return true on success
      */
-    virtual bool init() = 0;
+    bool init() override;
 
     /**
-     * Reset disk.
+     * Reset drive.
      */
-    virtual void reset() = 0;
+    void reset() override;
 
     /**
      * Insert disk image.
      * @param path path to disk image
      * @return true on success
      */
-    virtual bool insert_disk(const std::filesystem::path& path) = 0;
+    bool insert_disk(const std::filesystem::path& path) override;
 
     /**
-     * Print disk status to console.
+     * Print drive status to console.
      */
-    virtual void print_stat() = 0;
+    void print_stat() override;
 
     /**
      * Execute one cycle.
      */
-    virtual void exec() = 0;
+    void exec() override;
+
 
     /**
      * Read register value.
      * @param offset register to read
      * @return value of register
      */
-    virtual uint8_t read_byte(uint16_t offset) = 0;
+    uint8_t read_byte(uint16_t offset) override;
 
     /**
      * Write register value.
      * @param offset register to write
      * @param value new value
      */
-    virtual void write_byte(uint16_t offset, uint8_t value) = 0;
+    void write_byte(uint16_t offset, uint8_t value) override;
+
+protected:
 };
 
-#endif // DISK_H
+#endif // DRIVE_NONE_H

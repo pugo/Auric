@@ -22,8 +22,8 @@
 #include <boost/log/trivial.hpp>
 
 #include "chip/memory_interface.hpp"
-#include "disk/disk_microdrive.hpp"
-#include "disk/disk_none.hpp"
+#include "disk/drive_microdrive.hpp"
+#include "disk/drive_none.hpp"
 #include "frontends/sdl/frontend.hpp"
 #include "frontends/flags.hpp"
 #include "machine.hpp"
@@ -143,7 +143,7 @@ void Machine::init_ay3()
 void Machine::init_disk()
 {
     if (! oric.get_config().disk_path().empty()) {
-        disk = std::make_unique<DiskMicrodrive>(*this);
+        disk = std::make_unique<DriveMicrodrive>(*this);
 
         if (!disk->insert_disk(oric.get_config().disk_path())) {
             BOOST_LOG_TRIVIAL(info) << "No disk in drive";
@@ -154,7 +154,7 @@ void Machine::init_disk()
         disk_rom_enabled = true;
     }
     else {
-        disk = std::make_unique<DiskNone>();
+        disk = std::make_unique<DriveNone>();
     }
 }
 

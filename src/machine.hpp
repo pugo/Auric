@@ -30,7 +30,7 @@
 #include "monitor.hpp"
 #include "snapshot.hpp"
 #include "tape/tape.hpp"
-#include "disk/disk.hpp"
+#include "disk/drive.hpp"
 
 class Oric;
 class Frontend;
@@ -299,7 +299,7 @@ protected:
     Oric& oric;
     Monitor monitor;
 
-    std::unique_ptr<Disk> disk;
+    std::unique_ptr<Drive> disk;
     std::unique_ptr<Tape> tape;
 
     bool disassemble_execution;
