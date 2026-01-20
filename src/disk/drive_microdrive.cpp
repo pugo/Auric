@@ -18,25 +18,25 @@
 #include <boost/log/trivial.hpp>
 #include <machine.hpp>
 
-#include "disk_microdrive.hpp"
+#include "drive_microdrive.hpp"
 
 #include <print>
 #include <random>
 
 
-DiskMicrodrive::DiskMicrodrive(Machine& machine) :
+DriveMicrodrive::DriveMicrodrive(Machine& machine) :
     machine(machine),
     wd1793(machine)
 {
 
 }
 
-bool DiskMicrodrive::init()
+bool DriveMicrodrive::init()
 {
     return true;
 }
 
-bool DiskMicrodrive::insert_disk(const std::filesystem::path& path)
+bool DriveMicrodrive::insert_disk(const std::filesystem::path& path)
 {
     if (!std::filesystem::exists(path)) {
         BOOST_LOG_TRIVIAL(warning) << "Disk image not found: " << path.string();
@@ -44,27 +44,30 @@ bool DiskMicrodrive::insert_disk(const std::filesystem::path& path)
     }
 
     disk_image_path = path;
+    disk_image = std::make_shared<DiskImage>(disk_image_path);
+    disk_image->init();
+
     return true;
 }
 
-void DiskMicrodrive::reset()
+void DriveMicrodrive::reset()
 {}
 
-void DiskMicrodrive::print_stat()
+void DriveMicrodrive::print_stat()
 {
     std::println("Disk None");;
 }
 
-void DiskMicrodrive::exec()
+void DriveMicrodrive::exec()
 {}
 
-uint8_t DiskMicrodrive::read_byte(uint16_t offset)
+uint8_t DriveMicrodrive::read_byte(uint16_t offset)
 {
     std::println("DiskMicrodrive::read_byte");
     return wd1793.read_byte(offset);
 }
 
-void DiskMicrodrive::write_byte(uint16_t offset, uint8_t value)
+void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
 {
     std::println("Microdrive write: {:04x} <- {:02x}", offset, value);
 

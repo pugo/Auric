@@ -17,34 +17,34 @@
 
 #include <print>
 
-#include "disk_none.hpp"
+#include "drive_none.hpp"
 
 
-bool DiskNone::init()
+bool DriveNone::init()
 {
     return true;
 }
 
-bool DiskNone::insert_disk(const std::filesystem::path& path)
+bool DriveNone::insert_disk(const std::filesystem::path& path)
 {
     return false;
 }
 
-void DiskNone::reset()
+void DriveNone::reset()
 {}
 
-void DiskNone::print_stat()
+void DriveNone::print_stat()
 {
-    std::println("Disk None");;
+    std::println("No disk drive");
 }
 
-void DiskNone::exec()
+void DriveNone::exec()
 {}
 
-uint8_t DiskNone::read_byte(uint16_t offset)
+uint8_t DriveNone::read_byte(uint16_t offset)
 {
     return 0x00;
 }
 
-void DiskNone::write_byte(uint16_t offset, uint8_t value)
+void DriveNone::write_byte(uint16_t offset, uint8_t value)
 {}

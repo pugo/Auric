@@ -15,23 +15,30 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef DISK_NONE_H
-#define DISK_NONE_H
+#ifndef DRIVE_MICRODRIVE_H
+#define DRIVE_MICRODRIVE_H
 
-#include "disk.hpp"
+#include <filesystem>
 
+#include "chip/wd1793.hpp"
+#include "drive.hpp"
+#include "disk_image.hpp"
 
-class DiskNone : public Disk
+class Machine;
+
+class DriveMicrodrive : public Drive
 {
 public:
+    explicit DriveMicrodrive(Machine& machine);
+
     /**
-     * Initialize disk.
+     * Initialize drive.
      * @return true on success
      */
     bool init() override;
 
     /**
-     * Reset disk.
+     * Reset drive.
      */
     void reset() override;
 
@@ -43,7 +50,7 @@ public:
     bool insert_disk(const std::filesystem::path& path) override;
 
     /**
-     * Print disk status to console.
+     * Print drive status to console.
      */
     void print_stat() override;
 
@@ -51,7 +58,6 @@ public:
      * Execute one cycle.
      */
     void exec() override;
-
 
     /**
      * Read register value.
@@ -68,6 +74,11 @@ public:
     void write_byte(uint16_t offset, uint8_t value) override;
 
 protected:
+    Machine& machine;
+    WD1793 wd1793;
+
+    std::filesystem::path disk_image_path;
+    std::shared_ptr<DiskImage> disk_image;
 };
 
-#endif // DISK_NONE_H
+#endif // DRIVE_MICRODRIVE_H

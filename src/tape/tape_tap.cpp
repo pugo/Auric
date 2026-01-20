@@ -292,7 +292,7 @@ bool TapeTap::parse_header()
     }
 
     // Skip reserved bytes.
-    i += 2clo;
+    i += 2;
 
     auto file_type = data[tape_pos + i];
     switch(file_type)
