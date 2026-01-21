@@ -22,14 +22,41 @@
 
 #include "disk_image.hpp"
 
-constexpr uint32_t track_size = 4600;   // bytes per track
+constexpr uint32_t track_size = 6400;   // bytes per track
 constexpr uint32_t header_size = 256;   // bytes of header
 
+
+DiskTrack::DiskTrack(uint8_t* track_data, size_t track_size)
+{
+    
+}
+
+
+uint8_t DiskTrack::read_byte(size_t offset) const
+{
+    return 0x00;
+}
+
+
+DiskSide::DiskSide(uint8_t side) :
+    side(side)
+{
+    BOOST_LOG_TRIVIAL(debug) << "Added DiskSide: side " << (int)side;
+}
+
+
+void DiskSide::add_track(DiskTrack track)
+{
+    tracks.push_back(track);
+}
 
 
 DiskImage::DiskImage(const std::filesystem::path& path) :
     image_path(path),
     image_size(0),
+    side_count(0),
+    tracks_count(0),
+    geometry(0),
     data(nullptr)
 {
 }
@@ -73,11 +100,28 @@ bool DiskImage::init()
         return false;
     }
 
-    auto sides = read32(8);
-    auto tracks = read32(12);
-    auto geometry = read32(16);
+    side_count = static_cast<uint8_t>(read32(8));
+    tracks_count = static_cast<uint16_t>(read32(12));
+    geometry = static_cast<uint8_t>(read32(16));
 
-    BOOST_LOG_TRIVIAL(info) << "DiskImage: sides: " << sides << ", tracks: " << tracks << ", geometry: " << geometry;
+    BOOST_LOG_TRIVIAL(info) << "DiskImage: sides: " << (int)side_count
+                            << ", tracks: " << (int)tracks_count
+                            << ", geometry: " << (int)geometry;
+
+    BOOST_LOG_TRIVIAL(info) << "Total size: " << image_size;
+
+    for (uint8_t i = 1; i <= side_count; ++i) {
+        disk_sides.emplace_back(DiskSide(i));
+    }
+
+    size_t size_per_side = tracks_count * track_size;
+
+    for (uint8_t side = 0; side < side_count; ++side) {
+        for (uint8_t track = 0; track < tracks_count; ++track) {
+            disk_sides[side].add_track(DiskTrack(data + header_size + side * track * track_size, track_size));
+            BOOST_LOG_TRIVIAL(info) << (tracks_count * side) + track << ": " << (header_size + side * size_per_side + track * track_size);
+        }
+    }
 
     return true;
 }
@@ -94,13 +138,3 @@ bool DiskImage::set_track(uint8_t track)
     return true;
 }
 
-
-DiskTrack::DiskTrack(uint8_t* track_data, size_t track_size)
-{
-
-}
-
-uint8_t DiskTrack::read_byte(size_t offset) const
-{
-    return 0x00;
-}

@@ -20,7 +20,27 @@
 
 #include <filesystem>
 
-class DiskTrack;
+
+class DiskTrack
+{
+public:
+    DiskTrack(uint8_t* track_data, size_t track_size);
+
+    uint8_t read_byte(size_t offset) const;
+};
+
+
+class DiskSide
+{
+public:
+    DiskSide(uint8_t side);
+
+    void add_track(DiskTrack track);
+
+protected:
+    uint8_t side;
+    std::vector<DiskTrack> tracks;
+};
 
 
 class DiskImage
@@ -38,17 +58,16 @@ protected:
     std::filesystem::path image_path;
     size_t image_size;
 
+    uint8_t side_count;
+    uint16_t tracks_count;
+    uint8_t geometry;
+
     std::vector<uint8_t> memory_vector;
     uint8_t* data;
+
+    std::vector<DiskSide> disk_sides;
 };
 
 
-class DiskTrack
-{
-public:
-    DiskTrack(uint8_t* track_data, size_t track_size);
-
-    uint8_t read_byte(size_t offset) const;
-};
 
 #endif // DISK_IMAGE_H
