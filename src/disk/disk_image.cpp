@@ -79,7 +79,6 @@ bool DiskImage::init()
 
     BOOST_LOG_TRIVIAL(info) << "DiskImage: sides: " << sides << ", tracks: " << tracks << ", geometry: " << geometry;
 
-
     return true;
 }
 
@@ -91,7 +90,6 @@ bool DiskImage::set_track(uint8_t track)
         BOOST_LOG_TRIVIAL(error) << "DiskImage: track " << static_cast<int>(track) << " out of bounds";
         return false;
     }
-
 
     return true;
 }

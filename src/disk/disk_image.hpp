@@ -51,5 +51,4 @@ public:
     uint8_t read_byte(size_t offset) const;
 };
 
-
 #endif // DISK_IMAGE_H
