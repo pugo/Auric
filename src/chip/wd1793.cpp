@@ -31,6 +31,8 @@ void WD1793::State::reset()
     sector = 0x00;
     command = 0x00;
     status = 0x00;
+    interrupt_counter = 0x00;
+    irq_flag = false;
 }
 
 void WD1793::State::print() const
@@ -54,8 +56,19 @@ void WD1793::load_from_snapshot(Snapshot& snapshot)
 {
 }
 
-void WD1793::exec()
+void WD1793::exec(uint8_t cycles)
 {
+
+    if (state.interrupt_counter > 0) {
+        std::println("WD1793 exec irq counter: {}", state.interrupt_counter);
+        state.interrupt_counter -= cycles;
+        if (state.interrupt_counter <= 0) {
+            state.interrupt_counter = 0;
+            std::println("WD1793 *IRQ*");
+
+            interrupt_set();
+        }
+    }
 
 }
 
@@ -66,6 +79,8 @@ uint8_t WD1793::read_byte(uint16_t offset)
     switch (offset)
     {
         case 0x0:
+            std::println("WD1793 *IRQ clear*");
+            interrupt_clear();
             return state.status;
         case 0x1:
             return state.track;
@@ -86,6 +101,7 @@ void WD1793::write_byte(uint16_t offset, uint8_t value)
     {
         case 0x00:
             std::println("WD1793::write_byte - command {:02x}", value);
+            interrupt_clear();
             do_command(value);
             break;
         case 0x01:
@@ -114,42 +130,59 @@ void WD1793::do_command(uint8_t command)
             if (command & 0x10) {
                 // Seek [Type 1]: 0 0 1 0 h V r₁ r₀
                 std::println("WD1793 do command: Seek");
+                state.status = Status::StatusBusy;
+                state.interrupt_counter = 20;
             }
             else {
                 // Restore [Type 1]: : 0 0 1 1 h V r₁ r₀
                 std::println("WD1793 do command: Restore");
-                state.reset();
+                state.status = Status::StatusBusy;
+                state.interrupt_counter = 20;
             }
             break;
         case 0x20:
             // Step [Type 1]: 0 0 1 u h V r₁ r₀
             std::println("WD1793 do command: Step");
+            state.status = Status::StatusBusy;
+            state.interrupt_counter = 20;
             break;
         case 0x40:
             // Step in [Type 1]: 0 1 0 u h V r₁ r₀
             std::println("WD1793 do command: Step in");
+            state.status = Status::StatusBusy;
+            state.interrupt_counter = 20;
             break;
         case 0x60:
             // Step out [Type 1]: 0 1 1 u h V r₁ r₀
             std::println("WD1793 do command: Step out");
+            state.status = Status::StatusBusy;
+            state.interrupt_counter = 20;
             break;
         case 0x80:
             // Read sector [Type 2]: 1 0 0 m F₂ E F₁ 0
             std::println("WD1793 do command: Read sector");
+            state.status = Status::StatusBusy | StatusNotReady;
+            state.interrupt_counter = 20;
             break;
         case 0xa0:
             // Write sector [Type 2]: 1 0 1 F₂ E F₁ a₀
             std::println("WD1793 do command: Write sector");
+            state.status = Status::StatusBusy | StatusNotReady;
+            state.interrupt_counter = 20;
             break;
         case 0xc0:
             if (command & 0x10) {
                 // Force int [Type 4]: 1 1 0 1 I₃ I₂ I₁ I₀
                 std::println("WD1793 do command: Force interrupt");
-                machine.cpu->irq();
+                state.status = 0;
+                state.interrupt_counter = 0;
+                interrupt_set();
             }
             else {
                 // Read address [Type 3]: 1 1 0 0 0 E 0 0
                 std::println("WD1793 do command: Read address");
+                state.status = Status::StatusBusy | StatusNotReady | StatusDataRequest;
+                state.interrupt_counter = 20;
                 state.reset();
             }
             break;
@@ -157,12 +190,31 @@ void WD1793::do_command(uint8_t command)
             if (command & 0x10) {
                 // Write track [Type 3]: 1 1 1 1 0 E 0 0
                 std::println("WD1793 do command: Write track");
+                state.status = Status::StatusBusy | StatusNotReady;
+                state.interrupt_counter = 20;
             }
             else {
                 // Read track [Type 3]: 1 1 1 0 0 E 0 0
                 std::println("WD1793 do command: Read track");
+                state.interrupt_counter = 20;
                 state.reset();
             }
             break;
     }
+}
+
+void WD1793::interrupt_set()
+{
+    state.irq_flag = true;
+    if (state.interrupt_enabled) {
+        std::println("--- WD1793 IRQ SET ---");
+
+        machine.cpu->irq();
+    }
+}
+
+void WD1793::interrupt_clear()
+{
+    state.irq_flag = false;
+    machine.cpu->irq_clear();
 }

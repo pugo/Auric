@@ -199,9 +199,12 @@ void Machine::run(Oric* oric)
         }
 
         while (cycle_count > 0) {
-            tape->exec();
-            mos_6522->exec();
-            ay3->exec();
+            uint8_t cycles = cpu->time_instruction();
+
+            tape->exec(cycles);
+            disk->exec(cycles);
+            mos_6522->exec(cycles);
+            ay3->exec(cycles);
 
             if (cpu->exec(false, break_exec)) {
                 update_key_output();
@@ -216,7 +219,7 @@ void Machine::run(Oric* oric)
                 return;
             }
 
-            --cycle_count;
+            cycle_count -= cycles;
         }
 
         if (ula.paint_raster()) {

@@ -53,7 +53,7 @@ public:
     /**
      * Execute one cycle.
      */
-    virtual void exec() = 0;
+    virtual void exec(uint8_t cycles) = 0;
 
     /**
      * Check if motor is running.

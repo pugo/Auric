@@ -30,8 +30,22 @@ class Snapshot;
 class WD1793
 {
 public:
-    enum Register {
+    enum Status : uint8_t {
+        StatusBusy = 0x01,                // bit 0: Type I, II and III
+        StatusIndex = 0x02,               // bit 1: Type I
+        StatusDataRequest = 0x02,         // bit 1: Type II and III
+        StatusTrack00 = 0x04,             // bit 2: Type I
+        StatusLostData = 0x04,            // bit 2: Type II and III
+        StatusCrcError = 0x08,            // bit 3: Type I, II and III
+        StatusSeekError = 0x10,           // bit 4: Type I
+        StatusRecordNotFound = 0x10,      // bit 4: Type II and III
+        StatusHeadLoaded = 0x20,          // bit 5: Type I
+        StatusRecordTypeWiteFault = 0x20, // bit 5: Type II and III
+        StatusProtected = 0x40,           // bit 6: Type I
+        StatusWriteProtect = 0x40,        // bit 6: Type II and III
+        StatusNotReady = 0x80             // bit 7: Type I, II and III
     };
+
 
     /**
      * State of a WD1793.
@@ -46,7 +60,9 @@ public:
         uint8_t sector;
         uint8_t command;
         uint8_t status;
-
+        int16_t interrupt_counter;
+        bool interrupt_enabled;
+        bool irq_flag;
 
         void reset();
         void print() const;
@@ -58,8 +74,9 @@ public:
     /**
      * Execute one clock cycle.
      */
-    void exec();
+    void exec(uint8_t cycles);
 
+    void set_interrupt_enabled(bool enabled) { state.interrupt_enabled = enabled; }
     void set_drive(uint8_t drive) { state.drive = drive; }
     void set_side(uint8_t side) { state.side = side; }
 
@@ -99,10 +116,11 @@ public:
 private:
     void do_command(uint8_t command);
 
+    void interrupt_set();
+    void interrupt_clear();
+
     Machine& machine;
     WD1793::State state;
-
-    std::map<Register, std::string> register_names;
 };
 
 

@@ -433,48 +433,40 @@ uint8_t MOS6502::time_instruction()
             break;
     }
 
-    return opcode_cycles[current_instruction] + extra;
+    instruction_cycles = opcode_cycles[current_instruction] + extra;
+    return instruction_cycles;
 }
 
 
 bool MOS6502::exec(bool break_on_brk, bool& do_break)
 {
-    if (instruction_load) {
-        instruction_load = false;
+    current_cycle = 0;
 
-        current_cycle = 0;
-        instruction_cycles = time_instruction();
+    if (do_interrupt) {
+        do_interrupt = false;
 
-        if (do_interrupt) {
-            do_interrupt = false;
+        PUSH_BYTE_STACK(PC >> 8);
+        PUSH_BYTE_STACK(PC & 0xff);
+        PUSH_BYTE_STACK((get_p() & ~FLAG_B) | 0x20);  // B=0, bit5=1
 
-            PUSH_BYTE_STACK(PC >> 8);
-            PUSH_BYTE_STACK(PC & 0xff);
-            PUSH_BYTE_STACK((get_p() & ~FLAG_B) | 0x20);  // B=0, bit5=1
+        I = true;            // mask further IRQs
+        D = false;           // NMOS quirk: clear decimal on interrupt
 
-            I = true;            // mask further IRQs
-            D = false;           // NMOS quirk: clear decimal on interrupt
-
-            if (nmi_flag) {
-                PC = memory_read_word_handler(machine, NMI_VECTOR_L);
-                nmi_flag = false;
-                std::println("NMI interrupt");
-            }
-
-            else if (irq_flag) {
-                PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
-                irq_flag = false;
-            }
+        if (nmi_flag) {
+            PC = memory_read_word_handler(machine, NMI_VECTOR_L);
+            nmi_flag = false;
+            std::println("NMI interrupt");
         }
 
-        if (has_breakpoints && breakpoints.contains(PC)) {
-            std::println("Found breakpoint at ${:04X}", PC);
-            do_break = true;
-            return false;
+        else if (irq_flag) {
+            PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
+            irq_flag = false;
         }
     }
 
-    if (++current_cycle < instruction_cycles) {
+    if (has_breakpoints && breakpoints.contains(PC)) {
+        std::println("Found breakpoint at ${:04X}", PC);
+        do_break = true;
         return false;
     }
 
@@ -482,7 +474,6 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
     uint16_t addr;
     int i;
 
-    instruction_load = true;
     ++PC;
 
     switch(current_instruction)

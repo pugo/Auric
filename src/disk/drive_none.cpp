@@ -38,7 +38,7 @@ void DriveNone::print_stat()
     std::println("No disk drive");
 }
 
-void DriveNone::exec()
+void DriveNone::exec(uint8_t cycles)
 {}
 
 uint8_t DriveNone::read_byte(uint16_t offset)

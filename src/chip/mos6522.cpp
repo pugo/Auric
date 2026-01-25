@@ -155,183 +155,185 @@ void MOS6522::load_from_snapshot(Snapshot& snapshot)
 }
 
 
-void MOS6522::exec()
+void MOS6522::exec(uint8_t cycles)
 {
-    // In pulse output mode, CA2 goes low for one cycle after read/write of ORA. Return it to high here.
-    if (state.ca2_do_pulse) {
-        state.ca2 = true;
-        state.ca2_do_pulse = false;
-        if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
-    }
-
-    // In pulse output mode, CB2 goes low for one cycle after read/write of ORA. Return it to high here.
-    if (state.cb2_do_pulse) {
-        state.cb2 = true;
-        state.cb2_do_pulse = false;
-        if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
-    }
-
-    switch (state.acr & 0xc0)
-    {
-        case 0x00:
-        case 0x80:
-            // T1 - One shot
-            if (state.t1_reload) {
-                --state.t1_reload;
-                if (state.t1_reload == 0) {
-                    state.t1_counter = (state.t1_latch_high << 8) | state.t1_latch_low;
-                }
-            }
-            else {
-                if (state.t1_run && state.t1_counter == 0) {
-                    irq_set(IRQ_T1);
-                    if (state.acr & 0x80) {
-                        state.orb |= 0x80;    // Output 1 on PB7 if ACR7 is set.
-                    }
-                    state.t1_run = false;
-                }
-                --state.t1_counter;
-            }
-            break;
-        case 0x40:
-        case 0xC0:
-            // T1 - Continuous
-            if (state.t1_reload) {
-                --state.t1_reload;
-                if (state.t1_reload == 0) {
-                    state.t1_counter = (state.t1_latch_high << 8) | state.t1_latch_low;
-                }
-            }
-            else {
-                if (state.t1_counter == 0) {
-                    irq_set(IRQ_T1);
-
-                    if (state.acr & 0x80) {
-                        state.orb ^= 0x80;    // Output squarewave on PB7 if ACR7 is set.
-                    }
-
-                    state.t1_reload = 1;
-                }
-
-                --state.t1_counter;
-            }
-
-            break;
-    }
-
-    if (!(state.acr & 0x20)) {
-        // T2 - One shot (pulse counting mode handled in set_irb_bit)
-        if (state.t2_reload) {
-            state.t2_reload = false;
+    while (cycles-- > 0) {
+        // In pulse output mode, CA2 goes low for one cycle after read/write of ORA. Return it to high here.
+        if (state.ca2_do_pulse) {
+            state.ca2 = true;
+            state.ca2_do_pulse = false;
+            if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
         }
-        else {
-            if (state.t2_run && (state.t2_counter == 0)) {
-                irq_set(IRQ_T2);
-                state.t2_run = false;
-            }
 
-            --state.t2_counter;
+        // In pulse output mode, CB2 goes low for one cycle after read/write of ORA. Return it to high here.
+        if (state.cb2_do_pulse) {
+            state.cb2 = true;
+            state.cb2_do_pulse = false;
+            if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
         }
-    }
 
-    switch (state.acr & 0x1c)
-    {
-        case 0x00:  // off
-            break;
-        case 0x04:  // Shift in under T2 control
-            if (! state.sr_run) { break; }
-
-            // Arm on first entry (after writing SR / enabling the mode)
-            if (state.sr_timer == 0) {
-                state.sr_timer = state.t2_latch_low;
-                state.sr_first = true;
+        switch (state.acr & 0xc0)
+        {
+            case 0x00:
+            case 0x80:
+                // T1 - One shot
+                if (state.t1_reload) {
+                    --state.t1_reload;
+                    if (state.t1_reload == 0) {
+                        state.t1_counter = (state.t1_latch_high << 8) | state.t1_latch_low;
+                    }
+                }
+                else {
+                    if (state.t1_run && state.t1_counter == 0) {
+                        irq_set(IRQ_T1);
+                        if (state.acr & 0x80) {
+                            state.orb |= 0x80;    // Output 1 on PB7 if ACR7 is set.
+                        }
+                        state.t1_run = false;
+                    }
+                    --state.t1_counter;
+                }
                 break;
+            case 0x40:
+            case 0xC0:
+                // T1 - Continuous
+                if (state.t1_reload) {
+                    --state.t1_reload;
+                    if (state.t1_reload == 0) {
+                        state.t1_counter = (state.t1_latch_high << 8) | state.t1_latch_low;
+                    }
+                }
+                else {
+                    if (state.t1_counter == 0) {
+                        irq_set(IRQ_T1);
+
+                        if (state.acr & 0x80) {
+                            state.orb ^= 0x80;    // Output squarewave on PB7 if ACR7 is set.
+                        }
+
+                        state.t1_reload = 1;
+                    }
+
+                    --state.t1_counter;
+                }
+
+                break;
+        }
+
+        if (!(state.acr & 0x20)) {
+            // T2 - One shot (pulse counting mode handled in set_irb_bit)
+            if (state.t2_reload) {
+                state.t2_reload = false;
             }
+            else {
+                if (state.t2_run && (state.t2_counter == 0)) {
+                    irq_set(IRQ_T2);
+                    state.t2_run = false;
+                }
 
-            if (--state.sr_timer == 0) {
-                // NMOS version of 6522 toggles CB1 on each underflow.
+                --state.t2_counter;
+            }
+        }
+
+        switch (state.acr & 0x1c)
+        {
+            case 0x00:  // off
+                break;
+            case 0x04:  // Shift in under T2 control
+                if (! state.sr_run) { break; }
+
+                // Arm on first entry (after writing SR / enabling the mode)
+                if (state.sr_timer == 0) {
+                    state.sr_timer = state.t2_latch_low;
+                    state.sr_first = true;
+                    break;
+                }
+
+                if (--state.sr_timer == 0) {
+                    // NMOS version of 6522 toggles CB1 on each underflow.
+                    state.cb1 = ! state.cb1;
+
+                    state.sr_shift_in();
+                    sr_handle_counter();
+
+                    // re-arm for next underflow
+                    state.sr_timer = state.t2_latch_low + (state.sr_first ? 1 : 2);
+                    state.sr_first = false;
+                }
+                break;
+            case 0x08:  // Shift in under O2 control
+                if (! state.sr_run) { break; }
+
                 state.cb1 = ! state.cb1;
-
                 state.sr_shift_in();
                 sr_handle_counter();
 
-                // re-arm for next underflow
-                state.sr_timer = state.t2_latch_low + (state.sr_first ? 1 : 2);
-                state.sr_first = false;
-            }
-            break;
-        case 0x08:  // Shift in under O2 control
-            if (! state.sr_run) { break; }
-
-            state.cb1 = ! state.cb1;
-            state.sr_shift_in();
-            sr_handle_counter();
-
-            break;
-        case 0x0c:  // Shift in under control of external clock (not implemented)
-            if (state.ifr & IRQ_SR) { irq_clear(IRQ_SR); }
-            state.sr_stop();
-            break;
-        case 0x10:  // Shift out free-running at T2 rate
-            if (! state.sr_run) { break; }
-
-            if (!state.sr_out_started) {
-                state.sr_out_started = true;
-                state.sr_timer = state.t2_latch_low;
                 break;
-            }
-
-            if (--state.sr_timer == 0) {
-                state.cb1 = ! state.cb1;
-                state.sr_shift_out();
-
-                bool wrapped = (++state.sr_counter == 8);
-                if (wrapped) {
-                    state.sr_counter = 0;
-                    irq_set(IRQ_SR);
-                    state.sr_out_gap_pending = true;
-                }
-
-                state.sr_timer = state.t2_latch_low;
-
-                if (state.sr_out_gap_pending) {
-                    state.sr_out_gap_pending = false;
-                    // Not documented, but analysis of the real hardware shows a full count cycle gap after each byte.
-                    state.sr_counter += (state.sr_counter + 1) % 8;
-                }
-            }
-            break;
-        case 0x14:  // Shift out under T2 control
-            if (! state.sr_run) { break; }
-
-            if (!state.sr_out_started) {
-                state.sr_out_started = true;
-                state.sr_timer = state.t2_latch_low;
-                state.sr_counter = 0;
+            case 0x0c:  // Shift in under control of external clock (not implemented)
+                if (state.ifr & IRQ_SR) { irq_clear(IRQ_SR); }
+                state.sr_stop();
                 break;
-            }
+            case 0x10:  // Shift out free-running at T2 rate
+                if (! state.sr_run) { break; }
 
-            if (--state.sr_timer == 0) {
-                state.cb1 = ! state.cb1;
-                state.sr_shift_out();
-                if (!sr_handle_counter()) {
+                if (!state.sr_out_started) {
+                    state.sr_out_started = true;
                     state.sr_timer = state.t2_latch_low;
+                    break;
                 }
-            }
-            break;
-        case 0x18:  // Shift out under O2 control
-            if (! state.sr_run) { break; }
 
-            state.cb1 = ! state.cb1;
-            if (! state.cb1) {
-                state.sr_shift_out();
-                sr_handle_counter();
-            }
-            break;
-        case 0x1c:  // Shift out under control of external clock (not implemented)
-            if (state.ifr & IRQ_SR) { irq_clear(IRQ_SR); }
-            state.sr_stop();
-            break;
+                if (--state.sr_timer == 0) {
+                    state.cb1 = ! state.cb1;
+                    state.sr_shift_out();
+
+                    bool wrapped = (++state.sr_counter == 8);
+                    if (wrapped) {
+                        state.sr_counter = 0;
+                        irq_set(IRQ_SR);
+                        state.sr_out_gap_pending = true;
+                    }
+
+                    state.sr_timer = state.t2_latch_low;
+
+                    if (state.sr_out_gap_pending) {
+                        state.sr_out_gap_pending = false;
+                        // Not documented, but analysis of the real hardware shows a full count cycle gap after each byte.
+                        state.sr_counter += (state.sr_counter + 1) % 8;
+                    }
+                }
+                break;
+            case 0x14:  // Shift out under T2 control
+                if (! state.sr_run) { break; }
+
+                if (!state.sr_out_started) {
+                    state.sr_out_started = true;
+                    state.sr_timer = state.t2_latch_low;
+                    state.sr_counter = 0;
+                    break;
+                }
+
+                if (--state.sr_timer == 0) {
+                    state.cb1 = ! state.cb1;
+                    state.sr_shift_out();
+                    if (!sr_handle_counter()) {
+                        state.sr_timer = state.t2_latch_low;
+                    }
+                }
+                break;
+            case 0x18:  // Shift out under O2 control
+                if (! state.sr_run) { break; }
+
+                state.cb1 = ! state.cb1;
+                if (! state.cb1) {
+                    state.sr_shift_out();
+                    sr_handle_counter();
+                }
+                break;
+            case 0x1c:  // Shift out under control of external clock (not implemented)
+                if (state.ifr & IRQ_SR) { irq_clear(IRQ_SR); }
+                state.sr_stop();
+                break;
+        }
     }
 }
 

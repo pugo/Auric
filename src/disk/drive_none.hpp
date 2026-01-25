@@ -50,7 +50,7 @@ public:
     /**
      * Execute one cycle.
      */
-    void exec() override;
+    void exec(uint8_t cycles) override;
 
 
     /**

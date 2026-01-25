@@ -176,6 +176,7 @@ public:
     f_memory_write_byte_zp_handler memory_write_byte_zp_handler;
 
     uint16_t PC;
+    uint8_t instruction_cycles;
 
 protected:
     /**
@@ -201,7 +202,6 @@ protected:
     bool do_nmi;
 
     bool instruction_load;
-    uint8_t instruction_cycles;
     uint16_t current_instruction_addr;
     uint8_t current_instruction;
     uint8_t current_cycle;

@@ -148,7 +148,7 @@ public:
     /**
      * Execute one clock cycle.
      */
-    void exec();
+    void exec(uint8_t cycles);
 
     /**
      * Save MOS 6522 state to snapshot.

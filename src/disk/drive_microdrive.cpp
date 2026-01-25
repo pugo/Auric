@@ -61,14 +61,19 @@ void DriveMicrodrive::print_stat()
     std::println("Disk None");;
 }
 
-void DriveMicrodrive::exec()
-{}
+void DriveMicrodrive::exec(uint8_t cycles)
+{
+    wd1793.exec(cycles);
+}
 
 uint8_t DriveMicrodrive::read_byte(uint16_t offset)
 {
     std::println("Microdrive read: {:04x}", offset);
 
     if (offset == 0x4) {
+        if (wd1793.get_state().irq_flag) {
+            return 0x7f;
+        }
         return 0xff;
     }
 
@@ -82,6 +87,7 @@ void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
     if (offset == 0x4) {
         status = value;
 
+        wd1793.set_interrupt_enabled(value & 0x01);
         wd1793.set_side(value & 0x10 >> 4);
         wd1793.set_drive(value & 0x60 >> 5);
         machine.set_oric_rom_enabled(value & 0x02);
