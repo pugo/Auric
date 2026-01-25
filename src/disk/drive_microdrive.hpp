@@ -77,6 +77,9 @@ protected:
     Machine& machine;
     WD1793 wd1793;
 
+    uint8_t status;
+
+
     std::filesystem::path disk_image_path;
     std::shared_ptr<DiskImage> disk_image;
 };

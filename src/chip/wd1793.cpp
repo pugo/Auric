@@ -25,6 +25,8 @@
 void WD1793::State::reset()
 {
     data = 0x00;
+    drive = 0x00;
+    side = 0x00;
     track = 0x00;
     sector = 0x00;
     command = 0x00;
@@ -80,18 +82,24 @@ uint8_t WD1793::read_byte(uint16_t offset)
 
 void WD1793::write_byte(uint16_t offset, uint8_t value)
 {
-    std::println("WD1793::write_byte");
-
     switch (offset)
     {
         case 0x00:
+            std::println("WD1793::write_byte - command {:02x}", value);
             do_command(value);
+            break;
         case 0x01:
+            std::println("WD1793::write_byte - track {:02x}", value);
             state.track = value;
+            break;
         case 0x02:
+            std::println("WD1793::write_byte - sector {:02x}", value);
             state.sector = value;
+            break;
         case 0x03:
+            std::println("WD1793::write_byte - value {:02x}", value);
             state.data = value;
+            break;
         default:
             break;
     };

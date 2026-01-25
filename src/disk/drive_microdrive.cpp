@@ -26,7 +26,8 @@
 
 DriveMicrodrive::DriveMicrodrive(Machine& machine) :
     machine(machine),
-    wd1793(machine)
+    wd1793(machine),
+    status(0)
 {
 
 }
@@ -51,7 +52,9 @@ bool DriveMicrodrive::insert_disk(const std::filesystem::path& path)
 }
 
 void DriveMicrodrive::reset()
-{}
+{
+    status = 0;
+}
 
 void DriveMicrodrive::print_stat()
 {
@@ -63,7 +66,12 @@ void DriveMicrodrive::exec()
 
 uint8_t DriveMicrodrive::read_byte(uint16_t offset)
 {
-    std::println("DiskMicrodrive::read_byte");
+    std::println("Microdrive read: {:04x}", offset);
+
+    if (offset == 0x4) {
+        return 0xff;
+    }
+
     return wd1793.read_byte(offset);
 }
 
@@ -72,7 +80,12 @@ void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
     std::println("Microdrive write: {:04x} <- {:02x}", offset, value);
 
     if (offset == 0x4) {
+        status = value;
+
+        wd1793.set_side(value & 0x10 >> 4);
+        wd1793.set_drive(value & 0x60 >> 5);
         machine.set_oric_rom_enabled(value & 0x02);
+        machine.set_diskdrive_rom_enabled(!(value & 0x80));
     }
 
     return wd1793.write_byte(offset, value);

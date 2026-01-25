@@ -40,10 +40,13 @@ public:
     {
         // Registers.
         unsigned char data;
+        uint8_t drive;
+        uint8_t side;
         uint8_t track;
         uint8_t sector;
         uint8_t command;
         uint8_t status;
+
 
         void reset();
         void print() const;
@@ -56,6 +59,9 @@ public:
      * Execute one clock cycle.
      */
     void exec();
+
+    void set_drive(uint8_t drive) { state.drive = drive; }
+    void set_side(uint8_t side) { state.side = side; }
 
     /**
      * Save WD1793 state to snapshot.

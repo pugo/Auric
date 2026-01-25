@@ -98,6 +98,15 @@ public:
     }
 
     /**
+     * Set whether the diskdrive ROM is enabled.
+     * @param enabled true to enable diskdrive ROM
+     */
+    void set_diskdrive_rom_enabled(bool enabled)
+    {
+        disk_rom_enabled = enabled;
+    }
+
+    /**
      * Run the machine.
      * @param oric Pointer to Oric object
      */
@@ -190,8 +199,7 @@ public:
 
         if (address >= 0x300 && address < 0x400) {
             if (address >= 0x310 && address < 0x31c) {
-                std::println("WD1793 read");
-                return 0x0;
+                return machine.disk->read_byte(address - 0x310);
             }
 
             return machine.mos_6522->read_byte(address);

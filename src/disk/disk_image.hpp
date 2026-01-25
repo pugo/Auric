@@ -19,14 +19,32 @@
 #define DISK_IMAGE_H
 
 #include <filesystem>
+#include <span>
+
+
+class DiskSector
+{
+public:
+    DiskSector(std::span<uint8_t> sector_data);
+
+    uint8_t read_byte(size_t offset) const;
+
+private:
+    std::span<uint8_t> sector_data;
+    bool valid;
+};
+
 
 
 class DiskTrack
 {
 public:
-    DiskTrack(uint8_t* track_data, size_t track_size);
+    DiskTrack(std::span<uint8_t> track_data);
 
     uint8_t read_byte(size_t offset) const;
+
+private:
+    std::vector<DiskSector> sectors;
 };
 
 
@@ -36,6 +54,8 @@ public:
     DiskSide(uint8_t side);
 
     void add_track(DiskTrack track);
+
+    bool get_track(uint8_t track, DiskTrack& out_track) const;
 
 protected:
     uint8_t side;
@@ -49,7 +69,9 @@ public:
     DiskImage(const std::filesystem::path& path);
 
     bool init();
-    bool set_track(uint8_t track);
+
+    bool get_track(uint8_t side, uint8_t track, DiskTrack& out_track) const;
+
 
 
 protected:
