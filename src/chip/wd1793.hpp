@@ -60,9 +60,14 @@ public:
         uint8_t sector;
         uint8_t command;
         uint8_t status;
-        int16_t interrupt_counter;
-        bool interrupt_enabled;
-        bool irq_flag;
+
+        bool interrupts_enabled;       // Set by bit 1 in the FDC control register to enable or disable CPU IRQs.
+
+        int16_t interrupt_counter;     // Counts down cycles to interrupt.
+        bool irq_flag;                 // Interrupt request flag.
+
+        int16_t data_request_counter;  // Counts down cycles to data request.
+        bool data_request_flag;        // Set when data is available on read or missing on write.
 
         void reset();
         void print() const;
@@ -76,7 +81,7 @@ public:
      */
     void exec(uint8_t cycles);
 
-    void set_interrupt_enabled(bool enabled) { state.interrupt_enabled = enabled; }
+    void set_interrupts_enabled(bool enabled) { state.interrupts_enabled = enabled; }
     void set_drive(uint8_t drive) { state.drive = drive; }
     void set_side(uint8_t side) { state.side = side; }
 
@@ -118,6 +123,9 @@ private:
 
     void interrupt_set();
     void interrupt_clear();
+
+    void data_request_set();
+    void data_request_clear();
 
     Machine& machine;
     WD1793::State state;
