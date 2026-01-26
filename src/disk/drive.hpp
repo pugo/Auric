@@ -20,6 +20,9 @@
 
 #include <filesystem>
 
+class DiskImage;
+
+
 class Drive
 {
 public:
@@ -42,6 +45,12 @@ public:
      * @return true on success
      */
     virtual bool insert_disk(const std::filesystem::path& path) = 0;
+
+    /**
+     * Get disk image.
+     * @return reference to disk image
+     */
+    virtual std::shared_ptr<DiskImage> get_disk_image() = 0;
 
     /**
      * Print drive status to console.

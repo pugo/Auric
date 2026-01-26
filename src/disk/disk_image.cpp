@@ -106,10 +106,16 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
 }
 
 
-uint8_t DiskTrack::read_byte(size_t offset) const
+bool DiskTrack::get_sector(uint8_t sector, DiskSector& out_sector) const
 {
-    return 0x00;
+    if (sector >= sectors.size()) {
+        return false;
+    }
+
+    out_sector = sectors[sector];
+    return true;
 }
+
 
 
 // ==== DiskSide ============================================

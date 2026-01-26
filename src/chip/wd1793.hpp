@@ -22,9 +22,78 @@
 #include <map>
 #include <string>
 
+
+class Drive;
 class Machine;
 class Memory;
 class Snapshot;
+
+
+class Operation
+{
+public:
+    virtual ~Operation() = default;
+
+    virtual uint8_t read_data_reg() const = 0;
+    virtual void write_data_reg(uint8_t value) = 0;
+};
+
+
+class OperationIdle : public Operation
+{
+public:
+    uint8_t read_data_reg() const override;
+    void write_data_reg(uint8_t value) override;
+};
+
+
+class OperationReadSector : public Operation
+{
+public:
+    OperationReadSector() : multiple_sectors(false) {}
+
+    uint8_t read_data_reg() const override;
+    void write_data_reg(uint8_t value) override;
+
+    bool multiple_sectors;
+};
+
+
+class OperationWriteSector : public Operation
+{
+public:
+    OperationWriteSector() : multiple_sectors(false) {}
+
+    uint8_t read_data_reg() const override;
+    void write_data_reg(uint8_t value) override;
+
+    bool multiple_sectors;
+};
+
+
+class OperationReadAddress : public Operation
+{
+public:
+    uint8_t read_data_reg() const override;
+    void write_data_reg(uint8_t value) override;
+};
+
+
+class OperationReadTrack : public Operation
+{
+public:
+    uint8_t read_data_reg() const override;
+    void write_data_reg(uint8_t value) override;
+};
+
+
+class OperationWriteTrack : public Operation
+{
+public:
+    uint8_t read_data_reg() const override;
+    void write_data_reg(uint8_t value) override;
+};
+
 
 
 class WD1793
@@ -46,12 +115,13 @@ public:
         StatusNotReady = 0x80             // bit 7: Type I, II and III
     };
 
-
     /**
      * State of a WD1793.
      */
     struct State
     {
+        Operation* current_operation;
+
         // Registers.
         unsigned char data;
         uint8_t drive;
@@ -71,9 +141,16 @@ public:
 
         void reset();
         void print() const;
+
+        OperationIdle operation_idle;
+        OperationReadSector operation_read_sector;
+        OperationWriteSector operation_write_sector;
+        OperationReadAddress operation_read_address;
+        OperationReadTrack operation_read_track;
+        OperationWriteTrack operation_write_track;
     };
 
-    explicit WD1793(Machine& a_Machine);
+    explicit WD1793(Machine& a_Machine, Drive* drive);
     ~WD1793() = default;
 
     /**
@@ -117,7 +194,6 @@ public:
      */
     WD1793::State& get_state() { return state; }
 
-
 private:
     void do_command(uint8_t command);
 
@@ -128,6 +204,7 @@ private:
     void data_request_clear();
 
     Machine& machine;
+    Drive* drive;
     WD1793::State state;
 };
 

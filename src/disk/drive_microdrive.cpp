@@ -26,7 +26,7 @@
 
 DriveMicrodrive::DriveMicrodrive(Machine& machine) :
     machine(machine),
-    wd1793(machine),
+    wd1793(machine, this),
     status(0)
 {
 
@@ -49,6 +49,11 @@ bool DriveMicrodrive::insert_disk(const std::filesystem::path& path)
     disk_image->init();
 
     return true;
+}
+
+std::shared_ptr<DiskImage> DriveMicrodrive::get_disk_image()
+{
+    return disk_image;
 }
 
 void DriveMicrodrive::reset()

@@ -27,13 +27,11 @@ class DiskSector
 public:
     DiskSector(std::span<uint8_t> sector_data);
 
-    uint8_t read_byte(size_t offset) const;
+    std::span<uint8_t> sector_data;
 
 private:
-    std::span<uint8_t> sector_data;
     bool valid;
 };
-
 
 
 class DiskTrack
@@ -41,8 +39,7 @@ class DiskTrack
 public:
     DiskTrack(std::span<uint8_t> track_data);
 
-    uint8_t read_byte(size_t offset) const;
-
+    bool get_sector(uint8_t sector, DiskSector& out_sector) const;
 private:
     std::vector<DiskSector> sectors;
 };

@@ -30,6 +30,11 @@ bool DriveNone::insert_disk(const std::filesystem::path& path)
     return false;
 }
 
+std::shared_ptr<DiskImage> DriveNone::get_disk_image()
+{
+    return nullptr;
+}
+
 void DriveNone::reset()
 {}
 
