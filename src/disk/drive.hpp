@@ -50,7 +50,7 @@ public:
      * Get disk image.
      * @return reference to disk image
      */
-    virtual std::shared_ptr<DiskImage> get_disk_image() = 0;
+    virtual DiskImage* get_disk_image() = 0;
 
     /**
      * Print drive status to console.

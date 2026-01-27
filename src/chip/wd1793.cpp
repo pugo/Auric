@@ -97,8 +97,6 @@ void OperationWriteTrack::write_data_reg(uint8_t value)
 
 void WD1793::State::reset()
 {
-    current_operation = &operation_idle;
-
     data = 0x00;
     drive = 0x00;
     side = 0x00;
@@ -110,23 +108,34 @@ void WD1793::State::reset()
     interrupts_enabled = false;
     interrupt_counter = 0;
     irq_flag = false;
+    status_at_interrupt = 0x00;
+    update_status_at_interrupt = false;
 
     data_request_counter = 0;
     data_request_flag = false;
+
+    current_track = nullptr;
 }
 
 void WD1793::State::print() const
 {
 }
 
-// ===== MOS6522 =====
+// ===== WD1793 =====
 
 WD1793::WD1793(Machine& a_Machine, Drive* drive) :
     machine(a_Machine),
     drive(drive),
-    state()
+    state(),
+    operation_idle(*this),
+    operation_read_sector(*this),
+    operation_write_sector(*this),
+    operation_read_address(*this),
+    operation_read_track(*this),
+    operation_write_track(*this)
 {
     state.reset();
+    state.current_operation = &operation_idle;
 }
 
 void WD1793::save_to_snapshot(Snapshot& snapshot)
@@ -144,6 +153,12 @@ void WD1793::exec(uint8_t cycles)
         if (state.interrupt_counter <= 0) {
             state.interrupt_counter = 0;
             std::println("WD1793 *IRQ*");
+
+            // Delayed update of status register at interrupt time.
+            if (state.update_status_at_interrupt) {
+                state.status = state.status_at_interrupt;
+                state.update_status_at_interrupt = false;
+            }
 
             interrupt_set();
         }
@@ -174,7 +189,7 @@ uint8_t WD1793::read_byte(uint16_t offset)
         case 0x2:
             return state.sector;
         case 0x3:
-            return state.data;
+            return state.current_operation->read_data_reg();
         default:
             break;
     };
@@ -202,6 +217,7 @@ void WD1793::write_byte(uint16_t offset, uint8_t value)
         case 0x03:
             std::println("WD1793::write_byte - value {:02x}", value);
             state.data = value;
+            state.current_operation->write_data_reg(value);
             break;
         default:
             break;
@@ -219,14 +235,15 @@ void WD1793::do_command(uint8_t command)
                 std::println("WD1793 do command: Seek");
                 state.status = Status::StatusBusy;
                 if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
-                state.current_operation = &state.operation_idle;
+                state.current_operation = &operation_idle;
             }
             else {
                 // Restore [Type 1]: : 0 0 1 1 h V r₁ r₀
                 std::println("WD1793 do command: Restore");
                 state.status = Status::StatusBusy;
                 if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
-                state.current_operation = &state.operation_idle;
+                state.current_operation = &operation_idle;
+                set_track(0);
             }
             break;
         case 0x20:
@@ -234,37 +251,37 @@ void WD1793::do_command(uint8_t command)
             std::println("WD1793 do command: Step");
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
-            state.current_operation = &state.operation_idle;
+            state.current_operation = &operation_idle;
             break;
         case 0x40:
             // Step in [Type 1]: 0 1 0 u h V r₁ r₀
             std::println("WD1793 do command: Step in");
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
-            state.current_operation = &state.operation_idle;
+            state.current_operation = &operation_idle;
             break;
         case 0x60:
             // Step out [Type 1]: 0 1 1 u h V r₁ r₀
             std::println("WD1793 do command: Step out");
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
-            state.current_operation = &state.operation_idle;
+            state.current_operation = &operation_idle;
             break;
         case 0x80:
             // Read sector [Type 2]: 1 0 0 m F₂ E F₁ 0
             std::println("WD1793 do command: Read sector");
             state.status = Status::StatusBusy | StatusNotReady;
             state.data_request_counter = 60;
-            state.operation_read_sector.multiple_sectors = command & 0x10;
-            state.current_operation = &state.operation_read_sector;
+            operation_read_sector.multiple_sectors = command & 0x10;
+            state.current_operation = &operation_read_sector;
             break;
         case 0xa0:
             // Write sector [Type 2]: 1 0 1 F₂ E F₁ a₀
             std::println("WD1793 do command: Write sector");
             state.status = Status::StatusBusy | StatusNotReady;
             state.data_request_counter = 500;
-            state.operation_write_sector.multiple_sectors = command & 0x10;
-            state.current_operation = &state.operation_write_sector;
+            operation_write_sector.multiple_sectors = command & 0x10;
+            state.current_operation = &operation_write_sector;
             break;
         case 0xc0:
             if (command & 0x10) {
@@ -273,14 +290,14 @@ void WD1793::do_command(uint8_t command)
                 state.status = 0;
                 state.interrupt_counter = 0;
                 interrupt_set();
-                state.current_operation = &state.operation_idle;
+                state.current_operation = &operation_idle;
             }
             else {
                 // Read address [Type 3]: 1 1 0 0 0 E 0 0
                 std::println("WD1793 do command: Read address");
                 state.status = Status::StatusBusy | StatusNotReady | StatusDataRequest;
                 state.reset();
-                state.current_operation = &state.operation_read_address;
+                state.current_operation = &operation_read_address;
             }
             break;
         case 0xe0:
@@ -288,17 +305,38 @@ void WD1793::do_command(uint8_t command)
                 // Write track [Type 3]: 1 1 1 1 0 E 0 0
                 std::println("WD1793 do command: Write track");
                 state.status = Status::StatusBusy | StatusNotReady;
-                state.current_operation = &state.operation_write_track;
+                state.current_operation = &operation_write_track;
             }
             else {
                 // Read track [Type 3]: 1 1 1 0 0 E 0 0
                 std::println("WD1793 do command: Read track");
                 state.reset();
-                state.current_operation = &state.operation_read_track;
+                state.current_operation = &operation_read_track;
             }
             break;
     }
 }
+
+
+bool WD1793::set_track(uint8_t track)
+{
+    auto* disk_image = drive->get_disk_image();
+    if (! disk_image) {
+        return false;
+    }
+    if (track < disk_image->tracks_count()) {
+        state.set_status_at_interrupt(StatusSeekError | StatusHeadLoaded);
+    }
+    else {
+        disk_image->get_track(state.side, disk_image->tracks_count() - 1, state.current_track);
+        state.set_status_at_interrupt(StatusIndex | StatusHeadLoaded);
+    }
+
+    state.interrupt_counter = 20;
+    return true;
+}
+
+
 
 void WD1793::interrupt_set()
 {

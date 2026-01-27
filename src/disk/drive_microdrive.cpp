@@ -45,15 +45,15 @@ bool DriveMicrodrive::insert_disk(const std::filesystem::path& path)
     }
 
     disk_image_path = path;
-    disk_image = std::make_shared<DiskImage>(disk_image_path);
+    disk_image = std::make_unique<DiskImage>(disk_image_path);
     disk_image->init();
 
     return true;
 }
 
-std::shared_ptr<DiskImage> DriveMicrodrive::get_disk_image()
+DiskImage* DriveMicrodrive::get_disk_image()
 {
-    return disk_image;
+    return disk_image.get();
 }
 
 void DriveMicrodrive::reset()
@@ -96,8 +96,8 @@ void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
         status = value;
 
         wd1793.set_interrupts_enabled(value & 0x01);
-        wd1793.set_side(value & 0x10 >> 4);
-        wd1793.set_drive(value & 0x60 >> 5);
+        wd1793.set_side_number(value & 0x10 >> 4);
+        wd1793.set_drive_number(value & 0x60 >> 5);
         machine.set_oric_rom_enabled(value & 0x02);
         machine.set_diskdrive_rom_enabled(!(value & 0x80));
     }

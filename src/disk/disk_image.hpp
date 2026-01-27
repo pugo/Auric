@@ -39,7 +39,7 @@ class DiskTrack
 public:
     DiskTrack(std::span<uint8_t> track_data);
 
-    bool get_sector(uint8_t sector, DiskSector& out_sector) const;
+    bool get_sector(uint8_t sector, DiskSector* out_sector);
 private:
     std::vector<DiskSector> sectors;
 };
@@ -52,7 +52,7 @@ public:
 
     void add_track(DiskTrack track);
 
-    bool get_track(uint8_t track, DiskTrack& out_track) const;
+    bool get_track(uint8_t track, DiskTrack* out_track);
 
 protected:
     uint8_t side;
@@ -67,9 +67,12 @@ public:
 
     bool init();
 
-    bool get_track(uint8_t side, uint8_t track, DiskTrack& out_track) const;
+    bool get_track(uint8_t side, uint8_t track, DiskTrack* out_track);
 
+    uint8_t get_track_count();
 
+    uint8_t side_count() const { return side_count_; }
+    uint8_t tracks_count() const { return tracks_count_; }
 
 protected:
     uint32_t read32(uint32_t offset) const;
@@ -77,9 +80,9 @@ protected:
     std::filesystem::path image_path;
     size_t image_size;
 
-    uint8_t side_count;
-    uint16_t tracks_count;
-    uint8_t geometry;
+    uint8_t side_count_;
+    uint16_t tracks_count_;
+    uint8_t geometry_;
 
     std::vector<uint8_t> memory_vector;
     uint8_t* data;

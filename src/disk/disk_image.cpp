@@ -32,7 +32,6 @@ constexpr uint32_t header_size = 256;   // bytes of header
 DiskSector::DiskSector(std::span<uint8_t> sector_data) :
     valid(false)
 {
-    BOOST_LOG_TRIVIAL(info) << " DiskSector - Sector data size: " << sector_data.size();
     BOOST_LOG_TRIVIAL(debug) << "   -- Sector data start byte: " << std::hex << (int)sector_data[0];
     if (sector_data[0] == 0xfb) {
         BOOST_LOG_TRIVIAL(debug) << "   -- Sector data ID byte indicates normal data sector";
@@ -106,13 +105,13 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
 }
 
 
-bool DiskTrack::get_sector(uint8_t sector, DiskSector& out_sector) const
+bool DiskTrack::get_sector(uint8_t sector, DiskSector* out_sector)
 {
     if (sector >= sectors.size()) {
         return false;
     }
 
-    out_sector = sectors[sector];
+    out_sector = &sectors[sector];
     return true;
 }
 
@@ -132,13 +131,13 @@ void DiskSide::add_track(DiskTrack track)
 }
 
 
-bool DiskSide::get_track(uint8_t track, DiskTrack& out_track) const
+bool DiskSide::get_track(uint8_t track, DiskTrack* out_track)
 {
     if (track >= tracks.size()) {
         return false;
     }
 
-    out_track = tracks[track];
+    out_track = &tracks[track];
     return true;
 }
 
@@ -148,9 +147,9 @@ bool DiskSide::get_track(uint8_t track, DiskTrack& out_track) const
 DiskImage::DiskImage(const std::filesystem::path& path) :
     image_path(path),
     image_size(0),
-    side_count(0),
-    tracks_count(0),
-    geometry(0),
+    side_count_(0),
+    tracks_count_(0),
+    geometry_(0),
     data(nullptr)
 {
 }
@@ -193,27 +192,27 @@ bool DiskImage::init()
         return false;
     }
 
-    side_count = static_cast<uint8_t>(read32(8));
-    tracks_count = static_cast<uint16_t>(read32(12));
-    geometry = static_cast<uint8_t>(read32(16));
+    side_count_ = static_cast<uint8_t>(read32(8));
+    tracks_count_ = static_cast<uint16_t>(read32(12));
+    geometry_ = static_cast<uint8_t>(read32(16));
 
-    BOOST_LOG_TRIVIAL(info) << "DiskImage: sides: " << (int)side_count
-                            << ", tracks: " << (int)tracks_count
-                            << ", geometry: " << (int)geometry;
+    BOOST_LOG_TRIVIAL(info) << "DiskImage: sides: " << (int)side_count_
+                            << ", tracks: " << (int)tracks_count_
+                            << ", geometry: " << (int)geometry_;
 
     BOOST_LOG_TRIVIAL(info) << "Total size: " << image_size;
     BOOST_LOG_TRIVIAL(info) << "data start: " << (void*)data;
 
-    for (uint8_t i = 1; i <= side_count; ++i) {
+    for (uint8_t i = 1; i <= side_count_; ++i) {
         disk_sides.emplace_back(DiskSide(i));
     }
 
-    size_t size_per_side = tracks_count * track_size;
+    size_t size_per_side = tracks_count_ * track_size;
 
-    for (uint8_t side = 0; side < side_count; ++side) {
+    for (uint8_t side = 0; side < side_count_; ++side) {
         BOOST_LOG_TRIVIAL(info) << "======= DiskImage: sides: " << (int)side << " =======";
 
-        for (uint8_t track = 0; track < tracks_count; ++track) {
+        for (uint8_t track = 0; track < tracks_count_; ++track) {
             auto track_data = std::span<uint8_t>(data + header_size + (side * size_per_side) + (track * track_size), track_size);
             if (track_data.data() - data > image_size) {
                 BOOST_LOG_TRIVIAL(error) << "DiskImage: track data out of bounds";
@@ -222,7 +221,6 @@ bool DiskImage::init()
 
             BOOST_LOG_TRIVIAL(info) << "======= DiskImage: track: " << (int)track << " =======";
             disk_sides[side].add_track(track_data);
-            BOOST_LOG_TRIVIAL(info) << (tracks_count * side) + track << ": " << (header_size + side * size_per_side + track * track_size);
         }
     }
 
@@ -230,9 +228,9 @@ bool DiskImage::init()
 }
 
 
-bool DiskImage::get_track(uint8_t side, uint8_t track, DiskTrack& out_track) const
+bool DiskImage::get_track(uint8_t side, uint8_t track, DiskTrack* out_track)
 {
-    if (side >= side_count) {
+    if (side >= side_count_) {
         return false;
     }
 

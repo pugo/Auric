@@ -46,7 +46,7 @@ public:
      * Get disk image.
      * @return reference to disk image
      */
-    std::shared_ptr<DiskImage> get_disk_image() override;
+    DiskImage* get_disk_image() override;
 
     /**
      * Print drive status to console.

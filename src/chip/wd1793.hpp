@@ -19,29 +19,34 @@
 #define CHIP_WD1793_H
 
 #include <cstdint>
-#include <map>
 #include <string>
 
+#include <disk/disk_image.hpp>
 
 class Drive;
 class Machine;
 class Memory;
 class Snapshot;
-
+class WD1793;
 
 class Operation
 {
 public:
+    Operation(WD1793& wd1793) : wd1793(wd1793) { printf("HEEEEJ!\n"); }
     virtual ~Operation() = default;
 
     virtual uint8_t read_data_reg() const = 0;
     virtual void write_data_reg(uint8_t value) = 0;
+
+protected:
+    WD1793& wd1793;
 };
 
 
 class OperationIdle : public Operation
 {
 public:
+    OperationIdle(WD1793& wd1793) : Operation(wd1793) {}
     uint8_t read_data_reg() const override;
     void write_data_reg(uint8_t value) override;
 };
@@ -50,7 +55,7 @@ public:
 class OperationReadSector : public Operation
 {
 public:
-    OperationReadSector() : multiple_sectors(false) {}
+    OperationReadSector(WD1793& wd1793) : Operation(wd1793), multiple_sectors(false) {}
 
     uint8_t read_data_reg() const override;
     void write_data_reg(uint8_t value) override;
@@ -62,7 +67,7 @@ public:
 class OperationWriteSector : public Operation
 {
 public:
-    OperationWriteSector() : multiple_sectors(false) {}
+    OperationWriteSector(WD1793& wd1793) : Operation(wd1793), multiple_sectors(false) {}
 
     uint8_t read_data_reg() const override;
     void write_data_reg(uint8_t value) override;
@@ -74,6 +79,7 @@ public:
 class OperationReadAddress : public Operation
 {
 public:
+    OperationReadAddress(WD1793& wd1793) : Operation(wd1793) {}
     uint8_t read_data_reg() const override;
     void write_data_reg(uint8_t value) override;
 };
@@ -82,6 +88,7 @@ public:
 class OperationReadTrack : public Operation
 {
 public:
+    OperationReadTrack(WD1793& wd1793) : Operation(wd1793) {}
     uint8_t read_data_reg() const override;
     void write_data_reg(uint8_t value) override;
 };
@@ -90,6 +97,7 @@ public:
 class OperationWriteTrack : public Operation
 {
 public:
+    OperationWriteTrack(WD1793& wd1793) : Operation(wd1793) {}
     uint8_t read_data_reg() const override;
     void write_data_reg(uint8_t value) override;
 };
@@ -131,23 +139,27 @@ public:
         uint8_t command;
         uint8_t status;
 
-        bool interrupts_enabled;       // Set by bit 1 in the FDC control register to enable or disable CPU IRQs.
+        bool interrupts_enabled;         // Set by bit 1 in the FDC control register to enable or disable CPU IRQs.
 
-        int16_t interrupt_counter;     // Counts down cycles to interrupt.
-        bool irq_flag;                 // Interrupt request flag.
+        int16_t interrupt_counter;       // Counts down cycles to interrupt.
+        bool irq_flag;                   // Interrupt request flag.
+        uint8_t status_at_interrupt;     // Status value at interrupt time.
+        bool update_status_at_interrupt; // Whether to update status_at_interrupt on next interrupt.
 
-        int16_t data_request_counter;  // Counts down cycles to data request.
-        bool data_request_flag;        // Set when data is available on read or missing on write.
+        int16_t data_request_counter;    // Counts down cycles to data request.
+        bool data_request_flag;          // Set when data is available on read or missing on write.
+
+        DiskTrack* current_track;
 
         void reset();
-        void print() const;
 
-        OperationIdle operation_idle;
-        OperationReadSector operation_read_sector;
-        OperationWriteSector operation_write_sector;
-        OperationReadAddress operation_read_address;
-        OperationReadTrack operation_read_track;
-        OperationWriteTrack operation_write_track;
+        void set_status_at_interrupt(uint8_t status)
+        {
+            status_at_interrupt = status;
+            update_status_at_interrupt = (status != 0);
+        }
+
+        void print() const;
     };
 
     explicit WD1793(Machine& a_Machine, Drive* drive);
@@ -159,8 +171,8 @@ public:
     void exec(uint8_t cycles);
 
     void set_interrupts_enabled(bool enabled) { state.interrupts_enabled = enabled; }
-    void set_drive(uint8_t drive) { state.drive = drive; }
-    void set_side(uint8_t side) { state.side = side; }
+    void set_drive_number(uint8_t drive) { state.drive = drive; }
+    void set_side_number(uint8_t side) { state.side = side; }
 
     /**
      * Save WD1793 state to snapshot.
@@ -197,6 +209,8 @@ public:
 private:
     void do_command(uint8_t command);
 
+    bool set_track(uint8_t track);
+
     void interrupt_set();
     void interrupt_clear();
 
@@ -206,6 +220,13 @@ private:
     Machine& machine;
     Drive* drive;
     WD1793::State state;
+
+    OperationIdle operation_idle;
+    OperationReadSector operation_read_sector;
+    OperationWriteSector operation_write_sector;
+    OperationReadAddress operation_read_address;
+    OperationReadTrack operation_read_track;
+    OperationWriteTrack operation_write_track;
 };
 
 
