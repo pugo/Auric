@@ -40,6 +40,15 @@ void OperationIdle::write_data_reg(uint8_t value)
 
 uint8_t OperationReadSector::read_data_reg() const
 {
+    if (wd1793.state.current_sector == nullptr) {
+        wd1793.state.current_operation = &wd1793.operation_idle;
+        wd1793.state.status &= ~WD1793::Status::StatusBusy;
+        wd1793.state.status |= WD1793::Status::StatusRecordNotFound;
+        return 0x00;
+    }
+
+    // uint8_t data = wd1793.state.current_sector[wd1793.state.data_pointer];
+
     return 0x00;
 }
 
@@ -73,7 +82,9 @@ void OperationReadAddress::write_data_reg(uint8_t value)
 
 uint8_t OperationReadTrack::read_data_reg() const
 {
-    return 0x00;
+    uint8_t data = wd1793.state.current_track->data[wd1793.state.offset++];
+    wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
+    return data;
 }
 
 void OperationReadTrack::write_data_reg(uint8_t value)
@@ -104,6 +115,10 @@ void WD1793::State::reset()
     sector = 0x00;
     command = 0x00;
     status = 0x00;
+
+    current_track_number = 0x00;
+    current_sector_number = 0x00;
+    offset = 0x0000;
 
     interrupts_enabled = false;
     interrupt_counter = 0;
@@ -157,6 +172,7 @@ void WD1793::exec(uint8_t cycles)
             // Delayed update of status register at interrupt time.
             if (state.update_status_at_interrupt) {
                 state.status = state.status_at_interrupt;
+                state.status_at_interrupt = 0;
                 state.update_status_at_interrupt = false;
             }
 
@@ -176,8 +192,6 @@ void WD1793::exec(uint8_t cycles)
 
 uint8_t WD1793::read_byte(uint16_t offset)
 {
-    std::println("WD1793::read_byte");
-
     switch (offset)
     {
         case 0x0:
@@ -185,10 +199,13 @@ uint8_t WD1793::read_byte(uint16_t offset)
             interrupt_clear();
             return state.status;
         case 0x1:
+            std::println("WD1793::read_byte(0x01) - track");
             return state.track;
         case 0x2:
+            std::println("WD1793::read_byte(0x02) - sector");
             return state.sector;
         case 0x3:
+            std::println("WD1793::read_byte(0x03) - data");
             return state.current_operation->read_data_reg();
         default:
             break;
@@ -289,6 +306,7 @@ void WD1793::do_command(uint8_t command)
                 std::println("WD1793 do command: Force interrupt");
                 state.status = 0;
                 state.interrupt_counter = 0;
+                state.data_request_counter = 0;
                 interrupt_set();
                 state.current_operation = &operation_idle;
             }
@@ -296,7 +314,6 @@ void WD1793::do_command(uint8_t command)
                 // Read address [Type 3]: 1 1 0 0 0 E 0 0
                 std::println("WD1793 do command: Read address");
                 state.status = Status::StatusBusy | StatusNotReady | StatusDataRequest;
-                state.reset();
                 state.current_operation = &operation_read_address;
             }
             break;
@@ -306,12 +323,16 @@ void WD1793::do_command(uint8_t command)
                 std::println("WD1793 do command: Write track");
                 state.status = Status::StatusBusy | StatusNotReady;
                 state.current_operation = &operation_write_track;
+                state.offset = 0;
+                state.data_request_counter = 500;
             }
             else {
                 // Read track [Type 3]: 1 1 1 0 0 E 0 0
                 std::println("WD1793 do command: Read track");
-                state.reset();
+                state.status = Status::StatusBusy | StatusNotReady;
                 state.current_operation = &operation_read_track;
+                state.offset = 0;
+                state.data_request_counter = 60;
             }
             break;
     }
@@ -322,17 +343,33 @@ bool WD1793::set_track(uint8_t track)
 {
     auto* disk_image = drive->get_disk_image();
     if (! disk_image) {
+        std::println("WD1793 set track: No disk image!");
+        interrupt_set();
+        state.current_track_number = 0;
         return false;
     }
     if (track < disk_image->tracks_count()) {
         state.set_status_at_interrupt(StatusSeekError | StatusHeadLoaded);
     }
     else {
-        disk_image->get_track(state.side, disk_image->tracks_count() - 1, state.current_track);
+        track = disk_image->tracks_count() - 1;
         state.set_status_at_interrupt(StatusIndex | StatusHeadLoaded);
     }
 
+    if (!disk_image->get_track(state.side, track, state.current_track)) {
+        std::println("WD1793 set track: Unable to get track data!");
+        return false;
+    }
+
+    state.track = track;
+    state.current_track_number = track;
+    state.current_sector_number = 0;
+
     state.interrupt_counter = 20;
+    if (state.current_track_number == 0) {
+        state.set_status_at_interrupt(state.status_at_interrupt | StatusTrack00);
+    }
+
     return true;
 }
 

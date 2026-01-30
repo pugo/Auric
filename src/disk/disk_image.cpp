@@ -42,7 +42,7 @@ DiskSector::DiskSector(std::span<uint8_t> sector_data) :
     }
 
     if (sector_data[0] == 0xfb || sector_data[0] == 0xf8) {
-        this->sector_data = sector_data.subspan(1, sector_data.size() - 3); // Exclude ID byte and CRC
+        this->data = sector_data.subspan(1, sector_data.size() - 3); // Exclude ID byte and CRC
         valid = true;
     }
 }
@@ -54,6 +54,7 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
 {
     BOOST_LOG_TRIVIAL(info) << " DiskTrack - Track data size: " << track_data.size();
 
+    this->data = track_data;
     auto data_ptr = track_data.begin();
     auto data_end = track_data.end();
 
@@ -101,7 +102,6 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
 
         data_ptr += 256;
     }
-
 }
 
 

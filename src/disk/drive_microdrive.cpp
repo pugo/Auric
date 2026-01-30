@@ -81,7 +81,7 @@ uint8_t DriveMicrodrive::read_byte(uint16_t offset)
 
     if (offset == 0x8) {
         uint8_t result = wd1793.get_state().data_request_flag ? 0x7f : 0xff;
-        wd1793.get_state().data_request_flag = false;
+        wd1793.data_request_clear();
         return result;
     }
 
@@ -96,14 +96,27 @@ void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
         status = value;
 
         wd1793.set_interrupts_enabled(value & 0x01);
-        wd1793.set_side_number(value & 0x10 >> 4);
-        wd1793.set_drive_number(value & 0x60 >> 5);
+        wd1793.set_side_number((value & 0x10) >> 4);
+        wd1793.set_drive_number((value & 0x60) >> 5);
         machine.set_oric_rom_enabled(value & 0x02);
         machine.set_diskdrive_rom_enabled(!(value & 0x80));
+        std::println("----------------------- Nooooo");
+
+        if (wd1793.get_state().interrupts_enabled)
+            std::println("----------------------- 1");
+
+        if (wd1793.get_state().irq_flag)
+            std::println("----------------------- 2");
+
+
+        if (value & 0x01 && wd1793.get_state().irq_flag) {
+            std::println("----------------------- KOKOOKOKOKOKOKOKOKOIK");
+            machine.cpu->irq();
+        }
     }
 
     if (offset == 0x8) {
-        wd1793.get_state().data_request_flag = false;
+        wd1793.data_request_clear();
     }
 
     return wd1793.write_byte(offset, value);

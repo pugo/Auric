@@ -27,8 +27,7 @@ class DiskSector
 public:
     DiskSector(std::span<uint8_t> sector_data);
 
-    std::span<uint8_t> sector_data;
-
+    std::span<uint8_t> data;
 private:
     bool valid;
 };
@@ -40,6 +39,8 @@ public:
     DiskTrack(std::span<uint8_t> track_data);
 
     bool get_sector(uint8_t sector, DiskSector* out_sector);
+
+    std::span<uint8_t> data;
 private:
     std::vector<DiskSector> sectors;
 };

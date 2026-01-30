@@ -134,10 +134,13 @@ public:
         unsigned char data;
         uint8_t drive;
         uint8_t side;
-        uint8_t track;
-        uint8_t sector;
+        uint8_t track;                   // Desired track, not the current_track.
+        uint8_t sector;                  // Desired sector, not the current_sector.
         uint8_t command;
         uint8_t status;
+
+        uint8_t current_track_number;
+        uint8_t current_sector_number;
 
         bool interrupts_enabled;         // Set by bit 1 in the FDC control register to enable or disable CPU IRQs.
 
@@ -150,6 +153,8 @@ public:
         bool data_request_flag;          // Set when data is available on read or missing on write.
 
         DiskTrack* current_track;
+        DiskSector* current_sector;
+        uint16_t offset;                 // Position within current sector data.
 
         void reset();
 
@@ -206,6 +211,16 @@ public:
      */
     WD1793::State& get_state() { return state; }
 
+    friend class OperationIdle;
+    friend class OperationReadSector;
+    friend class OperationWriteSector;
+    friend class OperationReadAddress;
+    friend class OperationReadTrack;
+    friend class OperationWriteTrack;
+
+    void data_request_set();
+    void data_request_clear();
+
 private:
     void do_command(uint8_t command);
 
@@ -214,8 +229,6 @@ private:
     void interrupt_set();
     void interrupt_clear();
 
-    void data_request_set();
-    void data_request_clear();
 
     Machine& machine;
     Drive* drive;
