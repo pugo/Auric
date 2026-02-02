@@ -58,6 +58,11 @@ public:
      */
     void exec(uint8_t cycles) override;
 
+    void interrupt_set() override;
+    void interrupt_clear() override;
+
+    void data_request_set() override;
+    void data_request_clear() override;
 
     /**
      * Read register value.

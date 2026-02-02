@@ -62,6 +62,12 @@ public:
      */
     virtual void exec(uint8_t cycles) = 0;
 
+    virtual void interrupt_set() = 0;
+    virtual void interrupt_clear() = 0;
+
+    virtual void data_request_set() = 0;
+    virtual void data_request_clear() = 0;
+
     /**
      * Read register value.
      * @param offset register to read

@@ -142,10 +142,7 @@ public:
         uint8_t current_track_number;
         uint8_t current_sector_number;
 
-        bool interrupts_enabled;         // Set by bit 1 in the FDC control register to enable or disable CPU IRQs.
-
         int16_t interrupt_counter;       // Counts down cycles to interrupt.
-        bool irq_flag;                   // Interrupt request flag.
         uint8_t status_at_interrupt;     // Status value at interrupt time.
         bool update_status_at_interrupt; // Whether to update status_at_interrupt on next interrupt.
 
@@ -175,7 +172,6 @@ public:
      */
     void exec(uint8_t cycles);
 
-    void set_interrupts_enabled(bool enabled) { state.interrupts_enabled = enabled; }
     void set_drive_number(uint8_t drive) { state.drive = drive; }
     void set_side_number(uint8_t side) { state.side = side; }
 
@@ -218,21 +214,15 @@ public:
     friend class OperationReadTrack;
     friend class OperationWriteTrack;
 
-    void data_request_set();
-    void data_request_clear();
-
 private:
     void do_command(uint8_t command);
 
     bool set_track(uint8_t track);
-
-    void interrupt_set();
-    void interrupt_clear();
-
+    bool set_sector(uint8_t sector);
 
     Machine& machine;
     Drive* drive;
-    WD1793::State state;
+    State state;
 
     OperationIdle operation_idle;
     OperationReadSector operation_read_sector;

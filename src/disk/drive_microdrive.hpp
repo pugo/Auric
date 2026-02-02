@@ -29,6 +29,25 @@ class Machine;
 class DriveMicrodrive : public Drive
 {
 public:
+    enum MicroDriveStatus : uint8_t {
+        MdInterruptEnabled = 0x01,          // Bit 0
+        MdBasicRomEnabled = 0x02,           // Bit 1
+        MdDataSeparatorClockDivisor = 0x04, // Bit 2
+        MdDensityFlag = 0x08,               // Bit 3
+        MdSideControl = 0x10,               // Bit 4
+        MdDriveNumber = 0x60,               // Bits 5-6
+        MdRomEnable = 0x80                  // Bit 7
+    };
+
+    struct State
+    {
+        uint8_t status;
+        uint8_t interrupt_request;
+        uint8_t data_request;
+
+        void reset();
+    };
+
     explicit DriveMicrodrive(Machine& machine);
 
     /**
@@ -65,6 +84,12 @@ public:
      */
     void exec(uint8_t cycles) override;
 
+    void interrupt_set() override;
+    void interrupt_clear() override;
+
+    void data_request_set() override;
+    void data_request_clear() override;
+
     /**
      * Read register value.
      * @param offset register to read
@@ -83,7 +108,7 @@ protected:
     Machine& machine;
     WD1793 wd1793;
 
-    uint8_t status;
+    State state;
 
     std::filesystem::path disk_image_path;
     std::unique_ptr<DiskImage> disk_image;

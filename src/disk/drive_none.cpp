@@ -46,6 +46,18 @@ void DriveNone::print_stat()
 void DriveNone::exec(uint8_t cycles)
 {}
 
+void DriveNone::interrupt_set()
+{}
+
+void DriveNone::interrupt_clear()
+{}
+
+void DriveNone::data_request_set()
+{}
+
+void DriveNone::data_request_clear()
+{}
+
 uint8_t DriveNone::read_byte(uint16_t offset)
 {
     return 0x00;

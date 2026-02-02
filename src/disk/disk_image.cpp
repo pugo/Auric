@@ -29,7 +29,8 @@ constexpr uint32_t header_size = 256;   // bytes of header
 
 // ==== DiskSector ============================================
 
-DiskSector::DiskSector(std::span<uint8_t> sector_data) :
+DiskSector::DiskSector(uint16_t sector_number, std::span<uint8_t> sector_data) :
+    sector_number(sector_number),
     valid(false)
 {
     BOOST_LOG_TRIVIAL(debug) << "   -- Sector data start byte: " << std::hex << (int)sector_data[0];
@@ -95,7 +96,7 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
         }
 
         auto sector_data = std::span<uint8_t>(data_ptr, sector_size + 3); // Include ID byte and CRC
-        sectors.push_back(DiskSector(sector_data));
+        sectors.push_back(DiskSector(sector_nr, sector_data));
 
         auto data_pos = data_ptr;
         BOOST_LOG_TRIVIAL(debug) << " -- data position: " << std::hex << (data_ptr - track_data.begin());
@@ -105,14 +106,15 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
 }
 
 
-bool DiskTrack::get_sector(uint8_t sector, DiskSector* out_sector)
+DiskSector* DiskTrack::get_sector(uint16_t sector_number)
 {
-    if (sector >= sectors.size()) {
-        return false;
+    for (auto& sector : sectors) {
+        if (sector.sector_number == sector_number) {
+            return &sector;
+        }
     }
 
-    out_sector = &sectors[sector];
-    return true;
+    return nullptr;
 }
 
 
@@ -127,18 +129,19 @@ DiskSide::DiskSide(uint8_t side) :
 
 void DiskSide::add_track(DiskTrack track)
 {
-    tracks.push_back(track);
+    tracks.push_back(std::move(track));
 }
 
 
-bool DiskSide::get_track(uint8_t track, DiskTrack* out_track)
+DiskTrack* DiskSide::get_track(uint8_t track)
 {
+    std::println("DiskSide get track: side: {}, track: {}", side, track);
     if (track >= tracks.size()) {
-        return false;
+        return nullptr;
     }
+    std::println("DiskSide get track: ok");
 
-    out_track = &tracks[track];
-    return true;
+    return &tracks[track];
 }
 
 
@@ -220,7 +223,7 @@ bool DiskImage::init()
             }
 
             BOOST_LOG_TRIVIAL(info) << "======= DiskImage: track: " << (int)track << " =======";
-            disk_sides[side].add_track(track_data);
+            disk_sides[side].add_track(DiskTrack(track_data));
         }
     }
 
@@ -228,11 +231,11 @@ bool DiskImage::init()
 }
 
 
-bool DiskImage::get_track(uint8_t side, uint8_t track, DiskTrack* out_track)
+DiskTrack* DiskImage::get_track(uint8_t side, uint8_t track)
 {
     if (side >= side_count_) {
-        return false;
+        return nullptr;
     }
 
-    return disk_sides[side].get_track(track, out_track);
+    return disk_sides[side].get_track(track);
 }

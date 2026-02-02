@@ -26,10 +26,16 @@
 
 DriveMicrodrive::DriveMicrodrive(Machine& machine) :
     machine(machine),
-    wd1793(machine, this),
-    status(0)
+    wd1793(machine, this)
 {
+    state.reset();
+}
 
+void DriveMicrodrive::State::reset()
+{
+    status = 0;
+    interrupt_request = 0;
+    data_request = 0;
 }
 
 bool DriveMicrodrive::init()
@@ -58,7 +64,6 @@ DiskImage* DriveMicrodrive::get_disk_image()
 
 void DriveMicrodrive::reset()
 {
-    status = 0;
 }
 
 void DriveMicrodrive::print_stat()
@@ -71,18 +76,42 @@ void DriveMicrodrive::exec(uint8_t cycles)
     wd1793.exec(cycles);
 }
 
+void DriveMicrodrive::interrupt_set()
+{
+    state.interrupt_request = 0x00;
+    if (state.status & MdInterruptEnabled) {
+        std::println("--- WD1793 IRQ SET ---");
+
+        machine.cpu->irq();
+    }
+}
+
+void DriveMicrodrive::interrupt_clear()
+{
+    state.interrupt_request = 0x80;     // Bit 7 in status read
+    machine.cpu->irq_clear();
+}
+
+void DriveMicrodrive::data_request_set()
+{
+    state.data_request = 0x00;
+}
+
+void DriveMicrodrive::data_request_clear()
+{
+    state.data_request = 0x80;
+}
+
 uint8_t DriveMicrodrive::read_byte(uint16_t offset)
 {
-    std::println("Microdrive read: {:04x}", offset);
+    // std::println("Microdrive read: {:04x}", offset);
 
     if (offset == 0x4) {
-        return wd1793.get_state().irq_flag ? 0x7f : 0xff;
+        return state.interrupt_request | 0x7f;
     }
 
     if (offset == 0x8) {
-        uint8_t result = wd1793.get_state().data_request_flag ? 0x7f : 0xff;
-        wd1793.data_request_clear();
-        return result;
+        return state.data_request | 0x7f;
     }
 
     return wd1793.read_byte(offset);
@@ -90,33 +119,25 @@ uint8_t DriveMicrodrive::read_byte(uint16_t offset)
 
 void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
 {
-    std::println("Microdrive write: {:04x} <- {:02x}", offset, value);
+    // std::println("Microdrive write: {:04x} <- {:02x}", offset, value);
 
     if (offset == 0x4) {
-        status = value;
+        state.status = value;
 
-        wd1793.set_interrupts_enabled(value & 0x01);
         wd1793.set_side_number((value & 0x10) >> 4);
         wd1793.set_drive_number((value & 0x60) >> 5);
         machine.set_oric_rom_enabled(value & 0x02);
         machine.set_diskdrive_rom_enabled(!(value & 0x80));
-        std::println("----------------------- Nooooo");
 
-        if (wd1793.get_state().interrupts_enabled)
-            std::println("----------------------- 1");
-
-        if (wd1793.get_state().irq_flag)
-            std::println("----------------------- 2");
-
-
-        if (value & 0x01 && wd1793.get_state().irq_flag) {
-            std::println("----------------------- KOKOOKOKOKOKOKOKOKOIK");
+        if (state.status & MdInterruptEnabled && state.interrupt_request) {
             machine.cpu->irq();
         }
+        return;
     }
 
     if (offset == 0x8) {
-        wd1793.data_request_clear();
+        data_request_clear();
+        return;
     }
 
     return wd1793.write_byte(offset, value);

@@ -25,9 +25,11 @@
 class DiskSector
 {
 public:
-    DiskSector(std::span<uint8_t> sector_data);
+    DiskSector(uint16_t sector_number, std::span<uint8_t> sector_data);
 
+    uint16_t sector_number;
     std::span<uint8_t> data;
+
 private:
     bool valid;
 };
@@ -38,7 +40,8 @@ class DiskTrack
 public:
     DiskTrack(std::span<uint8_t> track_data);
 
-    bool get_sector(uint8_t sector, DiskSector* out_sector);
+    DiskSector* get_sector(uint16_t sector_number);
+    uint8_t sector_count() const { return sectors.size(); }
 
     std::span<uint8_t> data;
 private:
@@ -53,7 +56,7 @@ public:
 
     void add_track(DiskTrack track);
 
-    bool get_track(uint8_t track, DiskTrack* out_track);
+    DiskTrack* get_track(uint8_t track);
 
 protected:
     uint8_t side;
@@ -68,7 +71,7 @@ public:
 
     bool init();
 
-    bool get_track(uint8_t side, uint8_t track, DiskTrack* out_track);
+    DiskTrack* get_track(uint8_t side, uint8_t track);
 
     uint8_t get_track_count();
 
