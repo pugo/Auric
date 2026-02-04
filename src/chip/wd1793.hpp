@@ -141,6 +141,7 @@ public:
 
         uint8_t current_track_number;
         uint8_t current_sector_number;
+        uint8_t sector_type;
 
         int16_t interrupt_counter;       // Counts down cycles to interrupt.
         uint8_t status_at_interrupt;     // Status value at interrupt time.

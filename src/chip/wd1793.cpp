@@ -29,12 +29,13 @@
 
 uint8_t OperationIdle::read_data_reg() const
 {
-    // std::println("OperationIdle::read_data_reg()");
+    std::println("OperationIdle::read_data_reg()");
     return 0x00;
 }
 
 void OperationIdle::write_data_reg(uint8_t value)
 {
+    std::println("OperationIdle::write_data_reg(): {}", value);
 }
 
 // ----- OperationReadSector -----
@@ -46,20 +47,59 @@ uint8_t OperationReadSector::read_data_reg() const
         wd1793.state.current_operation = &wd1793.operation_idle;
         wd1793.state.status &= ~WD1793::Status::StatusBusy;
         wd1793.state.status |= WD1793::Status::StatusRecordNotFound;
+        wd1793.drive->data_request_clear();
+        wd1793.drive->interrupt_set();
         std::println("OperationReadSector::read_data_reg() - Record not found!");
         return 0x00;
     }
 
+    auto data_span = wd1793.state.current_sector->data;
+    std::println("OperationReadSector::read_data_reg() span size: {}", data_span.size());
 
-    // uint8_t data = wd1793.state.current_sector[wd1793.state.data_pointer];
+    if (wd1793.state.offset >= data_span.size()) {
+        if (multiple_sectors) {
+            std::println("OperationReadSector::read_data_reg() - Multiple sectors, reading next");
+            wd1793.state.sector += 1;
+            wd1793.set_sector(wd1793.state.sector);
+            wd1793.state.data_request_counter = 180;
+            return 0x00;
+        }
+    }
+
+    std::println("OperationReadSector::read_data_reg() reading offset: {}", wd1793.state.offset);
+
+    uint8_t v = data_span[wd1793.state.offset++];
+
+    // Kvittera DRQ för den här byten
     wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
     wd1793.drive->data_request_clear();
 
-    return 0x00;
+    // Om mer data återstår: trigga nästa DRQ (direkt eller efter få cycles)
+    if (wd1793.state.offset < data_span.size()) {
+        wd1793.state.data_request_counter = 32; // eller 0 för "direkt"
+    }
+    else {
+        std::println("OperationReadSector::read_data_reg() - No more data!");
+        // Sista byten levererad -> command complete
+        wd1793.state.status &= ~WD1793::Status::StatusBusy;
+        wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
+        // wd1793.state.status &= ~WD1793::Status::StatusLostData;
+        wd1793.drive->data_request_clear();
+
+        wd1793.state.interrupt_counter = 32;
+        wd1793.state.set_status_at_interrupt(0);
+
+        wd1793.state.data_request_counter = 0;
+        wd1793.state.current_operation = &wd1793.operation_idle;
+        printf("STATUS AFTER READ: %02X\n", wd1793.state.status);
+    }
+
+    return v;
 }
 
 void OperationReadSector::write_data_reg(uint8_t value)
 {
+    std::println("OperationReadSector::write_data_reg(): {}", value);
 }
 
 // ----- OperationWriteSector -----
@@ -72,6 +112,7 @@ uint8_t OperationWriteSector::read_data_reg() const
 
 void OperationWriteSector::write_data_reg(uint8_t value)
 {
+    std::println("OperationWriteSector::write_data_reg(): {}", value);
 }
 
 // ----- OperationReadAddress -----
@@ -84,6 +125,7 @@ uint8_t OperationReadAddress::read_data_reg() const
 
 void OperationReadAddress::write_data_reg(uint8_t value)
 {
+    std::println("OperationReadAddress::write_data_reg(): {}", value);
 }
 
 // ----- OperationReadTrack -----
@@ -98,6 +140,7 @@ uint8_t OperationReadTrack::read_data_reg() const
 
 void OperationReadTrack::write_data_reg(uint8_t value)
 {
+    std::println("OperationReadTrack::write_data_reg(): {}", value);
 }
 
 // ----- OperationWriteTrack -----
@@ -109,6 +152,7 @@ uint8_t OperationWriteTrack::read_data_reg() const
 
 void OperationWriteTrack::write_data_reg(uint8_t value)
 {
+    std::println("OperationWriteTrack::write_data_reg(): {}", value);
 }
 
 
@@ -127,6 +171,7 @@ void WD1793::State::reset()
 
     current_track_number = 0x00;
     current_sector_number = 0x00;
+    sector_type = 0x00;
     offset = 0x0000;
 
     interrupt_counter = 0;
@@ -203,17 +248,17 @@ uint8_t WD1793::read_byte(uint16_t offset)
     switch (offset)
     {
         case 0x0:
-            std::println("WD1793 *IRQ clear*");
+            std::println("WD1793::read_byte(0) - *IRQ clear*");
             drive->interrupt_clear();
             return state.status;
         case 0x1:
-            std::println("WD1793::read_byte(0x01) - track");
+            std::println("WD1793::read_byte(0x01) - track: {}", state.track);
             return state.track;
         case 0x2:
-            std::println("WD1793::read_byte(0x02) - sector");
+            std::println("WD1793::read_byte(0x02) - sector: {}", state.sector);
             return state.sector;
         case 0x3:
-//            std::println("WD1793::read_byte(0x03) - data");
+            // std::println("WD1793::read_byte(0x03) - data");
             return state.current_operation->read_data_reg();
         default:
             break;
@@ -261,6 +306,7 @@ void WD1793::do_command(uint8_t command)
                 state.status = Status::StatusBusy;
                 if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
                 state.current_operation = &operation_idle;
+                set_track(state.data);
             }
             else {
                 // Restore [Type 1]: : 0 0 1 1 h V r₁ r₀
@@ -294,11 +340,12 @@ void WD1793::do_command(uint8_t command)
             break;
         case 0x80:
             // Read sector [Type 2]: 1 0 0 m F₂ E F₁ 0
-            std::println("WD1793 do command: Read sector");
-            state.status = Status::StatusBusy | StatusNotReady;
+            std::println("WD1793 do command: Read sector: {:02x}", command);
+            state.status = Status::StatusBusy;
             state.offset = 0;
             state.data_request_counter = 60;
             operation_read_sector.multiple_sectors = command & 0x10;
+            if (command & 0x10) { std::println("////// MULTI ////////");}
             state.current_operation = &operation_read_sector;
             set_sector(state.sector);
             break;
@@ -384,7 +431,7 @@ bool WD1793::set_track(uint8_t track)
 
     state.interrupt_counter = 20;
     if (state.current_track_number == 0) {
-        state.set_status_at_interrupt(state.status_at_interrupt | StatusTrack00);
+        state.status_at_interrupt |= StatusTrack00;
     }
 
     return true;

@@ -200,6 +200,9 @@ void Machine::run(Oric* oric)
 
         while (cycle_count > 0) {
             uint8_t cycles = cpu->time_instruction();
+            if (disassemble_execution) {
+                PrintStat(cpu->get_current_instruction_addr());
+            }
 
             tape->exec(cycles);
             disk->exec(cycles);
@@ -208,10 +211,6 @@ void Machine::run(Oric* oric)
 
             if (cpu->exec(false, break_exec)) {
                 update_key_output();
-
-                if (disassemble_execution) {
-                    PrintStat(cpu->get_current_instruction_addr());
-                }
             }
 
             if (break_exec) {

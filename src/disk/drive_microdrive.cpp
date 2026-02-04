@@ -78,8 +78,8 @@ void DriveMicrodrive::exec(uint8_t cycles)
 
 void DriveMicrodrive::interrupt_set()
 {
-    state.interrupt_request = 0x00;
     if (state.status & MdInterruptEnabled) {
+        state.interrupt_request = 0x00;
         std::println("--- WD1793 IRQ SET ---");
 
         machine.cpu->irq();
@@ -111,6 +111,7 @@ uint8_t DriveMicrodrive::read_byte(uint16_t offset)
     }
 
     if (offset == 0x8) {
+        // std::println("--- DRQ READ ---");
         return state.data_request | 0x7f;
     }
 
@@ -124,12 +125,12 @@ void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
     if (offset == 0x4) {
         state.status = value;
 
-        wd1793.set_side_number((value & 0x10) >> 4);
+        wd1793.set_side_number((value & 0x10) ? 1 : 0);
         wd1793.set_drive_number((value & 0x60) >> 5);
         machine.set_oric_rom_enabled(value & 0x02);
         machine.set_diskdrive_rom_enabled(!(value & 0x80));
 
-        if (state.status & MdInterruptEnabled && state.interrupt_request) {
+        if (state.status & MdInterruptEnabled && state.interrupt_request == 0) {
             machine.cpu->irq();
         }
         return;

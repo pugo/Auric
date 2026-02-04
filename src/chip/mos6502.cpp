@@ -443,6 +443,7 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
     current_cycle = 0;
 
     if (do_interrupt) {
+        std::println("MOS6502::exec() - do_interrupt");
         do_interrupt = false;
 
         PUSH_BYTE_STACK(PC >> 8);

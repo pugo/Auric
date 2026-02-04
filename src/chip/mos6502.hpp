@@ -196,6 +196,7 @@ protected:
 
     uint8_t SP;
 
+    uint8_t irq_flags;
     bool irq_flag;
     bool nmi_flag;
     bool do_interrupt;
