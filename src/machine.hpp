@@ -127,12 +127,12 @@ public:
     /**
      * Trigger CPU IRQ.
      */
-    void irq() const { cpu->irq(); }
+    void set_irq_source(uint8_t source) { cpu->set_irq_source(source); }
 
     /**
      * Clear CPU IRQ.
      */
-    void irq_clear() const { cpu->irq_clear(); }
+    void clear_irq_source(uint8_t source) { cpu->clear_irq_source(source); }
 
     /**
      * Handle key press.
@@ -274,12 +274,12 @@ public:
 
     static void irq_callback(Machine& machine)
     {
-        machine.irq();
+        machine.set_irq_source(IRQ_SOURCE_VIA);
     }
 
     static void irq_clear_callback(Machine& machine)
     {
-        machine.irq_clear();
+        machine.clear_irq_source(IRQ_SOURCE_VIA);
     }
 
     std::unique_ptr<MOS6502> cpu;

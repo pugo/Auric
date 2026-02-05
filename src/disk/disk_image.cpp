@@ -33,16 +33,17 @@ DiskSector::DiskSector(uint16_t sector_number, std::span<uint8_t> sector_data) :
     sector_number(sector_number),
     valid(false)
 {
-    BOOST_LOG_TRIVIAL(debug) << "   -- Sector data start byte: " << std::hex << (int)sector_data[0];
-    if (sector_data[0] == 0xfb) {
-        BOOST_LOG_TRIVIAL(debug) << "   -- Sector data ID byte indicates normal data sector";
-    } else if (sector_data[0] == 0xf8) {
-        BOOST_LOG_TRIVIAL(debug) << "   -- Sector data ID byte indicates deleted data sector";
-    } else {
-        BOOST_LOG_TRIVIAL(debug) << "   -- Sector data ID byte indicates unknown sector type";
-    }
+    // BOOST_LOG_TRIVIAL(debug) << "   -- Sector data start byte: " << std::hex << (int)sector_data[0];
+    // if (sector_data[0] == 0xfb) {
+    //     BOOST_LOG_TRIVIAL(debug) << "   -- Sector data ID byte indicates normal data sector";
+    // } else if (sector_data[0] == 0xf8) {
+    //     BOOST_LOG_TRIVIAL(debug) << "   -- Sector data ID byte indicates deleted data sector";
+    // } else {
+    //     BOOST_LOG_TRIVIAL(debug) << "   -- Sector data ID byte indicates unknown sector type";
+    // }
 
     if (sector_data[0] == 0xfb || sector_data[0] == 0xf8) {
+        this->sector_mark = sector_data[0];
         this->data = sector_data.subspan(1, sector_data.size() - 3); // Exclude ID byte and CRC
         valid = true;
     }
@@ -62,8 +63,8 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
     uint16_t sector{0};
 
     while (data_ptr < data_end) {
-        BOOST_LOG_TRIVIAL(debug) << " -- ptr: " << std::hex << (data_ptr - track_data.begin())
-                                 << " -- Searching for sector ID record for sector " << sector;
+        // BOOST_LOG_TRIVIAL(debug) << " -- ptr: " << std::hex << (data_ptr - track_data.begin())
+        //                          << " -- Searching for sector ID record for sector " << sector;
         while (data_ptr < (data_end - 10) &&
                !(data_ptr[0] == 0xa1 && data_ptr[1] == 0xa1 && data_ptr[2] == 0xa1 && data_ptr[3] == 0xfe)) {
             ++data_ptr;
@@ -80,11 +81,11 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
         auto bps = static_cast<uint16_t>(data_ptr[4]);
         auto sector_size = 128 << bps;
 
-        BOOST_LOG_TRIVIAL(debug) << " -- ptr: " << std::hex << (data_ptr - track_data.begin())
-                                 << " -- Track header: track " << track_nr
-                                 << ", side " << side_nr
-                                 << ", sector " << sector_nr
-                                 << ", sector_size " << sector_size;
+        // BOOST_LOG_TRIVIAL(debug) << " -- ptr: " << std::hex << (data_ptr - track_data.begin())
+        //                          << " -- Track header: track " << track_nr
+        //                          << ", side " << side_nr
+        //                          << ", sector " << sector_nr
+        //                          << ", sector_size " << sector_size;
         data_ptr += 7; // Skip ID record and CRC
 
         if (data_ptr >= data_end - sector_size - 3) {
@@ -99,7 +100,7 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
         sectors.push_back(DiskSector(sector_nr, sector_data));
 
         auto data_pos = data_ptr;
-        BOOST_LOG_TRIVIAL(debug) << " -- data position: " << std::hex << (data_ptr - track_data.begin());
+        // BOOST_LOG_TRIVIAL(debug) << " -- data position: " << std::hex << (data_ptr - track_data.begin());
 
         data_ptr += 256;
     }
@@ -206,7 +207,7 @@ bool DiskImage::init()
     BOOST_LOG_TRIVIAL(info) << "Total size: " << image_size;
     BOOST_LOG_TRIVIAL(info) << "data start: " << (void*)data;
 
-    for (uint8_t i = 1; i <= side_count_; ++i) {
+    for (uint8_t i = 0; i < side_count_; ++i) {
         disk_sides.emplace_back(DiskSide(i));
     }
 

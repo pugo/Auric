@@ -108,19 +108,20 @@ class WD1793
 {
 public:
     enum Status : uint8_t {
-        StatusBusy = 0x01,                // bit 0: Type I, II and III
-        StatusIndex = 0x02,               // bit 1: Type I
-        StatusDataRequest = 0x02,         // bit 1: Type II and III
-        StatusTrack00 = 0x04,             // bit 2: Type I
-        StatusLostData = 0x04,            // bit 2: Type II and III
-        StatusCrcError = 0x08,            // bit 3: Type I, II and III
-        StatusSeekError = 0x10,           // bit 4: Type I
-        StatusRecordNotFound = 0x10,      // bit 4: Type II and III
-        StatusHeadLoaded = 0x20,          // bit 5: Type I
-        StatusRecordTypeWiteFault = 0x20, // bit 5: Type II and III
-        StatusProtected = 0x40,           // bit 6: Type I
-        StatusWriteProtect = 0x40,        // bit 6: Type II and III
-        StatusNotReady = 0x80             // bit 7: Type I, II and III
+        StatusBusy = 0x01,                 // bit 0: Type I, II and III
+        StatusIndex = 0x02,                // bit 1: Type I
+        StatusDataRequest = 0x02,          // bit 1: Type II and III
+        StatusTrack00 = 0x04,              // bit 2: Type I
+        StatusLostData = 0x04,             // bit 2: Type II and III
+        StatusCrcError = 0x08,             // bit 3: Type I, II and III
+        StatusSeekError = 0x10,            // bit 4: Type I
+        StatusRecordNotFound = 0x10,       // bit 4: Type II and III
+        StatusHeadLoaded = 0x20,           // bit 5: Type I
+        StatusRecordType = 0x20,           // bit 5: Type II and III
+        StatusWriteFault = 0x20,           // bit 5: Type II and III
+        StatusProtected = 0x40,            // bit 6: Type I
+        StatusWriteProtect = 0x40,         // bit 6: Type II and III
+        StatusNotReady = 0x80              // bit 7: Type I, II and III
     };
 
     /**
@@ -148,7 +149,6 @@ public:
         bool update_status_at_interrupt; // Whether to update status_at_interrupt on next interrupt.
 
         int16_t data_request_counter;    // Counts down cycles to data request.
-        bool data_request_flag;          // Set when data is available on read or missing on write.
 
         DiskTrack* current_track;
         DiskSector* current_sector;
@@ -159,7 +159,7 @@ public:
         void set_status_at_interrupt(uint8_t status)
         {
             status_at_interrupt = status;
-            update_status_at_interrupt = (status != 0);
+            update_status_at_interrupt = true;
         }
 
         void print() const;

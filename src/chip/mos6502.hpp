@@ -45,6 +45,12 @@
 #define IRQ_VECTOR_L 0xFFFE
 #define IRQ_VECTOR_H 0xFFFF
 
+enum {
+    IRQ_SOURCE_VIA = 1,
+    IRQ_SOURCE_FDC = 2,
+};
+
+
 class Machine;
 class MOS6502;
 class Memory;
@@ -162,8 +168,9 @@ public:
      * Trigger NMI (Non Maskable Interrupt).
      */
     void NMI() { nmi_flag = true; }
-    void irq() { irq_flag = true; }
-    void irq_clear() { irq_flag = false; }
+
+    void set_irq_source(uint8_t source) { irq_flags |= source; }
+    void clear_irq_source(uint8_t source) { irq_flags &= ~source; }
 
     f_memory_read_byte_handler memory_read_byte_handler;
     f_memory_read_byte_zp_handler memory_read_byte_zp_handler;
@@ -197,7 +204,6 @@ protected:
     uint8_t SP;
 
     uint8_t irq_flags;
-    bool irq_flag;
     bool nmi_flag;
     bool do_interrupt;
     bool do_nmi;

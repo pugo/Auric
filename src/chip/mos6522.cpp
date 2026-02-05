@@ -226,7 +226,7 @@ void MOS6522::exec(uint8_t cycles)
                 state.t2_reload = false;
             }
             else {
-                if (state.t2_run && (state.t2_counter == 0)) {
+                if (state.t2_run && (state.t2_counter <= 0)) {
                     irq_set(IRQ_T2);
                     state.t2_run = false;
                 }
@@ -579,7 +579,7 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
                 state.ifr |= 0x80;	// bit 7=1 if any IRQ is set.
             }
             else {
-                if (irq_clear_handler) { irq_clear_handler(machine); }
+                machine.clear_irq_source(IRQ_SOURCE_VIA);
             }
             break;
         case IER:
@@ -629,13 +629,11 @@ void MOS6522::set_irb_bit(uint8_t bit, bool value)
 void MOS6522::irq_check()
 {
     if ((state.ier & state.ifr) & 0x7f) {
-        if ((state.ifr & 0x80) == 0) {
-            if (irq_handler) { irq_handler(machine); }
+            machine.set_irq_source(IRQ_SOURCE_VIA);
             state.ifr |= 0x80;
-        }
     }
     else {
-        if (irq_clear_handler) { irq_clear_handler(machine); }
+        machine.clear_irq_source(IRQ_SOURCE_VIA);
         state.ifr &= 0x7f;
     }
 }
@@ -657,7 +655,7 @@ void MOS6522::irq_set(uint8_t bits)
     }
 
     if (bits & state.ier) {
-        if (irq_handler) { irq_handler(machine); }
+        machine.set_irq_source(IRQ_SOURCE_VIA);
     }
 }
 
@@ -667,6 +665,7 @@ void MOS6522::irq_clear(uint8_t bits)
 
     // Clear bit 7 if no (enabled) interrupts exist.
     if (!((state.ifr & state.ier) & 0x7f)) {
+        machine.clear_irq_source(IRQ_SOURCE_VIA);
         state.ifr &= 0x7f;
     }
 }

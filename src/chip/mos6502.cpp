@@ -90,7 +90,7 @@ MOS6502::MOS6502(Machine& a_Machine) :
     PC(0),
     SP(0),
     machine(a_Machine),
-    irq_flag(false),
+    irq_flags(0),
     nmi_flag(false),
     do_interrupt(false),
     do_nmi(false),
@@ -126,7 +126,7 @@ void MOS6502::Reset()
     PC = memory_read_byte_handler(machine, RESET_VECTOR_L) + (memory_read_byte_handler(machine, RESET_VECTOR_H) << 8);
     std::print("PC: ${:04X}\t", PC);
     SP = 0xff;
-    irq_flag = false;
+    irq_flags = 0;
     nmi_flag = false;
     do_interrupt = false;
     do_nmi = false;
@@ -152,7 +152,7 @@ void MOS6502::save_to_snapshot(Snapshot& snapshot) const
 
     snapshot.mos6502.PC = PC;
     snapshot.mos6502.SP = SP;
-    snapshot.mos6502.irq_flag = irq_flag;
+    snapshot.mos6502.irq_flags = irq_flags;
     snapshot.mos6502.nmi_flag = nmi_flag;
     snapshot.mos6502.do_interrupt = do_interrupt;
     snapshot.mos6502.do_nmi = do_nmi;
@@ -178,7 +178,7 @@ void MOS6502::load_from_snapshot(Snapshot& snapshot)
 
     PC = snapshot.mos6502.PC;
     SP = snapshot.mos6502.SP;
-    irq_flag = snapshot.mos6502.irq_flag;
+    irq_flags = snapshot.mos6502.irq_flags;
     nmi_flag = snapshot.mos6502.nmi_flag;
     do_interrupt = snapshot.mos6502.do_interrupt;
     do_nmi = snapshot.mos6502.do_nmi;
@@ -310,7 +310,7 @@ uint8_t MOS6502::time_instruction()
         extra += 7;
         do_interrupt = true;
     }
-    else if (irq_flag && !I) {
+    else if (irq_flags && !I) {
         _pc = memory_read_word_handler(machine, IRQ_VECTOR_L);
         extra += 7;
         do_interrupt = true;
@@ -443,7 +443,6 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
     current_cycle = 0;
 
     if (do_interrupt) {
-        std::println("MOS6502::exec() - do_interrupt");
         do_interrupt = false;
 
         PUSH_BYTE_STACK(PC >> 8);
@@ -459,9 +458,9 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
             std::println("NMI interrupt");
         }
 
-        else if (irq_flag) {
+        else if (irq_flags) {
             PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
-            irq_flag = false;
+            // irq_flags = 0;
         }
     }
 

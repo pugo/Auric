@@ -29,6 +29,7 @@ public:
 
     uint16_t sector_number;
     std::span<uint8_t> data;
+    uint8_t sector_mark;
 
 private:
     bool valid;

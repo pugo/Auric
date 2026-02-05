@@ -1,0 +1,1834 @@
+E000  4C C2 E5  |         JMP $E5C2	; initializes some parameters
+E003  4C 0C E2  |         JMP $E20C	; FDC routine
+E006  4C 34 EB  |         JMP $EB34
+E009  4C CE E4  |         JMP $E4CE	; loads a file
+E00C  4C D3 EA  |         JMP $EAD3	; searches a file
+E00F  4C DE E4  |         JMP $E4DE	; error "File not found"
+E012  4C FC EA  |         JMP $EAFC
+E015  4C 17 E1  |         JMP $E117	; lets the user type a command in TIB
+E018  4C 1F E1  |         JMP $E11F	; waits for a keypress
+E01B  4C DC E7  |         JMP $E7DC	; error routine
+E01E  4C 16 E8  |         JMP $E816	; dummy, points to a RTS
+E021  4C 17 E8  |         JMP $E817	; writes a sector
+E024  4C 25 E8  |         JMP $E825	; reads sector
+E027  4C 2B E8  |         JMP $E82B	; reads boot sector
+E02A  4C 46 E8  |         JMP $E846	; checks drive number
+E02D  4C 54 E8  |         JMP $E854	; prints string pointed by ($0C)
+E030  4C 80 E9  |         JMP $E980	; points to next directory entry
+E033  4C 72 E8  |         JMP $E872	; reads system parameters from boot sector
+E036  4C 81 E8  |         JMP $E881	; writes system parameters to boot sector
+E039  4C 93 E8  |         JMP $E893	; adds a directory entry (not used)
+E03C  4C B7 E8  |         JMP $E8B7
+E03F  4C C5 E8  |         JMP $E8C5
+E042  4C F6 E8  |         JMP $E8F6
+E045  4C 50 E9  |         JMP $E950
+E048  4C A8 E9  |         JMP $E9A8	; reads boot sector
+E04B  4C CA E9  |         JMP $E9CA
+E04E  4C B8 EA  |         JMP $EAB8	; limits a char to alphanumeric
+E051  4C EA EA  |         JMP $EAEA
+E054  4C 27 E1  |         JMP $E127	; new line
+E057  4C 2E E1  |         JMP $E12E	; prints char
+E05A  4C 70 E0  |         JMP $E070	; calls a routine in ROM Basic
+E05D  4C 6A E1  |         JMP $E16A	; interprets a decimal or hex number
+E060  4C 63 E1  |         JMP $E163	; reads a non-blank char
+E063  4C C7 E4  |         JMP $E4C7
+E066  4C 00 00  |         JMP $0000
+E069  4C 00 00  |         JMP $0000	
+E06C  4C 45 EB  |         JMP $EB45	; checks no '?' wildcard is used
+
+E06F: 00
+
+;******************************************************************************
+; calls a routine in Basic ROM:
+;   grabs the two addresses after the JSR and selects one depending on the version
+;******************************************************************************
+
+E070  08        |         PHP 
+E071  48        |         PHA 
+E072  8A        |         TXA 
+E073  48        |         PHA 
+E074  98        |         TYA 
+E075  48        |         PHA 
+E076  BA        |         TSX 
+E077  BD 05 01  |         LDA $0105,X
+E07A  18        |         CLC 
+E07B  85 0E     |         STA $0E
+E07D  69 04     |         ADC #$04
+E07F  9D 05 01  |         STA $0105,X
+E082  BD 06 01  |         LDA $0106,X
+E085  85 0F     |         STA $0F
+E087  69 00     |         ADC #$00
+E089  9D 06 01  |         STA $0106,X
+E08C  A0 01     |         LDY #$01
+E08E  AD 07 C0  |         LDA $C007
+E091  F0 02     |         BEQ $E095
+E093  A0 03     |         LDY #$03
+E095  B1 0E     |         LDA ($0E),Y
+E097  8D 85 04  |         STA $0485
+E09A  C8        |         INY 
+E09B  B1 0E     |         LDA ($0E),Y
+E09D  8D 86 04  |         STA $0486
+E0A0  A9 06     |         LDA #$06
+E0A2  8D 81 04  |         STA $0481
+E0A5  68        |         PLA 
+E0A6  A8        |         TAY 
+E0A7  68        |         PLA 
+E0A8  AA        |         TAX 
+E0A9  68        |         PLA 
+E0AA  28        |         PLP 
+E0AB  4C 90 04  |         JMP $0490
+
+
+;******************************************************************************
+;           NMI : handler
+;******************************************************************************
+
+E0AE  48        |         PHA 
+E0AF  AD 81 04  |         LDA $0481
+E0B2  48        |         PHA 
+E0B3  AD 85 04  |         LDA $0485
+E0B6  48        |         PHA 
+E0B7  AD 86 04  |         LDA $0486
+E0BA  48        |         PHA 
+E0BB  AD 80 04  |         LDA $0480
+E0BE  29 FE     |         AND #$FE
+E0C0  8D 80 04  |         STA $0480
+E0C3  8D 14 03  |         STA $0314
+E0C6  A9 00     |         LDA #$00
+E0C8  8D 85 04  |         STA $0485
+E0CB  A9 00     |         LDA #$00
+E0CD  8D 86 04  |         STA $0486
+E0D0  A9 06     |         LDA #$06
+E0D2  8D 81 04  |         STA $0481
+E0D5  20 90 04  |         JSR $0490
+E0D8  68        |         PLA 
+E0D9  8D 86 04  |         STA $0486
+E0DC  68        |         PLA 
+E0DD  8D 85 04  |         STA $0485
+E0E0  68        |         PLA 
+E0E1  8D 81 04  |         STA $0481
+E0E4  68        |         PLA 
+E0E5  40        |         RTI 
+
+;******************************************************************************
+;           IRQ wrapper 
+;        -> switch to ROM and exec the Basic IRQ handler
+;******************************************************************************
+
+E0E6  48        |         PHA 
+E0E7  8A        |         TXA 
+E0E8  48        |         PHA 
+E0E9  AD 81 04  |         LDA $0481
+E0EC  48        |         PHA 
+E0ED  AD 85 04  |         LDA $0485
+E0F0  48        |         PHA 
+E0F1  AD 86 04  |         LDA $0486
+E0F4  48        |         PHA 
+E0F5  A9 8A     |         LDA #$8A
+E0F7  8D 85 04  |         STA $0485
+E0FA  A9 04     |         LDA #$04
+E0FC  8D 86 04  |         STA $0486
+E0FF  A9 06     |         LDA #$06
+E101  8D 81 04  |         STA $0481
+E104  20 90 04  |         JSR $0490
+E107  68        |         PLA 
+E108  8D 86 04  |         STA $0486
+E10B  68        |         PLA 
+E10C  8D 85 04  |         STA $0485
+E10F  68        |         PLA 
+E110  8D 81 04  |         STA $0481
+E113  68        |         PLA 
+E114  AA        |         TAX 
+E115  68        |         PLA 
+E116  40        |         RTI 
+
+;******************************************************************************
+; waits for the user to type a command in TIB
+;
+E117  20 5A E0  |         JSR $E05A
+E11A  A2 C5 92 C5
+E11E  60        |         RTS
+
+;******************************************************************************
+; waits for a keypress, ascii code returned in A
+;
+E11F  20 5A E0  |         JSR $E05A
+E122  F8 C5 E8 C5
+E126  60        |         RTS
+
+;*****************************************************************************
+; prints carriage return + line feed
+;
+E127  A9 0D     |         LDA #$0D
+E129  20 2E E1  |         JSR $E12E
+E12C  A9 0A     |         LDA #$0A
+;
+; prints char
+;
+E12E  08        |         PHP 
+E12F  8E 51 C1  |         STX $C151
+E132  AA        |         TAX 
+E133  48        |         PHA 
+E134  A5 0C     |         LDA $0C
+E136  48        |         PHA 
+E137  A5 0D     |         LDA $0D
+E139  48        |         PHA 
+E13A  20 5A E0  |         JSR $E05A		; calls Basic's output routine
+E13D  3F F7 7C F7
+E141  68        |         PLA 
+E142  85 0D     |         STA $0D
+E144  68        |         PLA 
+E145  85 0C     |         STA $0C
+E147  68        |         PLA 
+E148  AE 51 C1  |         LDX $C151
+E14B  28        |         PLP 
+E14C  60        |         RTS 
+
+;******************************************************************************
+; prints a hex byte
+;
+E14D  48        |         PHA 
+E14E  4A        |         LSR 
+E14F  4A        |         LSR 
+E150  4A        |         LSR 
+E151  4A        |         LSR 
+E152  20 56 E1  |         JSR $E156
+E155  68        |         PLA 
+E156  29 0F     |         AND #$0F
+E158  09 30     |         ORA #$30
+E15A  C9 3A     |         CMP #$3A
+E15C  90 D0     |         BCC $E12E
+E15E  69 06     |         ADC #$06
+E160  D0 CC     |         BNE $E12E
+;******************************************************************************
+; reads next non-blank char 
+
+E162  C8        |         INY 
+
+E163  B1 E9     |         LDA ($E9),Y
+E165  C9 20     |         CMP #$20
+E167  F0 F9     |         BEQ $E162
+E169  60        |         RTS 
+
+;******************************************************************************
+; interprets decimal and hexadecimal numbers
+
+E16A  A9 00     |         LDA #$00	; initializes the number read
+E16C  8D 45 C1  |         STA $C145
+E16F  8D 46 C1  |         STA $C146
+E172  B1 E9     |         LDA ($E9),Y	; skips any blanks
+E174  C8        |         INY 
+E175  C9 20     |         CMP #$20
+E177  F0 F9     |         BEQ $E172
+E179  C9 23     |         CMP #$23
+E17B  D0 24     |         BNE $E1A1	; is it a '#' ?
+
+E17D  B1 E9     |         LDA ($E9),Y	; yes, reads the hex number
+E17F  20 F1 E1  |         JSR $E1F1	
+E182  90 1B     |         BCC $E19F	; is it a hex digit ?
+E184  C8        |         INY 		; yes, computes the hex number read so far
+E185  A2 04     |         LDX #$04
+E187  0E 45 C1  |         ASL $C145
+E18A  2E 46 C1  |         ROL $C146
+E18D  CA        |         DEX 
+E18E  D0 F7     |         BNE $E187
+E190  18        |         CLC
+E191  6D 45 C1  |         ADC $C145
+E194  8D 45 C1  |         STA $C145
+E197  90 E4     |         BCC $E17D
+E199  EE 46 C1  |         INC $C146
+E19C  4C 7D E1  |         JMP $E17D
+E19F  38        |         SEC 		; no, returns C=1
+E1A0  60        |         RTS 
+
+E1A1  88        |         DEY 		; first char was not a '!', goes back on it
+E1A2  20 E6 E1  |         JSR $E1E6	; and reads a decimal number
+E1A5  90 F9     |         BCC $E1A0
+E1A7  C8        |         INY 
+E1A8  48        |         PHA 
+E1A9  AD 46 C1  |         LDA $C146
+E1AC  48        |         PHA 
+E1AD  AD 45 C1  |         LDA $C145
+E1B0  0E 45 C1  |         ASL $C145
+E1B3  2E 46 C1  |         ROL $C146
+E1B6  0E 45 C1  |         ASL $C145
+E1B9  2E 46 C1  |         ROL $C146
+E1BC  18        |         CLC 
+E1BD  6D 45 C1  |         ADC $C145
+E1C0  8D 45 C1  |         STA $C145
+E1C3  68        |         PLA 
+E1C4  6D 46 C1  |         ADC $C146
+E1C7  8D 46 C1  |         STA $C146
+E1CA  0E 45 C1  |         ASL $C145
+E1CD  2E 46 C1  |         ROL $C146
+E1D0  68        |         PLA 
+E1D1  18        |         CLC 
+E1D2  6D 45 C1  |         ADC $C145
+E1D5  8D 45 C1  |         STA $C145
+E1D8  90 03     |         BCC $E1DD
+E1DA  EE 46 C1  |         INC $C146
+E1DD  B1 E9     |         LDA ($E9),Y
+E1DF  20 E6 E1  |         JSR $E1E6
+E1E2  B0 C3     |         BCS $E1A7
+E1E4  38        |         SEC 
+E1E5  60        |         RTS 
+
+; checks for a decimal digit: returns C=1 if success
+;
+E1E6  38        |         SEC 
+E1E7  E9 30     |         SBC #$30
+E1E9  90 04     |         BCC $E1EF
+E1EB  C9 0A     |         CMP #$0A
+E1ED  90 F5     |         BCC $E1E4
+E1EF  18        |         CLC 
+E1F0  60        |         RTS 
+
+; checks for a hex digit: returns C=1 if success
+;
+E1F1  20 E6 E1  |         JSR $E1E6
+E1F4  B0 EE     |         BCS $E1E4
+E1F6  E9 06     |         SBC #$06
+E1F8  C9 10     |         CMP #$10
+E1FA  B0 F3     |         BCS $E1EF
+E1FC  C9 09     |         CMP #$09
+E1FE  60        |         RTS 
+
+;******************************************************************************
+; switch to Basic (no return)
+;
+E1FF  20 5A E0  |         JSR $E05A
+E202  A3 C4 96 C4
+
+;******************************************************************************
+;  write sector command
+;******************************************************************************
+E206  A2 A0     |         LDX #$A0
+E208  D0 02     |         BNE $E20C
+;******************************************************************************
+;  read sector command
+;******************************************************************************
+E20A  A2 80     |         LDX #$80
+;******************************************************************************
+;  FDC routine: command specified in register X
+;******************************************************************************
+E20C  20 E3 E3  |         JSR $E3E3	; disables timer1 interrupts
+E20F  20 1C E2  |         JSR $E21C	; the FDC routine itself
+E212  08        |         PHP 
+E213  8A        |         TXA 
+E214  48        |         PHA 
+E215  20 EB E3  |         JSR $E3EB	; enables timer1 interrupts
+E218  68        |         PLA 
+E219  AA        |         TAX 
+E21A  28        |         PLP 
+E21B  60        |         RTS 
+
+;******************************************************************************
+;  FDC routine heart: command specified in register X
+;  the routine may call itself recursively,
+;  thus callers have to save and restore some global variables (C005, C008,...)
+;******************************************************************************
+E21C  8E 05 C0  |         STX $C005
+E21F  48        |         PHA 
+E220  98        |         TYA 
+E221  48        |         PHA 
+E222  A9 00     |         LDA #$00
+E224  8D FE 04  |         STA $04FE
+E227  A9 07     |         LDA #$07
+E229  8D 08 C0  |         STA $C008
+E22C  20 A2 E2  |         JSR $E2A2	; recognizes and executes the command
+E22F  F0 16     |         BEQ $E247	; error ?
+E231  A8        |         TAY 		; yes...
+E232  6A        |         ROR 
+E233  B0 55     |         BCS $E28A	; busy ?
+E235  A9 20     |         LDA #$20
+E237  2C 05 C0  |         BIT $C005
+E23A  10 15     |         BPL $E251	; was it a type I command ?
+E23C  50 29     |         BVC $E267	; or a type II command ?
+E23E  D0 4A     |         BNE $E28A	; or else a read/write track command ?
+E240  A9 10     |         LDA #$10
+E242  2C 05 C0  |         BIT $C005
+E245  F0 3B     |         BEQ $E282	; or else a Read address id command ?
+					; no, just a Force Interrupt...
+
+E247  A2 00     |         LDX #$00	; forgets the error
+E249  18        |         CLC 
+E24A  8E FE 04  |         STX $04FE
+E24D  68        |         PLA 
+E24E  A8        |         TAY 
+E24F  68        |         PLA 
+E250  60        |         RTS 
+
+;******************************************************************************
+; got an error in a type I command...
+;
+E251  98        |         TYA 		
+E252  29 18     |         AND #$18
+E254  F0 F1     |         BEQ $E247	; takes care of seek and crc errors only
+E256  C0 18     |         CPY #$18
+E258  F0 30     |         BEQ $E28A	; returns error #1 if both seek and crc errors
+E25A  AD 05 C0  |         LDA $C005	; so, only one of these...
+E25D  C9 20     |         CMP #$20
+E25F  B0 29     |         BCS $E28A	; returns error #1 if step command
+E261  C9 10     |         CMP #$10
+E263  90 1D     |         BCC $E282	; but retries if Restore track 0
+E265  B0 10     |         BCS $E277
+
+;******************************************************************************
+; got an error in a type II command...
+;
+E267  98        |         TYA 
+E268  29 40     |         AND #$40
+E26A  D0 1E     |         BNE $E28A	; returns error #1 if Write protect flag
+E26C  C0 10     |         CPY #$10
+E26E  90 12     |         BCC $E282	; retries if CRC error (or lost data)
+E270  AD 05 C0  |         LDA $C005
+E273  29 10     |         AND #$10
+E275  D0 D0     |         BNE $E247	; forgets a record not found in multiple sectors operations
+					; so, a record was not found when reading
+E277  AC 05 C0  |         LDY $C005
+E27A  20 64 E3  |         JSR $E364	; read first address id encountered
+E27D  8C 05 C0  |         STY $C005
+E280  B0 05     |         BCS $E287	; can't even read an address id ? gives up...
+E282  CE 08 C0  |         DEC $C008	; decrements retry counter and tries again
+E285  10 A5     |         BPL $E22C
+E287  20 B2 E3  |         JSR $E3B2	; restores track 0
+
+E28A  A2 01     |         LDX #$01	; returns an error 1
+E28C  38        |         SEC 
+E28D  B0 BE     |         BCS $E24D
+
+
+;******************************************************************************
+;  type I commands
+;
+E28F  C0 20     |         CPY #$20
+E291  B0 29     |         BCS $E2BC	; step commands ? issue them ...
+E293  C0 10     |         CPY #$10
+E295  90 25     |         BCC $E2BC	; restore track 0 command ? issue it...
+E297  AD 01 C0  |         LDA $C001	; no, then it is a seek command
+E29A  29 7F     |         AND #$7F
+E29C  8D 13 03  |         STA $0313	; programs the track wanted
+E29F  4C BC E2  |         JMP $E2BC
+
+;******************************************************************************
+; updates the track register if needed, then recognizes the command
+;
+E2A2  AC 05 C0  |         LDY $C005
+E2A5  20 37 E3  |         JSR $E337	; updates the track register if needed
+E2A8  B0 7B     |         BCS $E325
+					; now, recognizes the command:
+E2AA  A9 20     |         LDA #$20
+E2AC  2C 05 C0  |         BIT $C005
+E2AF  10 DE     |         BPL $E28F	; type I commands ?
+E2B1  50 10     |         BVC $E2C3	; type II commands ?
+E2B3  D0 67     |         BNE $E31C	; read/write track commands ?
+E2B5  A9 10     |         LDA #$10
+E2B7  2C 05 C0  |         BIT $C005
+E2BA  F0 2A     |         BEQ $E2E6	; read address id command ?
+					; no, so it is a force interrupt command
+
+;******************************************************************************
+; issues the FDC command and waits for its completion (interrupt raised)
+; the interrupt handler will return to the caller routine
+;
+E2BC  20 93 E3  |         JSR $E393	; issues the command
+E2BF  18        |         CLC 
+E2C0  58        |         CLI 
+E2C1  90 FE     |         BCC $E2C1	; waits
+
+;******************************************************************************
+;  type II commands : read or write a sector
+;
+E2C3  AD 01 C0  |         LDA $C001
+E2C6  29 7F     |         AND #$7F
+E2C8  EA        |         NOP 
+E2C9  EA        |         NOP 
+E2CA  CD 11 03  |         CMP $0311
+E2CD  F0 11     |         BEQ $E2E0	; is the head already on the right track ?
+					; no, seeks the right track first
+E2CF  AD 08 C0  |         LDA $C008
+E2D2  A2 1C     |         LDX #$1C
+E2D4  20 1C E2  |         JSR $E21C
+E2D7  8D 08 C0  |         STA $C008
+E2DA  8C 05 C0  |         STY $C005
+E2DD  B0 4E     |         BCS $E32D
+E2DF  EA        |         NOP 
+					; ok, the head is on the right track
+E2E0  AD 02 C0  |         LDA $C002
+E2E3  8D 12 03  |         STA $0312	; programs the wanted sector
+E2E6  98        |         TYA 
+E2E7  29 20     |         AND #$20
+E2E9  D0 1A     |         BNE $E305	; write sector command ?
+					; no
+E2EB  20 93 E3  |         JSR $E393	; issues the read sector command
+E2EE  58        |         CLI 		; and gets the bytes, 
+E2EF  AD 18 03  |         LDA $0318	; the final interrupt will exit from here
+E2F2  30 FB     |         BMI $E2EF
+E2F4  AD 13 03  |         LDA $0313
+E2F7  91 FE     |         STA ($FE),Y
+E2F9  C8        |         INY 
+E2FA  D0 F3     |         BNE $E2EF
+E2FC  E6 FF     |         INC $FF
+E2FE  D0 EF     |         BNE $E2EF
+E300  F0 18     |         BEQ $E31A
+E302  EA        |         NOP 
+E303  EA        |         NOP 
+E304  EA        |         NOP 
+					
+E305  20 93 E3  |         JSR $E393	; issues the write sector command
+E308  58        |         CLI 		; and sends the bytes,
+E309  AD 18 03  |         LDA $0318	; the final interrupt will exit from here
+E30C  30 FB     |         BMI $E309
+E30E  B1 FE     |         LDA ($FE),Y
+E310  8D 13 03  |         STA $0313
+E313  C8        |         INY 
+E314  D0 F3     |         BNE $E309
+E316  E6 FF     |         INC $FF
+E318  D0 EF     |         BNE $E309
+E31A  F0 FE     |         BEQ $E31A
+
+
+;******************************************************************************
+; read/write track commands
+; handles them like read/write sector commands
+;
+E31C  AD 05 C0  |         LDA $C005
+E31F  29 10     |         AND #$10
+E321  F0 C8     |         BEQ $E2EB
+E323  D0 E0     |         BNE $E305
+
+;******************************************************************************
+; address id read failed, what now ?
+; the recursivity bug shows here : 
+; the JSR never returns if the restore track 0 fails and the stack fills up !
+;
+E325  20 B2 E3  |         JSR $E3B2	; restores track 0 
+E328  AD FE 04  |         LDA $04FE	; and returns status of the previous command...
+E32B  58        |         CLI
+E32C  60        |         RTS
+
+;******************************************************************************
+; seek track command failed, returns interesting bits of the status
+;
+E32D  AD FE 04  |         LDA $04FE
+E330  29 BB     |         AND #$BB
+E332  8D FE 04  |         STA $04FE
+E335  58        |         CLI 
+E336  60        |         RTS 
+
+;*******************************************************************************
+; updates the track register if needed (i.e the selected drive/side changes)
+;
+E337  AD 00 C0  |         LDA $C000
+E33A  29 03     |         AND #$03
+E33C  AA        |         TAX 
+E33D  BD F3 E3  |         LDA $E3F3,X
+E340  2C 01 C0  |         BIT $C001
+E343  10 02     |         BPL $E347
+E345  09 10     |         ORA #$10
+E347  8D 14 03  |         STA $0314	; programs drive and side numbers
+E34A  AA        |         TAX 
+E34B  AD 80 04  |         LDA $0480
+E34E  8E 80 04  |         STX $0480
+E351  29 7E     |         AND #$7E
+E353  85 FE     |         STA $FE
+E355  8A        |         TXA 
+E356  29 7E     |         AND #$7E
+E358  C5 FE     |         CMP $FE
+E35A  F0 31     |         BEQ $E38D	; were the drive/side numbers the same ?
+					; no, checks the drive
+E35C  C0 10     |         CPY #$10	; unless it is a seek command (no need to move twice)
+E35E  90 2D     |         BCC $E38D
+E360  C0 F0     |         CPY #$F0	; or a format command
+E362  F0 29     |         BEQ $E38D
+
+E364  AD 04 C0  |         LDA $C004	; reads the first address id encountered
+E367  48        |         PHA 
+E368  A9 C3     |         LDA #$C3
+E36A  8D 04 C0  |         STA $C004
+E36D  AD 08 C0  |         LDA $C008
+E370  A2 C0     |         LDX #$C0
+E372  20 1C E2  |         JSR $E21C
+E375  8D 08 C0  |         STA $C008
+E378  68        |         PLA 
+E379  8D 04 C0  |         STA $C004
+E37C  8C 05 C0  |         STY $C005
+
+E37F  AD FE 04  |         LDA $04FE
+E382  D0 0B     |         BNE $E38F
+E384  AD 12 03  |         LDA $0312	; gets the track number
+E387  EA        |         NOP 
+E388  EA        |         NOP 
+E389  EA        |         NOP 
+E38A  8D 11 03  |         STA $0311	; and updates the track register
+E38D  18        |         CLC 
+E38E  60        |         RTS 
+E38F  38        |         SEC 
+E390  60        |         RTS 
+E391  EA        |         NOP 
+E392  EA        |         NOP 
+
+;*******************************************************************************
+; issue the effective FDC command specified in Y
+;
+E393  78        |         SEI 
+E394  8C 05 C0  |         STY $C005
+E397  AD 03 C0  |         LDA $C003
+E39A  85 FE     |         STA $FE
+E39C  AD 04 C0  |         LDA $C004
+E39F  85 FF     |         STA $FF
+E3A1  8C 10 03  |         STY $0310
+E3A4  AD 80 04  |         LDA $0480
+E3A7  09 01     |         ORA #$01
+E3A9  8D 14 03  |         STA $0314
+E3AC  8D 80 04  |         STA $0480
+E3AF  A0 00     |         LDY #$00
+E3B1  60        |         RTS 
+
+;******************************************************************************
+; restore track 0 (preserving status of previous command)
+; heart of the bug is here...
+; command should be 0 (no load head flag)
+; this way, the command wouldn't fail when no disk is in drive
+;
+E3B2  AD FE 04  |         LDA $04FE
+E3B5  A2 08     |         LDX #$08
+E3B7  20 1C E2  |         JSR $E21C	
+E3BA  8D FE 04  |         STA $04FE
+E3BD  60        |         RTS 
+E3BE  EA        |         NOP 
+E3BF  EA        |         NOP 
+
+
+;******************************************************************************
+;           IRQ : handler
+;******************************************************************************
+
+E3C0  48        |         PHA 
+E3C1  AD 14 03  |         LDA $0314
+E3C4  30 19     |         BMI $E3DF	; checks if the IRQ comes from disk
+E3C6  68        |         PLA 		; ...yes, continue here
+E3C7  AD 80 04  |         LDA $0480
+E3CA  29 FE     |         AND #$FE
+E3CC  8D 80 04  |         STA $0480
+E3CF  8D 14 03  |         STA $0314
+E3D2  68        |         PLA 		; get rid of the IRQ context !!
+E3D3  68        |         PLA 
+E3D4  68        |         PLA 		; so, we are now in the interrupted routine !
+E3D5  AD 10 03  |         LDA $0310
+E3D8  29 5D     |         AND #$5D
+E3DA  8D FE 04  |         STA $04FE	; store FDC's status (only interesting flags)
+E3DD  58        |         CLI 		; enable interrupts
+E3DE  60        |         RTS 		; and return to the *caller* of the interrupted routine
+					; (not the interrupted routine itself !)
+
+E3DF  68        |         PLA 		; IRQ doesn't come from disk,
+E3E0  4C E6 E0  |         JMP $E0E6	; go to the normal IRQ handler
+
+;******************************************************************************
+; disables timer1 interrupts
+E3E3  48        |         PHA 		
+E3E4  A9 40     |         LDA #$40
+E3E6  8D 0E 03  |         STA $030E
+E3E9  68        |         PLA 
+E3EA  60        |         RTS 
+
+; enables timer1 interrupts
+E3EB  48        |         PHA 		
+E3EC  A9 C0     |         LDA #$C0
+E3EE  8D 0E 03  |         STA $030E
+E3F1  68        |         PLA 
+E3F2  60        |         RTS 
+
+;******************************************************************************
+E3F3  04 24 44 64			; drive numbers
+
+;******************************************************************************
+;  interpreter routine to load a program... not used
+;
+E3F7  20 06 E0  |         JSR $E006
+E3FA  20 4B E0  |         JSR $E04B
+E3FD  20 45 EB  |         JSR $EB45
+E400  20 00 E0  |         JSR $E000
+E403  88        |         DEY 
+E404  C8        |         INY 
+E405  20 60 E0  |         JSR $E060	; reads a non-blank char
+E408  20 00 00  |         JSR $0000	; incomplete !!
+E40B  F0 55     |         BEQ $E462	; end of command ?
+E40D  C9 2C     |         CMP #$2C	; is it a ',' ?
+E40F  D0 15     |         BNE $E426
+E411  C8        |         INY 		; yes, reads next char
+E412  B1 E9     |         LDA ($E9),Y
+E414  C9 4E     |         CMP #$4E	; is it a 'N' ?
+E416  D0 05     |         BNE $E41D
+E418  8D 4F C1  |         STA $C14F
+E41B  10 E7     |         BPL $E404
+E41D  C9 44     |         CMP #$44	; is it a 'D' ?
+E41F  D0 0A     |         BNE $E42B
+E421  8D 50 C1  |         STA $C150
+E424  10 DE     |         BPL $E404
+E426  A2 01     |         LDX #$01	; invalid command end
+E428  4C 1B E0  |         JMP $E01B
+E42B  C9 4A     |         CMP #$4A	; is it a 'J' ?
+E42D  D0 15     |         BNE $E444
+E42F  8D 41 C1  |         STA $C141	; yes: Join
+E432  A5 9C     |         LDA $9C
+E434  38        |         SEC 
+E435  E9 02     |         SBC #$02
+E437  8D 4D C1  |         STA $C14D
+E43A  A5 9D     |         LDA $9D
+E43C  E9 00     |         SBC #$00
+E43E  8D 4E C1  |         STA $C14E
+E441  4C 04 E4  |         JMP $E404
+E444  C9 41     |         CMP #$41	; is it a 'A' ?
+E446  D0 DE     |         BNE $E426
+E448  8D 4F C1  |         STA $C14F
+E44B  8D 41 C1  |         STA $C141
+E44E  C8        |         INY 
+E44F  20 5D E0  |         JSR $E05D	; reads a number
+E452  90 D2     |         BCC $E426
+E454  AD 46 C1  |         LDA $C146
+E457  8D 4E C1  |         STA $C14E
+E45A  AD 45 C1  |         LDA $C145
+E45D  8D 4D C1  |         STA $C14D
+E460  B0 A3     |         BCS $E405
+					; execs the command, ie loads specified file
+E462  98        |         TYA 
+E463  48        |         PHA 
+E464  20 09 E0  |         JSR $E009	; loads file
+E467  68        |         PLA 
+E468  A8        |         TAY 
+E469  AD 4C C1  |         LDA $C14C
+E46C  F0 08     |         BEQ $E476
+E46E  AD 4F C1  |         LDA $C14F
+E471  10 03     |         BPL $E476
+E473  6C 4B C1  |         JMP ($C14B)	; auto-run
+
+E476  AD 4B C1  |         LDA $C14B
+E479  D0 03     |         BNE $E47E
+E47B  4C 69 E0  |         JMP $E069	; uncomplete ! (points to 0000)
+E47E  C9 03     |         CMP #$03	 
+E480  B0 F9     |         BCS $E47B
+
+E482  20 5A E0  |         JSR $E05A	; links Basic program lines
+E485  6F C5 5F C5
+E489  A5 92     |         LDA $92
+E48B  85 9D     |         STA $9D
+E48D  18        |         CLC 
+E48E  A5 91     |         LDA $91
+E490  69 02     |         ADC #$02
+E492  85 9C     |         STA $9C
+E494  90 02     |         BCC $E498
+E496  E6 9D     |         INC $9D
+E498  85 9E     |         STA $9E
+E49A  85 A0     |         STA $A0
+E49C  A5 9D     |         LDA $9D
+E49E  85 9F     |         STA $9F
+E4A0  85 A1     |         STA $A1
+E4A2  A5 A6     |         LDA $A6
+E4A4  85 A2     |         STA $A2
+E4A6  A5 A7     |         LDA $A7
+E4A8  85 A3     |         STA $A3
+E4AA  20 5A E0  |         JSR $E05A	; Basic's RESTORE command
+E4AD  1F C9 52 C9
+E4B1  20 5A E0  |         JSR $E05A	; let's the interpreter points to the basic program
+E4B4  65 C7 3A C7
+E4B8  AD 4B C1  |         LDA $C14B
+E4BB  C9 01     |         CMP #$01
+E4BD  F0 08     |         BEQ $E4C7
+E4BF  2C 4F C1  |         BIT $C14F
+E4C2  10 03     |         BPL $E4C7
+E4C4  4C 69 E0  |         JMP $E069	; uncomplete, points to 0000
+E4C7  20 5A E0  |         JSR $E05A	; runs Basic interpreter
+E4CA  B5 C4 A8 C4
+
+;******************************************************************************
+; loads a file
+
+E4CE  AD 2B C1  |         LDA $C12B
+E4D1  8D 00 C0  |         STA $C000
+E4D4  20 2A E0  |         JSR $E02A	; checks drive number
+E4D7  20 0C E0  |         JSR $E00C	; searches the file
+E4DA  E0 00     |         CPX #$00
+E4DC  D0 05     |         BNE $E4E3
+E4DE  A2 00     |         LDX #$00	; File not found
+E4E0  4C 1B E0  |         JMP $E01B
+E4E3  BD 2F C0  |         LDA $C02F,X	; File found, reads first sector of it
+E4E6  8D 01 C0  |         STA $C001
+E4E9  BD 2E C0  |         LDA $C02E,X
+E4EC  20 3F E8  |         JSR $E83F
+E4EF  A2 00     |         LDX #$00
+E4F1  A0 02     |         LDY #$02
+E4F3  10 02     |         BPL $E4F7
+E4F5  8A        |         TXA 
+E4F6  A8        |         TAY 
+E4F7  AD 41 C1  |         LDA $C141
+E4FA  D0 0C     |         BNE $E508	; is it a 'Join' ?
+E4FC  B9 25 C0  |         LDA $C025,Y	; no, uses first start address as global address
+E4FF  8D 4D C1  |         STA $C14D
+E502  B9 26 C0  |         LDA $C026,Y
+E505  8D 4E C1  |         STA $C14E
+E508  38        |         SEC 		; computes end address of record
+E509  AD 4D C1  |         LDA $C14D
+E50C  F9 25 C0  |         SBC $C025,Y
+E50F  99 25 C0  |         STA $C025,Y
+E512  AD 4E C1  |         LDA $C14E
+E515  F9 26 C0  |         SBC $C026,Y
+E518  99 26 C0  |         STA $C026,Y
+E51B  18        |         CLC 
+E51C  B9 25 C0  |         LDA $C025,Y
+E51F  79 27 C0  |         ADC $C027,Y
+E522  99 27 C0  |         STA $C027,Y
+E525  B9 26 C0  |         LDA $C026,Y
+E528  79 28 C0  |         ADC $C028,Y
+E52B  99 28 C0  |         STA $C028,Y
+E52E  E0 00     |         CPX #$00
+E530  D0 0C     |         BNE $E53E
+E532  B9 2A C0  |         LDA $C02A,Y
+E535  8D 4C C1  |         STA $C14C
+E538  B9 29 C0  |         LDA $C029,Y
+E53B  8D 4B C1  |         STA $C14B
+
+E53E  AD 50 C1  |         LDA $C150
+E541  30 36     |         BMI $E579	; is trace required ?
+E543  AD 4E C1  |         LDA $C14E	; if yes, prints addresses
+E546  20 4D E1  |         JSR $E14D
+E549  AD 4D C1  |         LDA $C14D
+E54C  20 4D E1  |         JSR $E14D
+E54F  A9 20     |         LDA #$20
+E551  20 57 E0  |         JSR $E057
+E554  B9 28 C0  |         LDA $C028,Y
+E557  20 4D E1  |         JSR $E14D
+E55A  B9 27 C0  |         LDA $C027,Y
+E55D  20 4D E1  |         JSR $E14D
+E560  AD 41 C1  |         LDA $C141
+E563  D0 11     |         BNE $E576
+E565  A9 20     |         LDA #$20
+E567  20 57 E0  |         JSR $E057
+E56A  B9 2A C0  |         LDA $C02A,Y
+E56D  20 4D E1  |         JSR $E14D
+E570  B9 29 C0  |         LDA $C029,Y
+E573  20 4D E1  |         JSR $E14D
+E576  20 54 E0  |         JSR $E054
+
+E579  AD 4D C1  |         LDA $C14D
+E57C  85 0C     |         STA $0C
+E57E  AD 4E C1  |         LDA $C14E
+E581  85 0D     |         STA $0D
+E583  18        |         CLC 
+E584  98        |         TYA 
+E585  69 08     |         ADC #$08
+E587  AA        |         TAX 
+E588  F0 25     |         BEQ $E5AF
+E58A  BD 23 C0  |         LDA $C023,X	; taille du record
+E58D  F0 1D     |         BEQ $E5AC
+E58F  C9 FF     |         CMP #$FF
+E591  D0 03     |         BNE $E596
+E593  4C F5 E4  |         JMP $E4F5
+E596  8D 41 C1  |         STA $C141
+E599  A0 00     |         LDY #$00
+E59B  E8        |         INX 
+E59C  BD 23 C0  |         LDA $C023,X
+E59F  91 0C     |         STA ($0C),Y
+E5A1  E6 0C     |         INC $0C
+E5A3  D0 02     |         BNE $E5A7
+E5A5  E6 0D     |         INC $0D
+E5A7  CE 41 C1  |         DEC $C141
+E5AA  D0 EF     |         BNE $E59B
+E5AC  E8        |         INX 
+E5AD  D0 DB     |         BNE $E58A
+E5AF  AD 23 C0  |         LDA $C023
+E5B2  8D 01 C0  |         STA $C001
+E5B5  AD 24 C0  |         LDA $C024
+E5B8  F0 07     |         BEQ $E5C1
+E5BA  20 3F E8  |         JSR $E83F
+E5BD  A2 02     |         LDX #$02
+E5BF  10 C9     |         BPL $E58A
+E5C1  60        |         RTS 
+
+;******************************************************************************
+; initializes some parameters
+E5C2  A9 FF     |         LDA #$FF
+E5C4  8D 4F C1  |         STA $C14F
+E5C7  8D 50 C1  |         STA $C150
+E5CA  8D 3C C1  |         STA $C13C
+E5CD  A9 00     |         LDA #$00
+E5CF  8D 4D C1  |         STA $C14D
+E5D2  8D 4E C1  |         STA $C14E
+E5D5  8D 41 C1  |         STA $C141
+E5D8  60        |         RTS 
+
+E5D9: 46 69 6C 65 20 6E 6F 74 20 66 6F 75 6E 64 00  File not found.
+E5E8: 49 6E 76 61 6C 69 64 20 63 6F 6D 6D 61 6E 64 20 65 6E 64 00 Invalid command end.
+E5FC: 4E 6F 20 64 72 69 76 65 20 6E 75 6D 62 65 72 00 No drive number.
+E60C: 42 61 64 20 64 72 69 76 65 20 6E 75 6D 62 65 72 00 Bad drive number.
+E61D: 49 6E 76 61 6C 69 64 20 66 69 6C 65 6E 61 6D 65 00 Invalid filename.
+E62E: 44 69 73 63 20 65 72 72 6F 72 00 Disc error.
+E639: 49 6C 6C 65 67 61 6C 20 61 74 74 72 69 62 75 00 Illegal attribute
+E64B: 57 69 6C 64 63 61 72 64 28 73 29 20 6E 6F 74 20 61 6C 6C 6F 77 65 64 00 Wildcard(s) not allowed
+E663: 46 69 6C 65 20 61 6C 72 65 61 64 79 20 65 78 69 73 74 73 00 File already exists
+E677: 49 6E 73 75 66 66 69 63 69 65 6E 74 20 64 69 73 6B 20 73 70 61 63 65 00 Insufficient disk space
+E68F: 53 74 61 72 74 20 61 64 64 72 65 73 73 20 6D 69 73 73 69 6E 67 00 Start address missing
+E6A5: 49 6C 6C 65 67 61 6C 20 71 75 61 6E 74 69 74 79 00 Illegal quantity
+E6B6: 45 6E 64 20 61 64 64 72 65 73 73 20 6D 69 73 73 69 6E 67 00 End address missing
+E6CA: 53 74 61 72 74 20 61 64 64 72 65 73 73 20 3E 20 65 6E 64 20 61 64 64 72 65 73 73 00 Start address > end address
+E6E6: 4D 69 73 73 69 6E 67 20 27 54 4F 27 00 Missing 'TO'
+E6F3: 52 65 6E 61 6D 65 64 20 66 69 6C 65 20 6E 6F 74 20 6F 6E 20 73 61 6D 65 20 64 69 73 6B 00 Renamed file not on same disk
+E711: 4D 69 73 73 69 6E 67 20 63 6F 6D 6D 61 00 53 Missing comma
+E71F: 53 6F 75 72 63 65 20 61 6E 64 20 64 65 73 74 69 6E 61 74 69 6F 6E 20 64 72 69 76 65 73 20 6D 75 73 74 20 62 65 20 73 61 6D 65 00 Source and destination drives must be same
+E74A: 44 65 73 74 69 6E 61 74 69 6F 6E 20 6E 6F 74 20 73 70 65 63 69 66 69 65 64 00 Destination not specified
+E764: 43 61 6E 6E 6F 74 20 6D 65 72 67 65 20 61 6E 64 20 6F 76 65 72 77 72 69 74 65 00 Cannot merge and overwrite
+E77F: 53 69 6E 67 6C 65 20 64 65 73 74 69 6E 61 74 69 6F 6E 20 66 69 6C 65 20 6E 6F 74 20 61 6C 6C 6F 77 65 64 00 Single destination file not allowed
+E7A3: 53 79 6E 74 61 78 20 65 72 72 6F 72 00 Syntax error.
+
+; addresses of the messages above (low bytes in the first line) :
+E7B0: D9 E8 FC 0C 1D 2E 39 4B 63 77 8F A5 B6 CA E6 F3 11 1F 4A 64 7F A3
+E7C6: E5 E5 E5 E6 E6 E6 E6 E6 E6 E6 E6 E6 E6 E6 E6 E6 E7 E7 E7 E7 E7 E7
+
+
+;******************************************************************************
+; error routine
+;
+E7DC  E8        |         INX
+E7DD  8E FF 04  |         STX $04FF
+E7E0  6C 49 C1  |         JMP ($C149)	; clearly, this instruction has been added
+					; the error routine is below but not used
+
+E7E3  CA        |         DEX 
+E7E4  AD FD 04  |         LDA $04FD
+E7E7  29 01     |         AND #$01
+E7E9  F0 03     |         BEQ $E7EE
+E7EB  4C 69 E0  |         JMP $E069	; uncomplete, points to 0000
+E7EE  E0 16     |         CPX #$16
+E7F0  B0 15     |         BCS $E807
+E7F2  BD B0 E7  |         LDA $E7B0,X
+E7F5  85 0C     |         STA $0C
+E7F7  BD C6 E7  |         LDA $E7C6,X
+E7FA  85 0D     |         STA $0D
+E7FC  20 2D E0  |         JSR $E02D	; prints message
+E7FF  A9 3A     |         LDA #$3A
+E801  20 57 E0  |         JSR $E057
+E804  4C 13 E8  |         JMP $E813
+
+E807  8A        |         TXA 		; prints the error number
+E808  20 4D E1  |         JSR $E14D
+E80B  AD FE 04  |         LDA $04FE
+E80E  F0 03     |         BEQ $E813
+E810  20 4D E1  |         JSR $E14D
+E813  4C FF E1  |         JMP $E1FF	; switch to Basic
+E816  60        |         RTS 
+
+;******************************************************************************
+; writes a sector
+E817  20 06 E2  |         JSR $E206
+E81A  AD FE 04  |         LDA $04FE
+E81D  F0 05     |         BEQ $E824
+E81F  A2 05     |         LDX #$05	; Disc error
+E821  4C 1B E0  |         JMP $E01B
+E824  60        |         RTS 
+
+;******************************************************************************
+; reads a sector
+E825  20 0A E2  |         JSR $E20A
+E828  4C 1A E8  |         JMP $E81A
+
+;******************************************************************************
+; reads boot sector
+E82B  A9 23     |         LDA #$23
+E82D  8D 03 C0  |         STA $C003
+E830  A9 C0     |         LDA #$C0
+E832  8D 04 C0  |         STA $C004
+E835  A9 00     |         LDA #$00
+E837  8D 01 C0  |         STA $C001
+E83A  8D 0A C0  |         STA $C00A
+E83D  A9 01     |         LDA #$01
+E83F  8D 02 C0  |         STA $C002
+E842  20 24 E0  |         JSR $E024
+E845  60        |         RTS 
+
+;******************************************************************************
+; checks drive number
+;
+E846  AE 00 C0  |         LDX $C000
+E849  BD 13 C0  |         LDA $C013,X
+E84C  F0 01     |         BEQ $E84F
+E84E  60        |         RTS 
+E84F  A2 03     |         LDX #$03	; bad drive number
+E851  4C 1B E0  |         JMP $E01B
+
+;******************************************************************************
+; prints string pointed by ($0C)
+;
+E854  A0 00     |         LDY #$00
+E856  B1 0C     |         LDA ($0C),Y
+E858  F0 06     |         BEQ $E860
+E85A  20 57 E0  |         JSR $E057
+E85D  C8        |         INY 
+E85E  10 F6     |         BPL $E856
+E860  60        |         RTS 
+
+;******************************************************************************
+; not used
+E861  AD 46 C1  |         LDA $C146
+E864  D0 09     |         BNE $E86F
+E866  AD 45 C1  |         LDA $C145
+E869  30 04     |         BMI $E86F
+E86B  C9 04     |         CMP #$04
+E86D  30 02     |         BMI $E871
+E86F  A9 FF     |         LDA #$FF
+E871  60        |         RTS 
+
+;******************************************************************************
+; reads system parameters from boot sector
+E872  20 27 E0  |         JSR $E027
+E875  A2 07     |         LDX #$07
+E877  BD 33 C0  |         LDA $C033,X
+E87A  9D 23 C1  |         STA $C123,X
+E87D  CA        |         DEX 
+E87E  10 F7     |         BPL $E877
+E880  60        |         RTS 
+
+;******************************************************************************
+; writes system parameters to boot sector
+E881  20 27 E0  |         JSR $E027
+E884  A2 07     |         LDX #$07
+E886  BD 23 C1  |         LDA $C123,X
+E889  9D 33 C0  |         STA $C033,X
+E88C  CA        |         DEX 
+E88D  10 F7     |         BPL $E886
+E88F  20 21 E0  |         JSR $E021
+E892  60        |         RTS 
+
+;******************************************************************************
+; adds a directory entry (no used)
+E893  AD 3E C1  |         LDA $C13E
+E896  8D 01 C0  |         STA $C001
+E899  AD 3D C1  |         LDA $C13D
+E89C  20 3F E8  |         JSR $E83F	; reads sector (C13D) track (C13E)
+E89F  A2 00     |         LDX #$00
+E8A1  AC 3F C1  |         LDY $C13F
+E8A4  BD 2C C1  |         LDA $C12C,X
+E8A7  99 23 C0  |         STA $C023,Y
+E8AA  C8        |         INY 
+E8AB  E8        |         INX 
+E8AC  E0 10     |         CPX #$10
+E8AE  D0 F4     |         BNE $E8A4
+E8B0  EE 25 C0  |         INC $C025
+E8B3  20 21 E0  |         JSR $E021
+E8B6  60        |         RTS 
+
+;******************************************************************************
+E8B7  20 3F E0  |         JSR $E03F
+E8BA  F0 08     |         BEQ $E8C4
+E8BC  EE 29 C1  |         INC $C129
+E8BF  D0 03     |         BNE $E8C4
+E8C1  EE 2A C1  |         INC $C12A
+E8C4  60        |         RTS 
+
+;******************************************************************************
+E8C5  AD 23 C1  |         LDA $C123
+E8C8  F0 2B     |         BEQ $E8F5
+E8CA  8D 02 C0  |         STA $C002
+E8CD  AD 24 C1  |         LDA $C124
+E8D0  8D 01 C0  |         STA $C001
+E8D3  20 24 E0  |         JSR $E024
+E8D6  AD 24 C0  |         LDA $C024
+E8D9  8D 23 C1  |         STA $C123
+E8DC  AD 23 C0  |         LDA $C023
+E8DF  8D 24 C1  |         STA $C124
+E8E2  38        |         SEC 
+E8E3  AD 27 C1  |         LDA $C127
+E8E6  E9 01     |         SBC #$01
+E8E8  8D 27 C1  |         STA $C127
+E8EB  AD 28 C1  |         LDA $C128
+E8EE  E9 00     |         SBC #$00
+E8F0  8D 28 C1  |         STA $C128
+E8F3  A9 01     |         LDA #$01
+E8F5  60        |         RTS 
+;******************************************************************************
+; finds a free directory entry
+E8F6  20 24 E0  |         JSR $E024
+E8F9  AD 25 C0  |         LDA $C025
+E8FC  C9 0F     |         CMP #$0F
+E8FE  D0 31     |         BNE $E931	; this directory sector is full ?
+E900  AD 24 C0  |         LDA $C024	; yes
+E903  F0 0C     |         BEQ $E911	; is it the last dir sector ?
+E905  8D 02 C0  |         STA $C002	; no, reads next one
+E908  AD 23 C0  |         LDA $C023
+E90B  8D 01 C0  |         STA $C001
+E90E  4C F6 E8  |         JMP $E8F6
+E911  AD 23 C1  |         LDA $C123	; yes,
+E914  F0 39     |         BEQ $E94F
+E916  8D 24 C0  |         STA $C024
+E919  AD 24 C1  |         LDA $C124
+E91C  8D 23 C0  |         STA $C023
+E91F  20 21 E0  |         JSR $E021
+E922  20 3F E0  |         JSR $E03F
+E925  A9 00     |         LDA #$00
+E927  AA        |         TAX 
+E928  9D 23 C0  |         STA $C023,X
+E92B  E8        |         INX 
+E92C  D0 FA     |         BNE $E928
+E92E  20 21 E0  |         JSR $E021
+E931  A2 03     |         LDX #$03	; looks for a free entry
+E933  BD 23 C0  |         LDA $C023,X
+E936  F0 07     |         BEQ $E93F
+E938  8A        |         TXA 
+E939  18        |         CLC 
+E93A  69 10     |         ADC #$10
+E93C  AA        |         TAX 
+E93D  D0 F4     |         BNE $E933
+E93F  8A        |         TXA 		; and returns it
+E940  8D 3F C1  |         STA $C13F
+E943  AD 01 C0  |         LDA $C001
+E946  8D 3E C1  |         STA $C13E
+E949  AD 02 C0  |         LDA $C002
+E94C  8D 3D C1  |         STA $C13D
+E94F  60        |         RTS 
+;******************************************************************************
+E950  20 24 E0  |         JSR $E024
+E953  AE 3F C1  |         LDX $C13F
+E956  D0 28     |         BNE $E980
+E958  20 24 E0  |         JSR $E024
+E95B  A2 03     |         LDX #$03
+E95D  A9 26     |         LDA #$26
+E95F  85 0C     |         STA $0C
+E961  A9 C0     |         LDA #$C0
+E963  85 0D     |         STA $0D
+E965  A0 00     |         LDY #$00
+E967  B1 0C     |         LDA ($0C),Y
+E969  F0 15     |         BEQ $E980
+E96B  A0 08     |         LDY #$08
+E96D  B9 2C C1  |         LDA $C12C,Y
+E970  C9 3F     |         CMP #$3F
+E972  F0 04     |         BEQ $E978
+E974  D1 0C     |         CMP ($0C),Y
+E976  D0 08     |         BNE $E980
+E978  88        |         DEY 
+E979  10 F2     |         BPL $E96D
+E97B  8A        |         TXA 
+E97C  8D 3F C1  |         STA $C13F
+E97F  60        |         RTS 
+;******************************************************************************
+; points to next directory entry
+E980  8A        |         TXA 
+E981  18        |         CLC 
+E982  69 10     |         ADC #$10
+E984  B0 0E     |         BCS $E994	; need to read next directory sector ?
+E986  AA        |         TAX 
+E987  A5 0C     |         LDA $0C
+E989  69 10     |         ADC #$10
+E98B  85 0C     |         STA $0C
+E98D  90 D6     |         BCC $E965
+E98F  E6 0D     |         INC $0D
+E991  4C 65 E9  |         JMP $E965
+E994  AD 24 C0  |         LDA $C024	; yes, gets it...
+E997  F0 0C     |         BEQ $E9A5
+E999  8D 02 C0  |         STA $C002
+E99C  AD 23 C0  |         LDA $C023
+E99F  8D 01 C0  |         STA $C001
+E9A2  4C 58 E9  |         JMP $E958
+E9A5  A2 00     |         LDX #$00
+E9A7  60        |         RTS 
+
+;******************************************************************************
+; reads boot sector
+E9A8  AD 13 C0  |         LDA $C013
+E9AB  D0 FA     |         BNE $E9A7
+E9AD  8D 00 C0  |         STA $C000
+E9B0  A9 13     |         LDA #$13
+E9B2  8D 03 C0  |         STA $C003
+E9B5  A9 C0     |         LDA #$C0
+E9B7  8D 04 C0  |         STA $C004
+E9BA  4C 35 E8  |         JMP $E835
+;******************************************************************************
+; location intended to store a command (not used, how would you write to an eprom ?)
+; 
+E9BD: 20 20 20 20 20 20 20 20 20 20 20 20 00
+
+;******************************************************************************
+E9CA  A2 0B     |         LDX #$0B
+E9CC  A9 20     |         LDA #$20
+E9CE  9D BD E9  |         STA $E9BD,X
+E9D1  CA        |         DEX 
+E9D2  10 FA     |         BPL $E9CE
+E9D4  20 60 E0  |         JSR $E060
+E9D7  20 00 00  |         JSR $0000
+E9DA  F0 69     |         BEQ $EA45
+E9DC  38        |         SEC 
+E9DD  E9 30     |         SBC #$30
+E9DF  C9 04     |         CMP #$04
+E9E1  B0 0F     |         BCS $E9F2
+E9E3  C8        |         INY 
+E9E4  8D 2B C1  |         STA $C12B
+E9E7  A2 09     |         LDX #$09
+E9E9  A9 20     |         LDA #$20
+E9EB  9D 2B C1  |         STA $C12B,X
+E9EE  CA        |         DEX 
+E9EF  D0 FA     |         BNE $E9EB
+E9F1  60        |         RTS 
+
+E9F2  A5 EA     |         LDA $EA
+E9F4  48        |         PHA 
+E9F5  A5 E9     |         LDA $E9
+E9F7  48        |         PHA 
+E9F8  98        |         TYA 
+E9F9  18        |         CLC 
+E9FA  65 E9     |         ADC $E9
+E9FC  85 E9     |         STA $E9
+E9FE  90 02     |         BCC $EA02
+EA00  E6 EA     |         INC $EA
+EA02  20 5A E0  |         JSR $E05A	; evaluates a Basic expression, result on ACC0
+EA05  8B CE 17 CF
+EA09  24 28     |         BIT $28
+EA0B  10 56     |         BPL $EA63	; is it a string ?
+EA0D  20 5A E0  |         JSR $E05A	; yes, gets it
+EA10  15 D7 D0 D7
+EA14  C9 0C     |         CMP #$0C	; stores the first 12 chars in E9BD
+EA16  90 02     |         BCC $EA1A
+EA18  A9 0C     |         LDA #$0C
+EA1A  A8        |         TAY 
+EA1B  88        |         DEY 
+EA1C  30 08     |         BMI $EA26
+EA1E  B1 91     |         LDA ($91),Y
+EA20  99 BD E9  |         STA $E9BD,Y
+EA23  4C 1B EA  |         JMP $EA1B
+
+EA26  A5 E9     |         LDA $E9
+EA28  48        |         PHA 
+EA29  A9 BD     |         LDA #$BD
+EA2B  85 E9     |         STA $E9
+EA2D  A9 E9     |         LDA #$E9
+EA2F  85 EA     |         STA $EA
+EA31  C8        |         INY 
+EA32  20 45 EA  |         JSR $EA45
+EA35  68        |         PLA 
+EA36  85 EA     |         STA $EA
+EA38  68        |         PLA 
+EA39  18        |         CLC 
+EA3A  85 E9     |         STA $E9
+EA3C  E5 EA     |         SBC $EA
+EA3E  49 FF     |         EOR #$FF
+EA40  A8        |         TAY 
+EA41  68        |         PLA 
+EA42  85 EA     |         STA $EA
+EA44  60        |         RTS 
+
+EA45  AD 0C C0  |         LDA $C00C
+EA48  8D 2B C1  |         STA $C12B
+EA4B  20 E7 E9  |         JSR $E9E7
+EA4E  C8        |         INY 
+EA4F  B1 E9     |         LDA ($E9),Y
+EA51  88        |         DEY 
+EA52  C9 CD     |         CMP #$CD
+EA54  F0 04     |         BEQ $EA5A
+EA56  C9 2D     |         CMP #$2D
+EA58  D0 13     |         BNE $EA6D
+EA5A  B1 E9     |         LDA ($E9),Y
+EA5C  38        |         SEC 
+EA5D  E9 30     |         SBC #$30
+EA5F  C9 04     |         CMP #$04
+EA61  90 05     |         BCC $EA68
+EA63  A2 04     |         LDX #$04	; invalid filename
+EA65  4C 1B E0  |         JMP $E01B
+EA68  8D 2B C1  |         STA $C12B
+EA6B  C8        |         INY 
+EA6C  C8        |         INY 
+EA6D  A2 00     |         LDX #$00
+EA6F  A9 06     |         LDA #$06
+EA71  20 8C EA  |         JSR $EA8C
+EA74  B1 E9     |         LDA ($E9),Y
+EA76  C9 2E     |         CMP #$2E
+EA78  D0 08     |         BNE $EA82
+EA7A  C8        |         INY 
+EA7B  A2 06     |         LDX #$06
+EA7D  A9 03     |         LDA #$03
+EA7F  20 8C EA  |         JSR $EA8C
+EA82  20 00 00  |         JSR $0000
+EA85  F0 04     |         BEQ $EA8B
+EA87  C9 20     |         CMP #$20
+EA89  D0 D8     |         BNE $EA63
+EA8B  60        |         RTS 
+EA8C  8D 41 C1  |         STA $C141
+EA8F  B1 E9     |         LDA ($E9),Y
+EA91  C9 2A     |         CMP #$2A
+EA93  F0 16     |         BEQ $EAAB
+EA95  C9 3F     |         CMP #$3F
+EA97  F0 07     |         BEQ $EAA0
+EA99  20 4E E0  |         JSR $E04E
+EA9C  C9 00     |         CMP #$00
+EA9E  F0 0A     |         BEQ $EAAA
+EAA0  9D 2C C1  |         STA $C12C,X
+EAA3  E8        |         INX 
+EAA4  C8        |         INY 
+EAA5  CE 41 C1  |         DEC $C141
+EAA8  D0 E5     |         BNE $EA8F
+EAAA  60        |         RTS 
+EAAB  A9 3F     |         LDA #$3F
+EAAD  9D 2C C1  |         STA $C12C,X
+EAB0  E8        |         INX 
+EAB1  CE 41 C1  |         DEC $C141
+EAB4  D0 F7     |         BNE $EAAD
+EAB6  C8        |         INY 
+EAB7  60        |         RTS 
+
+; limits a char to alphanumeric
+EAB8  C9 30     |         CMP #$30
+EABA  90 14     |         BCC $EAD0
+EABC  C9 3A     |         CMP #$3A
+EABE  90 12     |         BCC $EAD2
+EAC0  C9 41     |         CMP #$41
+EAC2  90 0C     |         BCC $EAD0
+EAC4  C9 5B     |         CMP #$5B
+EAC6  90 0A     |         BCC $EAD2
+EAC8  C9 61     |         CMP #$61
+EACA  90 04     |         BCC $EAD0
+EACC  C9 7B     |         CMP #$7B
+EACE  90 02     |         BCC $EAD2
+EAD0  A9 00     |         LDA #$00
+EAD2  60        |         RTS 
+
+;******************************************************************************
+; reads first directory sector
+;
+EAD3  20 33 E0  |         JSR $E033
+EAD6  AD 26 C1  |         LDA $C126
+EAD9  8D 01 C0  |         STA $C001
+EADC  AD 25 C1  |         LDA $C125
+EADF  8D 02 C0  |         STA $C002
+EAE2  A9 00     |         LDA #$00
+EAE4  8D 3F C1  |         STA $C13F
+EAE7  4C 45 E0  |         JMP $E045
+
+;******************************************************************************
+EAEA  A2 09     |         LDX #$09
+EAEC  AC 3F C1  |         LDY $C13F
+EAEF  B9 2C C0  |         LDA $C02C,Y
+EAF2  9D 2C C1  |         STA $C12C,X
+EAF5  C8        |         INY 
+EAF6  E8        |         INX 
+EAF7  E0 10     |         CPX #$10
+EAF9  D0 F4     |         BNE $EAEF
+EAFB  60        |         RTS 
+;******************************************************************************
+EAFC  AE 3F C1  |         LDX $C13F
+EAFF  A0 06     |         LDY #$06
+EB01  BD 23 C0  |         LDA $C023,X
+EB04  C9 20     |         CMP #$20
+EB06  D0 03     |         BNE $EB0B
+EB08  20 57 E0  |         JSR $E057
+EB0B  E8        |         INX 
+EB0C  88        |         DEY 
+EB0D  D0 F2     |         BNE $EB01
+EB0F  AE 3F C1  |         LDX $C13F
+EB12  A0 06     |         LDY #$06
+EB14  BD 23 C0  |         LDA $C023,X
+EB17  C9 20     |         CMP #$20
+EB19  F0 03     |         BEQ $EB1E
+EB1B  20 57 E0  |         JSR $E057
+EB1E  E8        |         INX 
+EB1F  88        |         DEY 
+EB20  D0 F2     |         BNE $EB14
+EB22  A9 2E     |         LDA #$2E
+EB24  20 57 E0  |         JSR $E057
+EB27  A0 03     |         LDY #$03
+EB29  BD 23 C0  |         LDA $C023,X
+EB2C  20 57 E0  |         JSR $E057
+EB2F  E8        |         INX 
+EB30  88        |         DEY 
+EB31  D0 F6     |         BNE $EB29
+EB33  60        |         RTS 
+
+;******************************************************************************
+EB34  A5 0C     |         LDA $0C
+EB36  8D 47 C1  |         STA $C147
+EB39  A5 0D     |         LDA $0D
+EB3B  8D 48 C1  |         STA $C148
+EB3E  BA        |         TSX 
+EB3F  E8        |         INX 
+EB40  E8        |         INX 
+EB41  8E 40 C1  |         STX $C140
+EB44  60        |         RTS 
+
+;******************************************************************************
+; checks no '?' wildcard is used
+EB45  A2 08     |         LDX #$08
+EB47  BD 2C C1  |         LDA $C12C,X
+EB4A  C9 3F     |         CMP #$3F
+EB4C  F0 2B     |         BEQ $EB79
+EB4E  CA        |         DEX 
+EB4F  10 F6     |         BPL $EB47
+EB51  60        |         RTS 
+
+EB52: 43 4F 4D COM
+
+;******************************************************************************
+EB55  20 06 E0  |         JSR $E006
+EB58  A0 00     |         LDY #$00
+EB5A  98        |         TYA 
+EB5B  20 48 EA  |         JSR $EA48
+EB5E  AD 32 C1  |         LDA $C132
+EB61  C9 20     |         CMP #$20
+EB63  D0 0B     |         BNE $EB70
+EB65  A2 02     |         LDX #$02
+EB67  BD 52 EB  |         LDA $EB52,X
+EB6A  9D 32 C1  |         STA $C132,X
+EB6D  CA        |         DEX 
+EB6E  10 F7     |         BPL $EB67
+EB70  20 45 EB  |         JSR $EB45
+EB73  20 00 E0  |         JSR $E000
+EB76  4C 62 E4  |         JMP $E462
+;******************************************************************************
+EB79  A2 07     |         LDX #$07	; prints "wildcards not allowed"
+EB7B  4C 1B E0  |         JMP $E01B
+
+
+;******************************************************************************
+;          RESET : initialisation routine
+;******************************************************************************
+
+
+EB7E  78        |         SEI 		; inits cpu then waits
+EB7F  D8        |         CLD 
+EB80  A2 FF     |         LDX #$FF
+EB82  9A        |         TXS 
+EB83  E8        |         INX 
+EB84  8A        |         TXA 
+EB85  A8        |         TAY 
+EB86  CA        |         DEX 
+EB87  D0 FD     |         BNE $EB86
+EB89  88        |         DEY 
+EB8A  D0 FA     |         BNE $EB86
+
+EB8C  9D 00 C0  |         STA $C000,X		; clears some critical pages
+EB8F  9D 00 C1  |         STA $C100,X
+EB92  95 00     |         STA $00,X
+EB94  9D 00 02  |         STA $0200,X
+EB97  CA        |         DEX 
+EB98  D0 F2     |         BNE $EB8C
+
+EB9A  A2 7A     |         LDX #$7A		; transfers switching routines in page 4
+EB9C  BD ED EE  |         LDA $EEED,X
+EB9F  9D 80 04  |         STA $0480,X
+EBA2  CA        |         DEX 
+EBA3  10 F7     |         BPL $EB9C
+
+EBA5  20 AE EE  |         JSR $EEAE		; checks overlay ram
+
+EBA8  A2 0C     |         LDX #$0C		; copies a routine in BFE0
+EBAA  BD 68 EF  |         LDA $EF68,X		; to read rom location C002
+EBAD  9D E0 BF  |         STA $BFE0,X
+EBB0  CA        |         DEX 
+EBB1  10 F7     |         BPL $EBAA
+EBB3  20 E0 BF  |         JSR $BFE0
+EBB6  C0 EA     |         CPY #$EA
+EBB8  F0 0F     |         BEQ $EBC9	; is it a Basic v1.0 ?
+
+EBBA  A9 01     |         LDA #$01
+EBBC  8D 07 C0  |         STA $C007	; indicates a Basic v1.1
+EBBF  A9 44     |         LDA #$44
+EBC1  8D DC 04  |         STA $04DC
+EBC4  A9 47     |         LDA #$47
+EBC6  8D E4 04  |         STA $04E4
+
+EBC9  A2 FF     |         LDX #$FF	; fakes the Basic's initialization
+EBCB  86 A9     |         STX $A9
+EBCD  A9 FF     |         LDA #$FF
+EBCF  A0 97     |         LDY #$97
+EBD1  85 A6     |         STA $A6
+EBD3  84 A7     |         STY $A7
+EBD5  8D C1 02  |         STA $02C1
+EBD8  8C C2 02  |         STY $02C2
+EBDB  85 A2     |         STA $A2
+EBDD  84 A3     |         STY $A3
+EBDF  A2 1C     |         LDX #$1C
+EBE1  BD CF EE  |         LDA $EECF,X
+EBE4  95 E1     |         STA $E1,X
+EBE6  CA        |         DEX 
+EBE7  D0 F8     |         BNE $EBE1
+
+EBE9  AD 07 C0  |         LDA $C007
+EBEC  F0 28     |         BEQ $EC16
+
+EBEE  A9 B9     |         LDA #$B9	; atmos part
+EBF0  85 F0     |         STA $F0
+EBF2  A9 EC     |         LDA #$EC
+EBF4  85 F1     |         STA $F1
+EBF6  A9 20     |         LDA #$20
+EBF8  8D 4E 02  |         STA $024E
+EBFB  A9 04     |         LDA #$04
+EBFD  8D 4F 02  |         STA $024F
+EC00  A9 00     |         LDA #$00
+EC02  8D 60 02  |         STA $0260
+EC05  A2 12     |         LDX #$12
+EC07  BD 5D EE  |         LDA $EE5D,X
+EC0A  9D 38 02  |         STA $0238,X
+EC0D  CA        |         DEX 
+EC0E  10 F7     |         BPL $EC07
+EC10  A9 B0     |         LDA #$B0
+EC12  A0 CC     |         LDY #$CC
+EC14  30 19     |         BMI $EC2F
+
+EC16  A9 FF     |         LDA #$FF	; oric1 part
+EC18  A0 BF     |         LDY #$BF
+EC1A  8D E1 02  |         STA $02E1
+EC1D  8C E2 02  |         STY $02E2
+EC20  A2 08     |         LDX #$08
+EC22  BD 54 EE  |         LDA $EE54,X
+EC25  9D 28 02  |         STA $0228,X
+EC28  CA        |         DEX 
+EC29  10 F7     |         BPL $EC22
+EC2B  A9 ED     |         LDA #$ED
+EC2D  A0 CB     |         LDY #$CB
+
+EC2F  85 1B     |         STA $1B	; both
+EC31  84 1C     |         STY $1C
+EC33  A9 4C     |         LDA #$4C
+EC35  85 1A     |         STA $1A
+EC37  85 C3     |         STA $C3
+EC39  85 21     |         STA $21
+EC3B  8D FB 02  |         STA $02FB
+EC3E  A9 A0     |         LDA #$A0
+EC40  A0 D2     |         LDY #$D2
+EC42  AE 07 C0  |         LDX $C007
+EC45  F0 04     |         BEQ $EC4B
+EC47  A9 36     |         LDA #$36
+EC49  A0 D3     |         LDY #$D3
+EC4B  85 22     |         STA $22
+EC4D  84 23     |         STY $23
+EC4F  8D FC 02  |         STA $02FC
+EC52  8C FD 02  |         STY $02FD
+EC55  A9 C4     |         LDA #$C4
+EC57  A0 04     |         LDY #$04
+EC59  8D F5 02  |         STA $02F5
+EC5C  8C F6 02  |         STY $02F6
+EC5F  A9 00     |         LDA #$00
+EC61  8D FF 04  |         STA $04FF
+EC64  8D FD 04  |         STA $04FD
+
+EC67  20 5A E0  |         JSR $E05A	; inits the oric with the NMI routine of Basic
+EC6A: 88 F8 B8 F8
+EC6E  A9 50     |         LDA #$50
+EC70  85 31     |         STA $31
+EC72  A9 30     |         LDA #$30
+EC74  85 32     |         STA $32
+EC76  A9 03     |         LDA #$03
+EC78  85 C2     |         STA $C2
+EC7A  A9 00     |         LDA #$00
+EC7C  85 D7     |         STA $D7
+EC7E  85 88     |         STA $88
+EC80  85 2F     |         STA $2F
+EC82  48        |         PHA 
+EC83  8D 00 05  |         STA $0500
+EC86  8D 01 05  |         STA $0501
+EC89  8D 02 05  |         STA $0502
+EC8C  8D F7 02  |         STA $02F7
+EC8F  85 2E     |         STA $2E
+EC91  8D F1 02  |         STA $02F1
+EC94  8D F2 02  |         STA $02F2
+EC97  8D F4 02  |         STA $02F4
+EC9A  A9 88     |         LDA #$88
+EC9C  85 85     |         STA $85
+EC9E  A9 02     |         LDA #$02
+ECA0  8D C0 02  |         STA $02C0
+ECA3  A9 01     |         LDA #$01
+ECA5  A0 05     |         LDY #$05
+ECA7  85 9A     |         STA $9A
+ECA9  84 9B     |         STY $9B
+ECAB  A9 03     |         LDA #$03
+ECAD  85 9C     |         STA $9C
+ECAF  84 9D     |         STY $9D
+ECB1  85 9E     |         STA $9E
+ECB3  84 9F     |         STY $9F
+ECB5  85 A0     |         STA $A0
+ECB7  84 A1     |         STY $A1
+
+ECB9  A2 00     |         LDX #$00	; prints 'insert system disc'
+ECBB  20 92 EE  |         JSR $EE92
+
+ECBE  A2 09     |         LDX #$09	; copies SYSTEMDOS filename to C12B
+ECC0  BD 40 EE  |         LDA $EE40,X
+ECC3  9D 2B C1  |         STA $C12B,X
+ECC6  CA        |         DEX 
+ECC7  10 F7     |         BPL $ECC0
+
+ECC9  A9 8A     |         LDA #$8A	; initializes Error address to EE8A
+ECCB  8D 49 C1  |         STA $C149
+ECCE  A9 EE     |         LDA #$EE
+ECD0  8D 4A C1  |         STA $C14A
+
+ECD3  A2 D8     |         LDX #$D8	; 'Force Interrupt' command
+ECD5  8E 10 03  |         STX $0310	
+
+ECD8  A2 08     |         LDX #$08	; Restores track 0
+ECDA  20 03 E0  |         JSR $E003
+
+ECDD  20 48 E0  |         JSR $E048	; read sector
+ECE0  20 00 E0  |         JSR $E000	; initializes some parameters
+ECE3  20 09 E0  |         JSR $E009	; loads SYSTEM.DOS
+ECE6  20 A3 EE  |         JSR $EEA3	; clears the top line
+
+ECE9  A2 08     |         LDX #$08	; copies Basic line "!BOOTUP" to TIB
+ECEB  BD 5A ED  |         LDA $ED5A,X
+ECEE  95 35     |         STA $35,X
+ECF0  CA        |         DEX 
+ECF1  10 F8     |         BPL $ECEB
+
+ECF3  A2 FF     |         LDX #$FF	; prints DOS version on top line
+ECF5  E8        |         INX 
+ECF6  BD D0 9F  |         LDA $9FD0,X
+ECF9  9D 82 BB  |         STA $BB82,X
+ECFC  D0 F7     |         BNE $ECF5
+
+ECFE  A2 1A     |         LDX #$1A	; copies a routine to BFE0
+ED00  BD 3F ED  |         LDA $ED3F,X
+ED03  9D E0 BF  |         STA $BFE0,X
+ED06  CA        |         DEX 
+ED07  10 F7     |         BPL $ED00
+
+ED09  A9 AE     |         LDA #$AE	; prints Basic copyright
+ED0B  A0 ED     |         LDY #$ED
+ED0D  AE 07 C0  |         LDX $C007
+ED10  F0 04     |         BEQ $ED16
+ED12  A9 F1     |         LDA #$F1
+ED14  A0 ED     |         LDY #$ED
+ED16  85 0C     |         STA $0C
+ED18  84 0D     |         STY $0D
+ED1A  20 2D E0  |         JSR $E02D
+
+ED1D  A2 09     |         LDX #$09	; copies filename BOOTUPCOM to C12B
+ED1F  BD 4A EE  |         LDA $EE4A,X
+ED22  9D 2B C1  |         STA $C12B,X
+ED25  CA        |         DEX 
+ED26  10 F7     |         BPL $ED1F
+ED28  20 0C E0  |         JSR $E00C	; searches BOOTUPCOM in directory
+ED2B  E0 00     |         CPX #$00
+ED2D  D0 0D     |         BNE $ED3C	; found BOOTUPCOM ? executes !BOOTUP
+ED2F  86 35     |         STX $35	; no, removes !BOOTUP command from TIB
+ED31  A9 35     |         LDA #$35
+ED33  85 0C     |         STA $0C
+ED35  A9 EE     |         LDA #$EE
+ED37  85 0D     |         STA $0D
+ED39  20 2D E0  |         JSR $E02D	; and prints Ready
+ED3C  4C E0 BF  |         JMP $BFE0	; goes to ram in order to activate overlay ram
+
+;******************************************************************************
+; ED3F-ED59 : routine copied to BFE0
+;              switches to overlay ram and starts the OS
+;
+BFE0  78        |         SEI 
+BFE1  A9 84     |         LDA #$84
+BFE3  8D 80 04  |         STA $0480
+BFE6  8D 14 03  |         STA $0314
+BFE9  20 F8 BF  |         JSR $BFF8
+BFEC  A2 34     |         LDX #$34
+BFEE  A0 00     |         LDY #$00
+BFF0  58        |         CLI 
+BFF1  20 5A D4  |         JSR $D45A	; calls the Basic interpreter (no return)
+BFF4: CD C4 BD C4
+BFF8  6C 4B C1  |         JMP ($C14B)	; init the OS
+;*****************************************************************************
+
+ED5A: 21 42 4F 4F 54 55 50 00 00 !BOOTUP
+
+ED63: 69 6E 73 65 72 74 20 73 79 73 74 65 6D 20 64 69 73 63 00 insert system disc
+ED76: 0C 4E 6F 20 6F 70 65 72 61 74 69 6E 67 20 73 79 73 74 65 6D 20 6F 6E 20 64 69 73 63 08 00 No operating system on disc
+ED94: 0C 52 56 31 20 61 64 6A 75 73 74 6D 65 6E 74 20 72 65 71 75 69 72 65 64 08 00 RV1 adjustment required
+EDAE: 0C 4F 52 49 43 20 45 58 54 45 4E 44 45 44 20 42 41 53 49 43 20 56 31 2E 30 0D 0A ORIC EXTENDED BASIC V1.0
+EDC9: 60 20 31 39 38 33 20 54 41 4E 47 45 52 49 4E 45 0D 0A 0A 0A ` 1983 TANGERINE
+EDDD: 34 37 38 37 30 20 42 59 54 45 53 20 46 52 45 45 0D 0A 0A 00 47870 BYTES FREE
+EDF1: 0C 4F 52 49 43 20 45 58 54 45 4E 44 45 44 20 42 41 53 49 43 20 56 31 2E 31 0D 0A ORIC EXTENDED BASIC V1.1
+EE0C: 60 20 31 39 38 33 20 54 41 4E 47 45 52 49 4E 45 0D 0A 0A 0A ` 1983 TANGERINE
+EE20: 20 33 37 36 33 31 20 42 59 54 45 53 20 46 52 45 45 0D 0A 0A 00  37631 BYTES FREE
+EE35: 0D 0A 52 65 61 64 79 20 0D 0A 00 Ready 
+
+EE40: 00 53 59 53 54 45 4D 44 4F 53 SYSTEMDOS
+EE4A: 00 42 4F 4F 54 55 50 43 4F 4D BOOTUPCOM
+
+;******************************************************************************
+; EE54-EE5C: vectors copied to 0228 (oric1)
+;******************************************************************************
+
+EE54  4C 03 EC  |         JMP $EC03
+EE57  4C 30 F4  |         JMP $F430
+EE5A  01 00
+EE5C  40        |         RTI 
+
+;******************************************************************************
+; EE5D-EE6F: vectors copied to 0238 (atmos)
+;******************************************************************************
+
+EE5D  4C 7C F7  |         JMP $F77C
+EE60  4C 78 EB  |         JMP $EB78
+EE63  4C C1 F5  |         JMP $F5C1
+EE66  4C 65 F8  |         JMP $F865
+EE69  4C 22 EE  |         JMP $EE22
+EE6C  4C B2 F8  |         JMP $F8B2
+EE6F  40        |         RTI 
+
+
+;******************************************************************************
+
+EE70  A2 31     |         LDX #$31	; Error: prints 'RV1 adjustment required'
+EE72  A0 00     |         LDY #$00	; and halts the system
+EE74  A9 1A     |         LDA #$1A
+EE76  99 80 BB  |         STA $BB80,Y
+EE79  99 80 BC  |         STA $BC80,Y
+EE7C  99 80 BD  |         STA $BD80,Y
+EE7F  99 80 BE  |         STA $BE80,Y
+EE82  99 FE BE  |         STA $BEFE,Y
+EE85  88        |         DEY 
+EE86  D0 EE     |         BNE $EE76
+EE88  F0 02     |         BEQ $EE8C
+
+;*****************************************************************************
+
+EE8A  A2 13     |         LDX #$13	; Error: prints 'no operating system on disc'
+EE8C  20 92 EE  |         JSR $EE92
+EE8F  4C 8F EE  |         JMP $EE8F		; halt the system
+
+;*****************************************************************************
+
+EE92  20 A3 EE  |         JSR $EEA3	; clears the top line
+EE95  4C 9D EE  |         JMP $EE9D	; and prints a message on it
+
+EE98  E8        |         INX 		; prints a message on the top line
+EE99  99 82 BB  |         STA $BB82,Y
+EE9C  C8        |         INY 
+EE9D  BD 63 ED  |         LDA $ED63,X
+EEA0  D0 F6     |         BNE $EE98
+EEA2  60        |         RTS 
+
+EEA3  A0 1B     |         LDY #$1B	; clears the top line
+EEA5  A9 20     |         LDA #$20
+EEA7  99 81 BB  |         STA $BB81,Y
+EEAA  88        |         DEY 
+EEAB  D0 FA     |         BNE $EEA7
+EEAD  60        |         RTS 
+
+;*****************************************************************************
+
+; Checks overlay ram
+
+EEAE  A2 00     |         LDX #$00
+EEB0  BD A5 C0  |         LDA $C0A5,X
+EEB3  A8        |         TAY 
+EEB4  A9 55     |         LDA #$55
+EEB6  9D A5 C0  |         STA $C0A5,X
+EEB9  DD A5 C0  |         CMP $C0A5,X
+EEBC  D0 B2     |         BNE $EE70
+EEBE  A9 AA     |         LDA #$AA
+EEC0  9D A5 C0  |         STA $C0A5,X
+EEC3  DD A5 C0  |         CMP $C0A5,X
+EEC6  D0 A8     |         BNE $EE70
+EEC8  98        |         TYA 
+EEC9  9D A5 C0  |         STA $C0A5,X
+EECC  E8        |         INX 
+EECD  D0 E1     |         BNE $EEB0
+EECF  60        |         RTS 
+
+;*****************************************************************************
+; EED0-EEE0: interpreter routine copied to E2
+;*****************************************************************************
+
+00E2  E6 E9     |         INC $E9
+00E4  D0 02     |         BNE $00E8
+00E6  E6 EA     |         INC $EA
+00E8  AD 60 EA  |         LDA $EA60
+00EB  C9 20     |         CMP #$20
+00ED  F0 F3     |         BEQ $00E0
+00EF  20 41 EA  |         JSR $EA41
+00F2  60        |         RTS 
+
+;*****************************************************************************
+
+EEE1:    2C 60 EA 2C 60 EA 60
+EEE8: 80 4F C7 52 58
+
+;******************************************************************************
+;  EEED-EF67: switching routines transfered to page 4 (address 0480)
+;******************************************************************************
+
+0480: 04 00
+0482: 00 00				; temporary storage for A and flags
+
+0484  4C 60 EA  |         JMP $EA60	; address replaced for indirect jumps
+0487  4C E6 04  |         JMP $04E6	; enables/disables rom
+048A  4C D6 04  |         JMP $04D6
+048D  4C DE 04  |         JMP $04DE
+
+0490  08        |         PHP 		; calls a routine in rom or eprom
+0491  78        |         SEI 		; destination bank specified in 0481
+0492  8D 82 04  |         STA $0482
+0495  68        |         PLA 
+0496  8D 83 04  |         STA $0483
+0499  AD 80 04  |         LDA $0480
+049C  48        |         PHA 
+049D  AD 81 04  |         LDA $0481
+04A0  20 E6 04  |         JSR $04E6
+04A3  AD 83 04  |         LDA $0483
+04A6  48        |         PHA 
+04A7  AD 82 04  |         LDA $0482
+04AA  28        |         PLP 
+04AB  20 84 04  |         JSR $0484
+04AE  08        |         PHP 
+04AF  78        |         SEI 
+04B0  8D 82 04  |         STA $0482
+04B3  68        |         PLA 
+04B4  8D 83 04  |         STA $0483
+04B7  68        |         PLA 
+04B8  20 E6 04  |         JSR $04E6
+04BB  AD 83 04  |         LDA $0483
+04BE  48        |         PHA 
+04BF  AD 82 04  |         LDA $0482
+04C2  28        |         PLP 
+04C3  60        |         RTS 
+
+04C4  A9 00     |         LDA #$00
+04C6  8D 81 04  |         STA $0481
+04C9  A9 66     |         LDA #$66
+04CB  8D 85 04  |         STA $0485
+04CE  A9 D4     |         LDA #$D4
+04D0  8D 86 04  |         STA $0486
+04D3  4C 90 04  |         JMP $0490
+
+04D6  08        |         PHP 
+04D7  BA        |         TSX 
+04D8  FE 02 01  |         INC $0102,X
+04DB  4C 28 02  |         JMP $0228		; changed to 0244 for a v1.1 
+
+04DE  08        |         PHP 
+04DF  BA        |         TSX 
+04E0  FE 02 01  |         INC $0102,X
+04E3  4C 2B 02  |         JMP $022B		; changed to 0247 for a v1.1
+
+04E6  78        |         SEI 		; enables/disables rom
+04E7  29 02     |         AND #$02
+04E9  8D 81 04  |         STA $0481
+04EC  AD 80 04  |         LDA $0480
+04EF  29 FD     |         AND #$FD
+04F1  0D 81 04  |         ORA $0481
+04F4  8D 14 03  |         STA $0314
+04F7  8D 80 04  |         STA $0480
+04FA  60        |         RTS 
+
+;******************************************************************************
+; routine transfered in BFE0, just to read rom location C002...
+;******************************************************************************
+
+EF68  A9 06     |         LDA #$06
+EF6A  20 87 04  |         JSR $0487
+EF6D  AC 02 C0  |         LDY $C002
+EF70  A9 00     |         LDA #$00
+EF72  4C 87 04  |         JMP $0487
+
+;******************************************************************************
+;...
+;...nothing from EF75 to FFCF
+;...
+;******************************************************************************
+
+FFD0: 4F 72 69 63 20 44 4F 53 20 56 30 2E 36 00 00 00 Oric DOS V0.6
+FFE0: 28 43 29 20 4F 52 49 43 20 31 39 38 33 00 00 00 (C) ORIC 1983
+FFF0: 00 00 00 00 00 00 00 00 00 00
+FFFA: AE E0 7E EB C0 E3		; NMI=E0AE, RESET=EB7E, IRQ=E3C0

@@ -42,7 +42,7 @@ void OperationIdle::write_data_reg(uint8_t value)
 
 uint8_t OperationReadSector::read_data_reg() const
 {
-    std::println("OperationReadSector::read_data_reg()");
+    // std::println("OperationReadSector::read_data_reg()");
     if (wd1793.state.current_sector == nullptr) {
         wd1793.state.current_operation = &wd1793.operation_idle;
         wd1793.state.status &= ~WD1793::Status::StatusBusy;
@@ -54,7 +54,13 @@ uint8_t OperationReadSector::read_data_reg() const
     }
 
     auto data_span = wd1793.state.current_sector->data;
-    std::println("OperationReadSector::read_data_reg() span size: {}", data_span.size());
+    // std::println("OperationReadSector::read_data_reg() span size: {}", data_span.size());
+    // std::println("OperationReadSector::read_data_reg() reading offset: {}", wd1793.state.offset);
+
+    uint8_t v = data_span[wd1793.state.offset++];
+
+    wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
+    wd1793.drive->data_request_clear();
 
     if (wd1793.state.offset >= data_span.size()) {
         if (multiple_sectors) {
@@ -64,34 +70,23 @@ uint8_t OperationReadSector::read_data_reg() const
             wd1793.state.data_request_counter = 180;
             return 0x00;
         }
-    }
 
-    std::println("OperationReadSector::read_data_reg() reading offset: {}", wd1793.state.offset);
-
-    uint8_t v = data_span[wd1793.state.offset++];
-
-    // Kvittera DRQ för den här byten
-    wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
-    wd1793.drive->data_request_clear();
-
-    // Om mer data återstår: trigga nästa DRQ (direkt eller efter få cycles)
-    if (wd1793.state.offset < data_span.size()) {
-        wd1793.state.data_request_counter = 32; // eller 0 för "direkt"
-    }
-    else {
         std::println("OperationReadSector::read_data_reg() - No more data!");
         // Sista byten levererad -> command complete
-        wd1793.state.status &= ~WD1793::Status::StatusBusy;
+        // wd1793.state.status &= ~WD1793::Status::StatusBusy;
         wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
         // wd1793.state.status &= ~WD1793::Status::StatusLostData;
         wd1793.drive->data_request_clear();
 
         wd1793.state.interrupt_counter = 32;
-        wd1793.state.set_status_at_interrupt(0);
+        wd1793.state.set_status_at_interrupt(wd1793.state.current_sector->sector_mark == 0xfb ? 0 : WD1793::StatusRecordType);
 
         wd1793.state.data_request_counter = 0;
         wd1793.state.current_operation = &wd1793.operation_idle;
         printf("STATUS AFTER READ: %02X\n", wd1793.state.status);
+    }
+    else {
+        wd1793.state.data_request_counter = 32; // eller 0 för "direkt"
     }
 
     return v;
@@ -132,6 +127,7 @@ void OperationReadAddress::write_data_reg(uint8_t value)
 
 uint8_t OperationReadTrack::read_data_reg() const
 {
+    std::println("////////////////////////////////////////////");
     std::println("OperationReadTrack::read_data_reg()");
     uint8_t data = wd1793.state.current_track->data[wd1793.state.offset++];
     wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
@@ -179,7 +175,6 @@ void WD1793::State::reset()
     update_status_at_interrupt = false;
 
     data_request_counter = 0;
-    data_request_flag = false;
 
     current_track = nullptr;
 }
@@ -236,7 +231,7 @@ void WD1793::exec(uint8_t cycles)
         state.data_request_counter -= cycles;
         if (state.data_request_counter <= 0) {
             state.data_request_counter = 0;
-            std::println("WD1793 *DRQ*");
+            // std::println("WD1793 *DRQ*");
             state.status |= Status::StatusDataRequest;
             drive->data_request_set();
         }
@@ -341,7 +336,7 @@ void WD1793::do_command(uint8_t command)
         case 0x80:
             // Read sector [Type 2]: 1 0 0 m F₂ E F₁ 0
             std::println("WD1793 do command: Read sector: {:02x}", command);
-            state.status = Status::StatusBusy;
+            state.status = Status::StatusBusy | StatusNotReady;
             state.offset = 0;
             state.data_request_counter = 60;
             operation_read_sector.multiple_sectors = command & 0x10;
