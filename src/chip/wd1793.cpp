@@ -243,7 +243,7 @@ uint8_t WD1793::read_byte(uint16_t offset)
     switch (offset)
     {
         case 0x0:
-            std::println("WD1793::read_byte(0) - *IRQ clear*");
+            // std::println("WD1793::read_byte(0) - *IRQ clear*");
             drive->interrupt_clear();
             return state.status;
         case 0x1:
@@ -324,6 +324,7 @@ void WD1793::do_command(uint8_t command)
             std::println("WD1793 do command: Step in");
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
+            set_track(state.current_track_number + 1);
             state.current_operation = &operation_idle;
             break;
         case 0x60:
@@ -331,6 +332,7 @@ void WD1793::do_command(uint8_t command)
             std::println("WD1793 do command: Step out");
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
+            set_track(state.current_track_number - 1);
             state.current_operation = &operation_idle;
             break;
         case 0x80:
@@ -340,7 +342,6 @@ void WD1793::do_command(uint8_t command)
             state.offset = 0;
             state.data_request_counter = 60;
             operation_read_sector.multiple_sectors = command & 0x10;
-            if (command & 0x10) { std::println("////// MULTI ////////");}
             state.current_operation = &operation_read_sector;
             set_sector(state.sector);
             break;

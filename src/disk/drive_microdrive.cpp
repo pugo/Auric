@@ -34,8 +34,8 @@ DriveMicrodrive::DriveMicrodrive(Machine& machine) :
 void DriveMicrodrive::State::reset()
 {
     status = 0;
-    interrupt_request = 0;
-    data_request = 0;
+    interrupt_request = 0x80;
+    data_request = 0x80;
 }
 
 bool DriveMicrodrive::init()
@@ -78,10 +78,10 @@ void DriveMicrodrive::exec(uint8_t cycles)
 
 void DriveMicrodrive::interrupt_set()
 {
-    if (state.status & MdInterruptEnabled) {
-        state.interrupt_request = 0x00;
-        std::println("--- WD1793 IRQ SET ---");
+    state.interrupt_request = 0x00;
 
+    if (state.status & MdInterruptEnabled) {
+        std::println("--- WD1793 IRQ SET ---");
         machine.cpu->set_irq_source(IRQ_SOURCE_FDC);
     }
 }

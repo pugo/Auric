@@ -50,6 +50,11 @@ public:
     void init(Frontend* frontend);
 
     /**
+     * Init the RAM.
+     */
+    void init_ram();
+
+    /**
      * Init the CPU.
      */
     void init_cpu();

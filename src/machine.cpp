@@ -15,6 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <numeric>
 #include <thread>
 #include <unistd.h>
 
@@ -90,11 +91,27 @@ Machine::Machine(Oric& oric) :
 void Machine::init(Frontend* frontend)
 {
     this->frontend = frontend;
+    init_ram();
     init_cpu();
     init_mos6522();
     init_ay3();
     init_disk();
     init_tape();
+}
+
+void Machine::init_ram()
+{
+    // This patten mimics the startup pattern of the Oric RAM.
+    // It is needed for at least some Sedoric (disk operating system) versions to work correctly.
+    uint32_t mem_size = memory.get_size();
+    std::vector<uint8_t>& mem = memory.get_memory_vector();
+    auto pos = mem.begin();
+
+    for (uint32_t i = 0; i < mem_size; i += 256) {
+        std::fill(pos, pos + 128, 0);
+        std::fill(pos + 128, pos + 256, 0xff);
+        pos += 256;
+    }
 }
 
 void Machine::init_cpu()
