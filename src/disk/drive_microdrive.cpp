@@ -125,7 +125,6 @@ void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
     if (offset == 0x4) {
         state.status = value;
 
-        std::println("Microdrive write 0x314: {:02x}", value);
         wd1793.set_side_number((value & 0x10) ? 1 : 0);
         wd1793.set_drive_number((value & 0x60) >> 5);
         machine.set_oric_rom_enabled(value & 0x02);

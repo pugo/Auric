@@ -71,7 +71,6 @@ uint8_t OperationReadSector::read_data_reg() const
             return 0x00;
         }
 
-        std::println("OperationReadSector::read_data_reg() - No more data!");
         // Sista byten levererad -> command complete
         // wd1793.state.status &= ~WD1793::Status::StatusBusy;
         wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
@@ -83,7 +82,6 @@ uint8_t OperationReadSector::read_data_reg() const
 
         wd1793.state.data_request_counter = 0;
         wd1793.state.current_operation = &wd1793.operation_idle;
-        printf("STATUS AFTER READ: %02X\n", wd1793.state.status);
     }
     else {
         wd1793.state.data_request_counter = 32; // eller 0 för "direkt"
@@ -214,7 +212,7 @@ void WD1793::exec(uint8_t cycles)
         state.interrupt_counter -= cycles;
         if (state.interrupt_counter <= 0) {
             state.interrupt_counter = 0;
-            std::println("WD1793 *IRQ*");
+            // std::println("WD1793 *IRQ*");
 
             // Delayed update of status register at interrupt time.
             if (state.update_status_at_interrupt) {
