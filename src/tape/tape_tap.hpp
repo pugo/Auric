@@ -19,6 +19,7 @@
 #define TAPE_TAP_H
 
 #include <memory>
+#include <filesystem>
 
 #include "chip/mos6522.hpp"
 #include "tape.hpp"
@@ -38,7 +39,7 @@ class TapeTap : public Tape
     };
 
 public:
-    TapeTap(MOS6522& via, const std::string& path);
+    TapeTap(MOS6522& via, const std::filesystem::path& path);
 
     virtual ~TapeTap() = default;
 
@@ -67,7 +68,7 @@ public:
     /**
      * Execute one cycle.
      */
-    void exec() override;
+    void exec(uint8_t cycles) override;
 
 protected:
     /**

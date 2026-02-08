@@ -16,6 +16,7 @@
 // =========================================================================
 
 #include <print>
+#include <format>
 
 #include "machine.hpp"
 #include "mos6502.hpp"
@@ -88,9 +89,8 @@ MOS6502::MOS6502(Machine& a_Machine) :
     C(false),
     PC(0),
     SP(0),
-    quiet(true),
     machine(a_Machine),
-    irq_flag(false),
+    irq_flags(0),
     nmi_flag(false),
     do_interrupt(false),
     do_nmi(false),
@@ -105,7 +105,6 @@ MOS6502::MOS6502(Machine& a_Machine) :
     instruction_cycles(0),
     current_instruction(0),
     current_cycle(0),
-    monitor(memory),
     has_breakpoints(false)
 {
 }
@@ -125,8 +124,9 @@ void MOS6502::Reset()
     C = false;
 
     PC = memory_read_byte_handler(machine, RESET_VECTOR_L) + (memory_read_byte_handler(machine, RESET_VECTOR_H) << 8);
+    std::print("PC: ${:04X}\t", PC);
     SP = 0xff;
-    irq_flag = false;
+    irq_flags = 0;
     nmi_flag = false;
     do_interrupt = false;
     do_nmi = false;
@@ -152,7 +152,7 @@ void MOS6502::save_to_snapshot(Snapshot& snapshot) const
 
     snapshot.mos6502.PC = PC;
     snapshot.mos6502.SP = SP;
-    snapshot.mos6502.irq_flag = irq_flag;
+    snapshot.mos6502.irq_flags = irq_flags;
     snapshot.mos6502.nmi_flag = nmi_flag;
     snapshot.mos6502.do_interrupt = do_interrupt;
     snapshot.mos6502.do_nmi = do_nmi;
@@ -178,7 +178,7 @@ void MOS6502::load_from_snapshot(Snapshot& snapshot)
 
     PC = snapshot.mos6502.PC;
     SP = snapshot.mos6502.SP;
-    irq_flag = snapshot.mos6502.irq_flag;
+    irq_flags = snapshot.mos6502.irq_flags;
     nmi_flag = snapshot.mos6502.nmi_flag;
     do_interrupt = snapshot.mos6502.do_interrupt;
     do_nmi = snapshot.mos6502.do_nmi;
@@ -196,16 +196,12 @@ void MOS6502::set_breakpoint(uint16_t address)
     std::println("Set breakpoint at ${:04X}", address);
 }
 
-void MOS6502::PrintStat()
+std::string MOS6502::get_register_summary()
 {
-    PrintStat(PC);
+    return std::format("[A: {:02X}, X: {:02X}, Y: {:02X}  |  N: {}, Z: {}, C: {}, V: {}  |  SP: {:02X}]",
+                       A, X, Y, (int)N, (int)Z, (int)C, (int)V, SP);
 }
 
-void MOS6502::PrintStat(uint16_t address)
-{
-    std::print("${} ", monitor.disassemble(address));
-    std::println("\t\t[A: {:02X}, X: {:02X}, Y: {:02X}  |  N: {}, Z: {}, C: {}, V: {}  |  SP: {:02X}]", A, X, Y, (int)N, (int)Z, (int)C, (int)V, SP);
-}
 
 //   7                           0
 // +---+---+---+---+---+---+---+---+
@@ -314,7 +310,7 @@ uint8_t MOS6502::time_instruction()
         extra += 7;
         do_interrupt = true;
     }
-    else if (irq_flag && !I) {
+    else if (irq_flags && !I) {
         _pc = memory_read_word_handler(machine, IRQ_VECTOR_L);
         extra += 7;
         do_interrupt = true;
@@ -323,6 +319,7 @@ uint8_t MOS6502::time_instruction()
     uint8_t b1;
     uint16_t addr;
     current_instruction = memory_read_byte_handler(machine, _pc);
+    current_instruction_addr = PC;
 
     switch(current_instruction)
     {
@@ -436,49 +433,40 @@ uint8_t MOS6502::time_instruction()
             break;
     }
 
-    return opcode_cycles[current_instruction] + extra;
+    instruction_cycles = opcode_cycles[current_instruction] + extra;
+    return instruction_cycles;
 }
 
 
 bool MOS6502::exec(bool break_on_brk, bool& do_break)
 {
-    if (instruction_load) {
-        instruction_load = false;
+    current_cycle = 0;
 
-        current_cycle = 0;
-        instruction_cycles = time_instruction();
+    if (do_interrupt) {
+        do_interrupt = false;
 
-        if (do_interrupt) {
-            do_interrupt = false;
+        PUSH_BYTE_STACK(PC >> 8);
+        PUSH_BYTE_STACK(PC & 0xff);
+        PUSH_BYTE_STACK((get_p() & ~FLAG_B) | 0x20);  // B=0, bit5=1
 
+        I = true;            // mask further IRQs
+        D = false;           // NMOS quirk: clear decimal on interrupt
 
-            PUSH_BYTE_STACK(PC >> 8);
-            PUSH_BYTE_STACK(PC & 0xff);
-            PUSH_BYTE_STACK((get_p() & ~FLAG_B) | 0x20);  // B=0, bit5=1
-
-            I = true;            // mask further IRQs
-            D = false;           // NMOS quirk: clear decimal on interrupt
-
-            if (nmi_flag) {
-                PC = memory_read_word_handler(machine, NMI_VECTOR_L);
-                nmi_flag = false;
-                std::println("NMI interrupt");
-            }
-
-            else if (irq_flag) {
-                PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
-                irq_flag = false;
-            }
+        if (nmi_flag) {
+            PC = memory_read_word_handler(machine, NMI_VECTOR_L);
+            nmi_flag = false;
+            std::println("NMI interrupt");
         }
 
-        if (has_breakpoints && breakpoints.contains(PC)) {
-            std::println("Found breakpoint at ${:04X}", PC);
-            do_break = true;
-            return false;
+        else if (irq_flags) {
+            PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
+            // irq_flags = 0;
         }
     }
 
-    if (++current_cycle < instruction_cycles) {
+    if (has_breakpoints && breakpoints.contains(PC)) {
+        std::println("Found breakpoint at ${:04X}", PC);
+        do_break = true;
         return false;
     }
 
@@ -486,9 +474,6 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
     uint16_t addr;
     int i;
 
-    uint16_t pc_initial = PC;
-
-    instruction_load = true;
     ++PC;
 
     switch(current_instruction)
@@ -1311,13 +1296,8 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
 
         default:
             std::println("Unhandled illegal opcode: ${:02X}\n", current_instruction);
-//            PrintStat(pc_initial);
             do_break = true;
             break;
-    }
-
-    if (! quiet) {
-        PrintStat(pc_initial);
     }
 
     return true;

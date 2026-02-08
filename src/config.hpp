@@ -35,6 +35,12 @@ public:
     bool parse(int argc, char **argv);
 
     /**
+     * Path to disk image.
+     * @return path to disk image
+     */
+    std::filesystem::path& disk_path() { return _disk_path; }
+
+    /**
      * Path to tape image.
      * @return path to tape image
      */
@@ -68,6 +74,7 @@ public:
 protected:
     bool _start_in_monitor;
     bool _use_oric1_rom;
+    std::filesystem::path _disk_path;
     std::filesystem::path _tape_path;
     uint8_t _zoom;
     bool _verbose;

@@ -82,10 +82,12 @@ StatusBar::~StatusBar()
 
     if (front_surface) {
         SDL_FreeSurface(front_surface);
+        front_surface = nullptr;
     }
 
     if (back_surface) {
         SDL_FreeSurface(back_surface);
+        back_surface = nullptr;
     }
 
     if (texture) {

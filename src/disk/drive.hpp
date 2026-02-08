@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2026 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -15,54 +15,72 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef TAPE_H
-#define TAPE_H
+#ifndef DRIVE_H
+#define DRIVE_H
+
+#include <filesystem>
+
+class DiskImage;
 
 
-class Tape
+class Drive
 {
 public:
-    Tape() :
-        motor_running(false)
-    {}
-
-    virtual ~Tape() = default;
+    virtual ~Drive() = default;
 
     /**
-     * Initialize tape.
+     * Initialize drive.
      * @return true on success
      */
     virtual bool init() = 0;
 
     /**
-     * Reset tape postion.
+     * Reset drive.
      */
     virtual void reset() = 0;
 
     /**
-     * Print tape status to console.
+     * Insert disk image.
+     * @param path path to disk image
+     * @return true on success
      */
-    virtual void print_stat() = 0;
+    virtual bool insert_disk(const std::filesystem::path& path) = 0;
 
     /**
-     * Set motor state.
-     * @param motor_on true if motor is set to on
+     * Get disk image.
+     * @return reference to disk image
      */
-    virtual void motor_on(bool motor_on) = 0;
+    virtual DiskImage* get_disk_image() = 0;
+
+    /**
+     * Print drive status to console.
+     */
+    virtual void print_stat() = 0;
 
     /**
      * Execute one cycle.
      */
     virtual void exec(uint8_t cycles) = 0;
 
-    /**
-     * Check if motor is running.
-     * @return true if motor is running.
-     */
-    bool is_motor_running() { return motor_running; };
+    virtual void interrupt_set() = 0;
+    virtual void interrupt_clear() = 0;
 
-protected:
-    bool motor_running;
+    virtual void data_request_set() = 0;
+    virtual void data_request_clear() = 0;
+
+    /**
+     * Read register value.
+     * @param offset register to read
+     * @return value of register
+     */
+    virtual uint8_t read_byte(uint16_t offset) = 0;
+
+    /**
+     * Write register value.
+     * @param offset register to write
+     * @param value new value
+     */
+    virtual void write_byte(uint16_t offset, uint8_t value) = 0;
 };
 
-#endif // TAPE_TAP_H
+#endif // DRIVE_H

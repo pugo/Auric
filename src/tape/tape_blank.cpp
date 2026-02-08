@@ -44,6 +44,6 @@ void TapeBlank::motor_on(bool motor_on)
     motor_running = motor_on;
 }
 
-void TapeBlank::exec()
+void TapeBlank::exec(uint8_t cycles)
 {}
 

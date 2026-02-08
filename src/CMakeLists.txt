@@ -23,6 +23,7 @@ else ()
 endif ()
 
 add_subdirectory(chip)
+add_subdirectory(disk)
 add_subdirectory(tape)
 add_subdirectory(frontends)
 
@@ -43,6 +44,7 @@ target_link_libraries(oric_lib PUBLIC chip frontend tape ${BOOST_LIBRARIES} ${SD
 target_link_libraries(oric_lib
         PUBLIC
         chip
+        disk
         frontend
         tape
         ${BOOST_LIBRARIES}

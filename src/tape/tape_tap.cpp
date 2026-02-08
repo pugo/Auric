@@ -28,7 +28,7 @@
 #include "tape_tap.hpp"
 
 
-TapeTap::TapeTap(MOS6522& via, const std::string& path) :
+TapeTap::TapeTap(MOS6522& via, const std::filesystem::path& path) :
     via(via),
     path(path),
     tape_size(0),
@@ -126,7 +126,7 @@ void TapeTap::motor_on(bool motor_on)
 }
 
 
-void TapeTap::exec()
+void TapeTap::exec(uint8_t cycles)
 {
     if (!motor_running) {
         return;
@@ -158,8 +158,8 @@ void TapeTap::exec()
     }
 
     // Count down the cycle counter. This ensures that the line_out toggles according to expected bit output.
-    if (tape_cycle_counter > 1) {
-        --tape_cycle_counter;
+    if (tape_cycle_counter > cycles) {
+        tape_cycle_counter -= cycles;
         return;
     }
 
@@ -174,8 +174,12 @@ void TapeTap::exec()
             return;
         } else {
             tape_cycle_counter = Pulse_1;
-            if (--gap_bits_remaining == 0) {
+            if (gap_bits_remaining < cycles) {
+                gap_bits_remaining = 0;
                 tape_state = TapeState::Body;
+            }
+            else {
+                gap_bits_remaining -= cycles;
             }
             return;
         }
@@ -294,8 +298,7 @@ bool TapeTap::parse_header()
     // Skip reserved bytes.
     i += 2;
 
-    auto
-    file_type = data[tape_pos + i];
+    auto file_type = data[tape_pos + i];
     switch(file_type)
     {
         case 0x00:

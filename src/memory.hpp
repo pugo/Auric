@@ -81,6 +81,8 @@ public:
      */
     void show(uint32_t pos, uint32_t length) const;
 
+    std::vector<uint8_t>& get_memory_vector() { return memory; }
+
     // This is an emulator where speed is important. Allow direct access to the memory area.
     uint8_t* mem;
 

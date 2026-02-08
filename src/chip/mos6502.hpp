@@ -27,8 +27,8 @@
 #ifndef MOS6502_H
 #define MOS6502_H
 
+#include "memory_interface.hpp"
 #include "mos6502_opcodes.hpp"
-#include "monitor.hpp"
 #include "snapshot.hpp"
 
 #include <set>
@@ -45,18 +45,15 @@
 #define IRQ_VECTOR_L 0xFFFE
 #define IRQ_VECTOR_H 0xFFFF
 
+enum {
+    IRQ_SOURCE_VIA = 1,
+    IRQ_SOURCE_FDC = 2,
+};
+
+
 class Machine;
 class MOS6502;
 class Memory;
-
-typedef uint8_t (*f_memory_read_byte_handler)(Machine &oric, uint16_t address);
-typedef uint8_t (*f_memory_read_byte_zp_handler)(Machine &oric, uint8_t address);
-
-typedef uint16_t (*f_memory_read_word_handler)(Machine &oric, uint16_t address);
-typedef uint16_t (*f_memory_read_word_zp_handler)(Machine &oric, uint8_t address);
-
-typedef void (*f_memory_write_byte_handler)(Machine &oric, uint16_t address, uint8_t val);
-typedef void (*f_memory_write_byte_zp_handler)(Machine &oric, uint8_t address, uint8_t val);
 
 
 class MOS6502
@@ -64,12 +61,6 @@ class MOS6502
 public:
     explicit MOS6502(Machine& a_Machine);
     ~MOS6502() = default;
-
-    /**
-     * Get debug monitor.
-     * @return reference to debug monitor
-     */
-    Monitor& get_monitor() { return monitor; }
 
     /**
      * Set program counter address.
@@ -102,20 +93,9 @@ public:
     void set_p(uint8_t p);
 
     /**
-     * Set quiet status.
-     * @param val new quiet value
-     */
-    void set_quiet(bool val) { quiet = val; }
-
-    /**
      * Reset the processor.
      */
     void Reset();
-
-    /**
-     * Print CPU status.
-     */
-    void PrintStat();
 
     /**
      * Calculate CPU cycles used by instruction at PC.
@@ -143,7 +123,24 @@ public:
      */
     void load_from_snapshot(Snapshot& snapshot);
 
+    /**
+     * Set breakpoint on specified address.
+     * @param address address to break on
+     */
     void set_breakpoint(uint16_t address);
+
+    /**
+     * Get string presenting the current register states.
+     * @return string with register states
+     */
+    std::string get_register_summary();
+
+    /**
+     * Return address of the current instruction.
+     * @return address of current instruction
+     */
+    uint16_t get_current_instruction_addr() const { return current_instruction_addr; }
+
 
     // The public exposure of variables like below is uncommon for normal projects,
     // but this is an emulator where the chips must be able to quickly access each
@@ -171,8 +168,9 @@ public:
      * Trigger NMI (Non Maskable Interrupt).
      */
     void NMI() { nmi_flag = true; }
-    void irq() { irq_flag = true; }
-    void irq_clear() { irq_flag = false; }
+
+    void set_irq_source(uint8_t source) { irq_flags |= source; }
+    void clear_irq_source(uint8_t source) { irq_flags &= ~source; }
 
     f_memory_read_byte_handler memory_read_byte_handler;
     f_memory_read_byte_zp_handler memory_read_byte_zp_handler;
@@ -184,13 +182,10 @@ public:
     f_memory_write_byte_handler memory_write_byte_handler;
     f_memory_write_byte_zp_handler memory_write_byte_zp_handler;
 
-protected:
-    /**
-     * Print status and instruction at given address.
-     * @param address
-     */
-    void PrintStat(uint16_t address);
+    uint16_t PC;
+    uint8_t instruction_cycles;
 
+protected:
     /**
      * Implementation of ADC instruction.
      * @param value value to add
@@ -206,21 +201,17 @@ protected:
     Machine& machine;
     Memory& memory;
 
-    uint16_t PC;
     uint8_t SP;
-    bool quiet;
 
-    bool irq_flag;
+    uint8_t irq_flags;
     bool nmi_flag;
     bool do_interrupt;
     bool do_nmi;
 
     bool instruction_load;
-    uint8_t instruction_cycles;
+    uint16_t current_instruction_addr;
     uint8_t current_instruction;
     uint8_t current_cycle;
-
-    Monitor monitor;
 
     std::set<uint16_t> breakpoints;
     bool has_breakpoints;

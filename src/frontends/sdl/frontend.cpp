@@ -163,7 +163,6 @@ bool Frontend::init_sound()
         BOOST_LOG_TRIVIAL(error) << "Failed to get the desired AudioSpec";
     }
 
-    BOOST_LOG_TRIVIAL(debug) << "PAP provisioning operation: OK!";
     BOOST_LOG_TRIVIAL(debug) << "Freq: " << std::dec << (int) audio_spec.freq;
     BOOST_LOG_TRIVIAL(debug) << "Silence: " << (int) audio_spec.silence;
     BOOST_LOG_TRIVIAL(debug) << "format: " << (int) audio_spec.format;
@@ -264,9 +263,15 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 
 void Frontend::close_graphics()
 {
-    SDL_DestroyRenderer(sdl_renderer);
-    SDL_DestroyWindow(sdl_window);
-    sdl_window = nullptr;
+    if (sdl_renderer != nullptr) {
+        SDL_DestroyRenderer(sdl_renderer);
+        sdl_renderer = nullptr;
+    }
+
+    if (sdl_window != nullptr) {
+        SDL_DestroyWindow(sdl_window);
+        sdl_window = nullptr;
+    }
 }
 
 

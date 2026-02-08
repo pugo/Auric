@@ -15,16 +15,20 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <numeric>
 #include <thread>
 #include <unistd.h>
 
 #include <boost/assign.hpp>
 #include <boost/log/trivial.hpp>
 
-#include "machine.hpp"
-#include "oric.hpp"
+#include "chip/memory_interface.hpp"
+#include "disk/drive_microdrive.hpp"
+#include "disk/drive_none.hpp"
 #include "frontends/sdl/frontend.hpp"
 #include "frontends/flags.hpp"
+#include "machine.hpp"
+#include "oric.hpp"
 #include "tape/tape_tap.hpp"
 #include "tape/tape_blank.hpp"
 
@@ -48,6 +52,8 @@ constexpr uint8_t cycles_per_raster = 64;
 constexpr uint32_t sound_pause_target = 1000;
 
 constexpr size_t oric_ram_size = 64*1024;
+constexpr size_t oric_rom_size = 16*1024;
+constexpr size_t disk_rom_size = 8*1024;
 
 using hrc = std::chrono::high_resolution_clock;
 
@@ -61,8 +67,14 @@ Machine::Machine(Oric& oric) :
     frontend(nullptr),
     ula(*this, memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
     oric(oric),
+    monitor(*this, Machine::read_byte),
     memory(oric_ram_size),
+    oric_rom(oric_rom_size),
+    disk_rom(disk_rom_size),
+    oric_rom_enabled(true),
+    disk_rom_enabled(false),
     tape(nullptr),
+    disassemble_execution(false),
     cycle_count(0),
     warpmode_on(false),
     break_exec(false),
@@ -79,10 +91,27 @@ Machine::Machine(Oric& oric) :
 void Machine::init(Frontend* frontend)
 {
     this->frontend = frontend;
+    init_ram();
     init_cpu();
     init_mos6522();
     init_ay3();
+    init_disk();
     init_tape();
+}
+
+void Machine::init_ram()
+{
+    // This patten mimics the startup pattern of the Oric RAM.
+    // It is needed for at least some Sedoric (disk operating system) versions to work correctly.
+    uint32_t mem_size = memory.get_size();
+    std::vector<uint8_t>& mem = memory.get_memory_vector();
+    auto pos = mem.begin();
+
+    for (uint32_t i = 0; i < mem_size; i += 256) {
+        std::fill(pos, pos + 128, 0);
+        std::fill(pos + 128, pos + 256, 0xff);
+        pos += 256;
+    }
 }
 
 void Machine::init_cpu()
@@ -128,6 +157,24 @@ void Machine::init_ay3()
     //	ay3->m_write_data_handler = write_vi
 }
 
+void Machine::init_disk()
+{
+    if (! oric.get_config().disk_path().empty()) {
+        disk = std::make_unique<DriveMicrodrive>(*this);
+
+        if (!disk->insert_disk(oric.get_config().disk_path())) {
+            BOOST_LOG_TRIVIAL(info) << "No disk in drive";
+        }
+
+        BOOST_LOG_TRIVIAL(info) << "Starting disk drive";
+        oric_rom_enabled = false;
+        disk_rom_enabled = true;
+    }
+    else {
+        disk = std::make_unique<DriveNone>();
+    }
+}
+
 void Machine::init_tape()
 {
     if (! oric.get_config().tape_path().empty()) {
@@ -169,9 +216,15 @@ void Machine::run(Oric* oric)
         }
 
         while (cycle_count > 0) {
-            tape->exec();
-            mos_6522->exec();
-            ay3->exec();
+            uint8_t cycles = cpu->time_instruction();
+            if (disassemble_execution) {
+                PrintStat(cpu->get_current_instruction_addr());
+            }
+
+            tape->exec(cycles);
+            disk->exec(cycles);
+            mos_6522->exec(cycles);
+            ay3->exec(cycles);
 
             if (cpu->exec(false, break_exec)) {
                 update_key_output();
@@ -182,7 +235,7 @@ void Machine::run(Oric* oric)
                 return;
             }
 
-            --cycle_count;
+            cycle_count -= cycles;
         }
 
         if (ula.paint_raster()) {
@@ -289,4 +342,14 @@ bool Machine::toggle_warp_mode()
 
     BOOST_LOG_TRIVIAL(info) << "Warp mode: " << (warpmode_on ? "on" : "off");
     return warpmode_on;
+}
+
+void Machine::PrintStat()
+{
+    PrintStat(cpu->PC);
+}
+
+void Machine::PrintStat(uint16_t address)
+{
+    std::println("${}\t\t{} ", monitor.disassemble(address), cpu->get_register_summary());
 }

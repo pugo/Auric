@@ -180,14 +180,14 @@ void RegisterChanges::reset()
     buffer.set_capacity(register_changes_size);
 }
 
-void RegisterChanges::exec()
+void RegisterChanges::exec(uint8_t cycles)
 {
     if (update_log_cycle) {
         log_cycle = new_log_cycle;
         update_log_cycle = false;
     }
 
-    log_cycle++;
+    log_cycle += cycles;
 }
 
 
@@ -447,9 +447,9 @@ void AY3_8912::load_from_snapshot(Snapshot& snapshot)
     state = snapshot.ay3_8919;
 }
 
-short AY3_8912::exec()
+short AY3_8912::exec(uint8_t cycles)
 {
-    state.changes.exec();
+    state.changes.exec(cycles);
     return 0;
 }
 

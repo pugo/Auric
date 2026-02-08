@@ -46,7 +46,7 @@ public:
     uint16_t PC;
     uint8_t SP;
 
-    bool irq_flag;
+    uint8_t irq_flags;
     bool nmi_flag;
     bool do_interrupt;
     bool do_nmi;

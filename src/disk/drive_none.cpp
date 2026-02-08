@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2026 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -15,46 +15,53 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef TAPE_BLANK_H
-#define TAPE_BLANK_H
+#include <print>
 
-#include "tape.hpp"
+#include "drive_none.hpp"
 
 
-class TapeBlank : public Tape
+bool DriveNone::init()
 {
-public:
-    TapeBlank();
-    virtual ~TapeBlank();
+    return true;
+}
 
-    /**
-     * Initialize tape.
-     * @return true on success
-     */
-    bool init() override;
+bool DriveNone::insert_disk(const std::filesystem::path& path)
+{
+    return false;
+}
 
-    /**
-     * Reset tape postion.
-     */
-    void reset() override;
+DiskImage* DriveNone::get_disk_image()
+{
+    return nullptr;
+}
 
-    /**
-     * Print tape status to console.
-     */
-    void print_stat() override;
+void DriveNone::reset()
+{}
 
-    /**
-     * Set motor state.
-     * @param motor_on true if motor is on
-     */
-    void motor_on(bool motor_on) override;
+void DriveNone::print_stat()
+{
+    std::println("No disk drive");
+}
 
-    /**
-     * Execute one cycle.
-     */
-    void exec(uint8_t cycles) override;
+void DriveNone::exec(uint8_t cycles)
+{}
 
-protected:
-};
+void DriveNone::interrupt_set()
+{}
 
-#endif // TAPE_BLANK_H
+void DriveNone::interrupt_clear()
+{}
+
+void DriveNone::data_request_set()
+{}
+
+void DriveNone::data_request_clear()
+{}
+
+uint8_t DriveNone::read_byte(uint16_t offset)
+{
+    return 0x00;
+}
+
+void DriveNone::write_byte(uint16_t offset, uint8_t value)
+{}

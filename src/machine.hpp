@@ -27,9 +27,10 @@
 #include "chip/ay3_8912.hpp"
 #include "chip/ula.hpp"
 #include "memory.hpp"
+#include "monitor.hpp"
 #include "snapshot.hpp"
-
 #include "tape/tape.hpp"
+#include "disk/drive.hpp"
 
 class Oric;
 class Frontend;
@@ -49,6 +50,11 @@ public:
     void init(Frontend* frontend);
 
     /**
+     * Init the RAM.
+     */
+    void init_ram();
+
+    /**
      * Init the CPU.
      */
     void init_cpu();
@@ -64,6 +70,11 @@ public:
     void init_ay3();
 
     /**
+     * Import the disk support.
+     */
+    void init_disk();
+
+    /**
      * Import the tape support.
      */
     void init_tape();
@@ -72,6 +83,33 @@ public:
      * Reset the machine.
      */
     void reset() const;
+
+    /**
+     * Get debug monitor.
+     * @return reference to debug monitor
+     */
+    Monitor& get_monitor()
+    {
+        return monitor;
+    }
+
+    /**
+     * Set whether the Oric ROM is enabled.
+     * @param enabled true to enable Oric ROM
+     */
+    void set_oric_rom_enabled(bool enabled)
+    {
+        oric_rom_enabled = enabled;
+    }
+
+    /**
+     * Set whether the diskdrive ROM is enabled.
+     * @param enabled true to enable diskdrive ROM
+     */
+    void set_diskdrive_rom_enabled(bool enabled)
+    {
+        disk_rom_enabled = enabled;
+    }
 
     /**
      * Run the machine.
@@ -94,12 +132,12 @@ public:
     /**
      * Trigger CPU IRQ.
      */
-    void irq() const { cpu->irq(); }
+    void set_irq_source(uint8_t source) { cpu->set_irq_source(source); }
 
     /**
      * Clear CPU IRQ.
      */
-    void irq_clear() const { cpu->irq_clear(); }
+    void clear_irq_source(uint8_t source) { cpu->clear_irq_source(source); }
 
     /**
      * Handle key press.
@@ -135,13 +173,43 @@ public:
      */
     bool toggle_warp_mode();
 
+    /**
+     * Set whether to disassemble executed instructions.
+     * @param disassemble true to disassemble executed instructions
+     */
+    void set_disassemble_execution(bool disassemble)
+    {
+        disassemble_execution = disassemble;
+    }
+
+    /**
+     * Print CPU status.
+     */
+    void PrintStat();
+
     // --- Memory functions -------------------
 
     static uint8_t read_byte(Machine& machine, uint16_t address)
     {
+        if (!machine.oric_rom_enabled) {
+            if (machine.disk_rom_enabled && address >= 0xe000) {
+                return machine.disk_rom.mem[address - 0xe000];
+            }
+        }
+        else {
+            if (address >= 0xc000) {
+                return machine.oric_rom.mem[address - 0xc000];
+            }
+        }
+
         if (address >= 0x300 && address < 0x400) {
+            if (address >= 0x310 && address < 0x31c) {
+                return machine.disk->read_byte(address - 0x310);
+            }
+
             return machine.mos_6522->read_byte(address);
         }
+
         return machine.memory.mem[address];
     }
 
@@ -150,24 +218,37 @@ public:
         return machine.memory.mem[address];
     }
 
-    static uint16_t read_word(Machine &machine, uint16_t address)
+    static uint16_t read_word(Machine& m, uint16_t addr)
     {
-        return machine.memory.mem[address] | machine.memory.mem[address + 1] << 8;
+        return read_byte(m, addr) | (read_byte(m, addr + 1) << 8);
     }
 
     static uint16_t read_word_zp(Machine &machine, uint8_t address)
     {
-        return machine.memory.mem[address] | machine.memory.mem[address + 1 & 0xff] << 8;
+        return machine.memory.mem[address] | (machine.memory.mem[address + 1 & 0xff] << 8);
     }
 
     static void write_byte(Machine &machine, uint16_t address, uint8_t val)
     {
-        if (address >= 0xc000) {
-            return;
+        if (! machine.oric_rom_enabled) {
+            if (machine.disk_rom_enabled && address >= 0xe000) {
+                return;  // Can't write into disk ROM.
+            }
+        }
+        else {
+            if (address >= 0xc000) {
+                return;  // Can't write into BASIC ROM.
+            }
         }
 
         if (address >= 0x300 && address < 0x400) {
+            if (address >= 0x310 && address < 0x31c) {
+                machine.disk->write_byte(address - 0x310, val);
+                return;
+            }
+
             machine.mos_6522->write_byte(address, val);
+            return;
         }
 
         machine.memory.mem[address] = val;
@@ -198,12 +279,12 @@ public:
 
     static void irq_callback(Machine& machine)
     {
-        machine.irq();
+        machine.set_irq_source(IRQ_SOURCE_VIA);
     }
 
     static void irq_clear_callback(Machine& machine)
     {
-        machine.irq_clear();
+        machine.clear_irq_source(IRQ_SOURCE_VIA);
     }
 
     std::unique_ptr<MOS6502> cpu;
@@ -212,14 +293,29 @@ public:
 
     bool break_exec;
     Memory memory;
+    Memory oric_rom;
+    Memory disk_rom;
+    bool oric_rom_enabled;
+    bool disk_rom_enabled;
+
     Frontend* frontend;
     bool warpmode_on;
 
 protected:
+    /**
+     * Print status and instruction at given address.
+     * @param address
+     */
+    void PrintStat(uint16_t address);
+
     ULA ula;
     Oric& oric;
+    Monitor monitor;
+
+    std::unique_ptr<Drive> disk;
     std::unique_ptr<Tape> tape;
 
+    bool disassemble_execution;
     int32_t cycle_count;
     std::chrono::high_resolution_clock::time_point next_frame_tp;
 

@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2026 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -15,46 +15,70 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef TAPE_BLANK_H
-#define TAPE_BLANK_H
+#ifndef DRIVE_NONE_H
+#define DRIVE_NONE_H
 
-#include "tape.hpp"
+#include "drive.hpp"
 
 
-class TapeBlank : public Tape
+class DriveNone : public Drive
 {
 public:
-    TapeBlank();
-    virtual ~TapeBlank();
-
     /**
-     * Initialize tape.
+     * Initialize drive.
      * @return true on success
      */
     bool init() override;
 
     /**
-     * Reset tape postion.
+     * Reset drive.
      */
     void reset() override;
 
     /**
-     * Print tape status to console.
+     * Insert disk image.
+     * @param path path to disk image
+     * @return true on success
      */
-    void print_stat() override;
+    bool insert_disk(const std::filesystem::path& path) override;
 
     /**
-     * Set motor state.
-     * @param motor_on true if motor is on
+     * Get disk image.
+     * @return reference to disk image
      */
-    void motor_on(bool motor_on) override;
+    DiskImage* get_disk_image() override;
+
+    /**
+     * Print drive status to console.
+     */
+    void print_stat() override;
 
     /**
      * Execute one cycle.
      */
     void exec(uint8_t cycles) override;
 
+    void interrupt_set() override;
+    void interrupt_clear() override;
+
+    void data_request_set() override;
+    void data_request_clear() override;
+
+    /**
+     * Read register value.
+     * @param offset register to read
+     * @return value of register
+     */
+    uint8_t read_byte(uint16_t offset) override;
+
+    /**
+     * Write register value.
+     * @param offset register to write
+     * @param value new value
+     */
+    void write_byte(uint16_t offset, uint8_t value) override;
+
 protected:
 };
 
-#endif // TAPE_BLANK_H
+#endif // DRIVE_NONE_H

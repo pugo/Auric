@@ -116,7 +116,7 @@ public:
     RegisterChanges();
 
     void reset();
-    void exec();
+    void exec(uint8_t cycles);
 
     boost::circular_buffer<RegisterChange> buffer;
 
@@ -240,7 +240,7 @@ public:
     /**
      * Execute a number of clock cycles.
      */
-    short exec();
+    short exec(uint8_t cycles);
 
     /**
      * Update AY state based on BC1 and BDIR.
