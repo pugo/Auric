@@ -9,7 +9,7 @@ It is my absolutely slowest project, just made out of love to programming and to
 
 <div>
 <img style="width: 30%;" src="images/startscreen.png"/>
-<img style="width: 30%;" src="images/hunchback_liana.png"/>
+<img style="width: 33%; margin-left: 1em;" src="images/screen_petscii_robots.png"/>
 <img style="width: 30%;" src="images/hunchback_knights.png"/>
 </div>
 
