@@ -65,3 +65,11 @@ uint8_t DriveNone::read_byte(uint16_t offset)
 
 void DriveNone::write_byte(uint16_t offset, uint8_t value)
 {}
+
+void DriveNone::save_to_snapshot(Snapshot& snapshot)
+{
+}
+
+void DriveNone::load_from_snapshot(Snapshot& snapshot)
+{
+}

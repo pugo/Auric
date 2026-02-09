@@ -55,7 +55,7 @@ DiskSector::DiskSector(uint16_t sector_number, std::span<uint8_t> sector_data) :
 
 DiskTrack::DiskTrack(std::span<uint8_t> track_data)
 {
-    BOOST_LOG_TRIVIAL(info) << " DiskTrack - Track data size: " << track_data.size();
+    BOOST_LOG_TRIVIAL(debug) << " DiskTrack - Track data size: " << track_data.size();
 
     this->data = track_data;
     auto data_ptr = track_data.begin();
@@ -137,11 +137,9 @@ void DiskSide::add_track(DiskTrack track)
 
 DiskTrack* DiskSide::get_track(uint8_t track)
 {
-    std::println("DiskSide get track: side: {}, track: {}", side, track);
     if (track >= tracks.size()) {
         return nullptr;
     }
-    std::println("DiskSide get track: ok");
 
     return &tracks[track];
 }
@@ -201,12 +199,12 @@ bool DiskImage::init()
     tracks_count_ = static_cast<uint16_t>(read32(12));
     geometry_ = static_cast<uint8_t>(read32(16));
 
-    BOOST_LOG_TRIVIAL(info) << "DiskImage: sides: " << (int)side_count_
+    BOOST_LOG_TRIVIAL(debug) << "DiskImage: sides: " << (int)side_count_
                             << ", tracks: " << (int)tracks_count_
                             << ", geometry: " << (int)geometry_;
 
-    BOOST_LOG_TRIVIAL(info) << "Total size: " << image_size;
-    BOOST_LOG_TRIVIAL(info) << "data start: " << (void*)data;
+    BOOST_LOG_TRIVIAL(debug) << "Total size: " << image_size;
+    BOOST_LOG_TRIVIAL(debug) << "data start: " << (void*)data;
 
     for (uint8_t i = 0; i < side_count_; ++i) {
         disk_sides.emplace_back(DiskSide(i));
@@ -215,7 +213,7 @@ bool DiskImage::init()
     size_t size_per_side = tracks_count_ * track_size;
 
     for (uint8_t side = 0; side < side_count_; ++side) {
-        BOOST_LOG_TRIVIAL(info) << "======= DiskImage: sides: " << (int)side << " =======";
+        BOOST_LOG_TRIVIAL(debug) << "======= DiskImage: sides: " << (int)side << " =======";
 
         for (uint8_t track = 0; track < tracks_count_; ++track) {
             auto track_data = std::span<uint8_t>(data + header_size + (side * size_per_side) + (track * track_size), track_size);
@@ -224,7 +222,7 @@ bool DiskImage::init()
                 return false;
             }
 
-            BOOST_LOG_TRIVIAL(info) << "======= DiskImage: track: " << (int)track << " =======";
+            BOOST_LOG_TRIVIAL(debug) << "======= DiskImage: track: " << (int)track << " =======";
             disk_sides[side].add_track(DiskTrack(track_data));
         }
     }

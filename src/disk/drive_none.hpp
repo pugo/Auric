@@ -20,6 +20,8 @@
 
 #include "drive.hpp"
 
+class Snapshot;
+
 
 class DriveNone : public Drive
 {
@@ -58,10 +60,24 @@ public:
      */
     void exec(uint8_t cycles) override;
 
+    /**
+     * Set interrupt request. Sets CPU interrupt flag if interrupts are enabled in status.
+     */
     void interrupt_set() override;
+
+    /**
+     * Set interrupt request. Sets CPU interrupt flag if interrupts are enabled in status.
+     */
     void interrupt_clear() override;
 
+    /**
+     * Clear interrupt request. Clears CPU interrupt flag.
+     */
     void data_request_set() override;
+
+    /**
+     * Set data request flag.
+     */
     void data_request_clear() override;
 
     /**
@@ -77,6 +93,18 @@ public:
      * @param value new value
      */
     void write_byte(uint16_t offset, uint8_t value) override;
+
+    /**
+     * Save Drive state to snapshot.
+     * @param snapshot reference to snapshot
+     */
+    void save_to_snapshot(Snapshot& snapshot) override;
+
+    /**
+     * Load Drive state from snapshot.
+     * @param snapshot reference to snapshot
+     */
+    void load_from_snapshot(Snapshot& snapshot) override;
 
 protected:
 };

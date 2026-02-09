@@ -68,7 +68,7 @@ void DriveMicrodrive::reset()
 
 void DriveMicrodrive::print_stat()
 {
-    std::println("Disk None");;
+    BOOST_LOG_TRIVIAL(info) << "Microdrive status: " << std::hex << state.status;
 }
 
 void DriveMicrodrive::exec(uint8_t cycles)
@@ -81,7 +81,6 @@ void DriveMicrodrive::interrupt_set()
     state.interrupt_request = 0x00;
 
     if (state.status & MdInterruptEnabled) {
-        std::println("--- WD1793 IRQ SET ---");
         machine.cpu->set_irq_source(IRQ_SOURCE_FDC);
     }
 }
@@ -121,7 +120,6 @@ uint8_t DriveMicrodrive::read_byte(uint16_t offset)
 void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
 {
     // std::println("Microdrive write: {:04x} <- {:02x}", offset, value);
-
     if (offset == 0x4) {
         state.status = value;
 
@@ -145,4 +143,16 @@ void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
     }
 
     return wd1793.write_byte(offset, value);
+}
+
+void DriveMicrodrive::save_to_snapshot(Snapshot& snapshot)
+{
+    snapshot.drive_microdrive = state;
+    wd1793.save_to_snapshot(snapshot);
+}
+
+void DriveMicrodrive::load_from_snapshot(Snapshot& snapshot)
+{
+    state = snapshot.drive_microdrive;
+    wd1793.load_from_snapshot(snapshot);
 }

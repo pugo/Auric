@@ -84,10 +84,24 @@ public:
      */
     void exec(uint8_t cycles) override;
 
+    /**
+     * Set interrupt request. Sets CPU interrupt flag if interrupts are enabled in status.
+     */
     void interrupt_set() override;
+
+    /**
+     * Clear interrupt request. Clears CPU interrupt flag.
+     */
     void interrupt_clear() override;
 
+    /**
+     * Set data request flag.
+     */
     void data_request_set() override;
+
+    /**
+     * Clear data request flag.
+     */
     void data_request_clear() override;
 
     /**
@@ -103,6 +117,18 @@ public:
      * @param value new value
      */
     void write_byte(uint16_t offset, uint8_t value) override;
+
+    /**
+     * Save DriveMicrodrive state to snapshot.
+     * @param snapshot reference to snapshot
+     */
+    void save_to_snapshot(Snapshot& snapshot) override;
+
+    /**
+     * Load DriveMicrodrive state from snapshot.
+     * @param snapshot reference to snapshot
+     */
+    void load_from_snapshot(Snapshot& snapshot) override;
 
 protected:
     Machine& machine;

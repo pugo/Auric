@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2026 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -23,7 +23,9 @@ Snapshot::Snapshot() :
     mos6502(),
     mos6522(),
     ay3_8919(),
-    memory()
+    memory(),
+    wd1793(),
+    drive_microdrive()
 {
 }
 

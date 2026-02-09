@@ -21,6 +21,7 @@
 #include <filesystem>
 
 class DiskImage;
+class Snapshot;
 
 
 class Drive
@@ -62,10 +63,24 @@ public:
      */
     virtual void exec(uint8_t cycles) = 0;
 
+    /**
+     * Set interrupt request. Sets CPU interrupt flag if interrupts are enabled in status.
+     */
     virtual void interrupt_set() = 0;
+
+    /**
+     * Clear interrupt request. Clears CPU interrupt flag.
+     */
     virtual void interrupt_clear() = 0;
 
+    /**
+     * Set data request flag.
+     */
     virtual void data_request_set() = 0;
+
+    /**
+     * Clear data request flag.
+     */
     virtual void data_request_clear() = 0;
 
     /**
@@ -81,6 +96,18 @@ public:
      * @param value new value
      */
     virtual void write_byte(uint16_t offset, uint8_t value) = 0;
+
+    /**
+     * Save Drive state to snapshot.
+     * @param snapshot reference to snapshot
+     */
+    virtual void save_to_snapshot(Snapshot& snapshot) = 0;
+
+    /**
+     * Load Drive state from snapshot.
+     * @param snapshot reference to snapshot
+     */
+    virtual void load_from_snapshot(Snapshot& snapshot) = 0;
 };
 
 #endif // DRIVE_H

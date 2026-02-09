@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2026 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -15,11 +15,11 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <utility>
+#include <boost/log/trivial.hpp>
 #include <print>
 
-#include <machine.hpp>
-#include <disk/drive.hpp>
+#include "machine.hpp"
+#include "disk/drive.hpp"
 #include "wd1793.hpp"
 
 
@@ -29,13 +29,11 @@
 
 uint8_t OperationIdle::read_data_reg() const
 {
-    std::println("OperationIdle::read_data_reg()");
     return 0x00;
 }
 
 void OperationIdle::write_data_reg(uint8_t value)
 {
-    std::println("OperationIdle::write_data_reg(): {}", value);
 }
 
 // ----- OperationReadSector -----
@@ -48,7 +46,7 @@ uint8_t OperationReadSector::read_data_reg() const
         wd1793.state.status |= WD1793::Status::StatusRecordNotFound;
         wd1793.drive->data_request_clear();
         wd1793.drive->interrupt_set();
-        std::println("OperationReadSector::read_data_reg() - Record not found!");
+        BOOST_LOG_TRIVIAL(debug) << "OperationReadSector::read_data_reg() - Record not found!";
         return 0x00;
     }
 
@@ -61,7 +59,6 @@ uint8_t OperationReadSector::read_data_reg() const
 
     if (wd1793.state.offset >= data_span.size()) {
         if (multiple_sectors) {
-            std::println("OperationReadSector::read_data_reg() - Multiple sectors, reading next");
             wd1793.state.sector += 1;
             wd1793.set_sector(wd1793.state.sector);
             wd1793.state.data_request_counter = 180;
@@ -86,40 +83,34 @@ uint8_t OperationReadSector::read_data_reg() const
 
 void OperationReadSector::write_data_reg(uint8_t value)
 {
-    std::println("OperationReadSector::write_data_reg(): {}", value);
 }
 
 // ----- OperationWriteSector -----
 
 uint8_t OperationWriteSector::read_data_reg() const
 {
-    std::println("OperationWriteSector::read_data_reg()");
     return 0x00;
 }
 
 void OperationWriteSector::write_data_reg(uint8_t value)
 {
-    std::println("OperationWriteSector::write_data_reg(): {}", value);
 }
 
 // ----- OperationReadAddress -----
 
 uint8_t OperationReadAddress::read_data_reg() const
 {
-    std::println("OperationReadAddress::read_data_reg()");
     return 0x00;
 }
 
 void OperationReadAddress::write_data_reg(uint8_t value)
 {
-    std::println("OperationReadAddress::write_data_reg(): {}", value);
 }
 
 // ----- OperationReadTrack -----
 
 uint8_t OperationReadTrack::read_data_reg() const
 {
-    std::println("OperationReadTrack::read_data_reg()");
     uint8_t data = wd1793.state.current_track->data[wd1793.state.offset++];
     wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
     return data;
@@ -127,7 +118,6 @@ uint8_t OperationReadTrack::read_data_reg() const
 
 void OperationReadTrack::write_data_reg(uint8_t value)
 {
-    std::println("OperationReadTrack::write_data_reg(): {}", value);
 }
 
 // ----- OperationWriteTrack -----
@@ -139,11 +129,10 @@ uint8_t OperationWriteTrack::read_data_reg() const
 
 void OperationWriteTrack::write_data_reg(uint8_t value)
 {
-    std::println("OperationWriteTrack::write_data_reg(): {}", value);
 }
 
 
-// ===== WD1793 =============================================
+// ===== WD1793::State =============================================
 
 void WD1793::State::reset()
 {
@@ -190,14 +179,6 @@ WD1793::WD1793(Machine& a_Machine, Drive* drive) :
     state.current_operation = &operation_idle;
 }
 
-void WD1793::save_to_snapshot(Snapshot& snapshot)
-{
-}
-
-void WD1793::load_from_snapshot(Snapshot& snapshot)
-{
-}
-
 void WD1793::exec(uint8_t cycles)
 {
     if (state.interrupt_counter > 0) {
@@ -237,10 +218,8 @@ uint8_t WD1793::read_byte(uint16_t offset)
             drive->interrupt_clear();
             return state.status;
         case 0x1:
-            std::println("WD1793::read_byte(0x01) - track: {}", state.track);
             return state.track;
         case 0x2:
-            std::println("WD1793::read_byte(0x02) - sector: {}", state.sector);
             return state.sector;
         case 0x3:
             // std::println("WD1793::read_byte(0x03) - data");
@@ -257,20 +236,18 @@ void WD1793::write_byte(uint16_t offset, uint8_t value)
     switch (offset)
     {
         case 0x00:
-            std::println("WD1793::write_byte - command {:02x}", value);
+            // std::println("WD1793::write_byte - command {:02x}", value);
             drive->interrupt_clear();
             do_command(value);
             break;
         case 0x01:
-            std::println("WD1793::write_byte - track {:02x}", value);
             state.track = value;
             break;
         case 0x02:
-            std::println("WD1793::write_byte - sector {:02x}", value);
             state.sector = value;
             break;
         case 0x03:
-            std::println("WD1793::write_byte - value {:02x}", value);
+            // std::println("WD1793::write_byte - value {:02x}", value);
             state.data = value;
             state.current_operation->write_data_reg(value);
             break;
@@ -287,7 +264,7 @@ void WD1793::do_command(uint8_t command)
         case 0x00:
             if (command & 0x10) {
                 // Seek [Type 1]: 0 0 1 0 h V r₁ r₀
-                std::println("WD1793 do command: Seek");
+                BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Seek";
                 state.status = Status::StatusBusy;
                 if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
                 state.current_operation = &operation_idle;
@@ -295,7 +272,7 @@ void WD1793::do_command(uint8_t command)
             }
             else {
                 // Restore [Type 1]: : 0 0 1 1 h V r₁ r₀
-                std::println("WD1793 do command: Restore");
+                BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Restore";
                 state.status = Status::StatusBusy;
                 if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
                 state.current_operation = &operation_idle;
@@ -304,14 +281,14 @@ void WD1793::do_command(uint8_t command)
             break;
         case 0x20:
             // Step [Type 1]: 0 0 1 u h V r₁ r₀
-            std::println("WD1793 do command: Step");
+            BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Step";
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
             state.current_operation = &operation_idle;
             break;
         case 0x40:
             // Step in [Type 1]: 0 1 0 u h V r₁ r₀
-            std::println("WD1793 do command: Step in");
+            BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Step in";
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
             set_track(state.current_track_number + 1);
@@ -319,7 +296,7 @@ void WD1793::do_command(uint8_t command)
             break;
         case 0x60:
             // Step out [Type 1]: 0 1 1 u h V r₁ r₀
-            std::println("WD1793 do command: Step out");
+            BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Step out";
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
             set_track(state.current_track_number - 1);
@@ -327,7 +304,7 @@ void WD1793::do_command(uint8_t command)
             break;
         case 0x80:
             // Read sector [Type 2]: 1 0 0 m F₂ E F₁ 0
-            std::println("WD1793 do command: Read sector: {:02x}", command);
+            BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Read sector";
             state.status = Status::StatusBusy | StatusNotReady;
             state.offset = 0;
             state.data_request_counter = 60;
@@ -337,7 +314,7 @@ void WD1793::do_command(uint8_t command)
             break;
         case 0xa0:
             // Write sector [Type 2]: 1 0 1 F₂ E F₁ a₀
-            std::println("WD1793 do command: Write sector");
+            BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Write sector";
             state.status = Status::StatusBusy | StatusNotReady;
             state.data_request_counter = 500;
             operation_write_sector.multiple_sectors = command & 0x10;
@@ -346,7 +323,7 @@ void WD1793::do_command(uint8_t command)
         case 0xc0:
             if (command & 0x10) {
                 // Force int [Type 4]: 1 1 0 1 I₃ I₂ I₁ I₀
-                std::println("WD1793 do command: Force interrupt");
+                BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Force interrupt";
                 state.status = 0;
                 drive->data_request_clear();
                 state.interrupt_counter = 0;
@@ -356,7 +333,7 @@ void WD1793::do_command(uint8_t command)
             }
             else {
                 // Read address [Type 3]: 1 1 0 0 0 E 0 0
-                std::println("WD1793 do command: Read address");
+                BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Read address";
                 state.status = Status::StatusBusy | StatusNotReady | StatusDataRequest;
                 state.current_operation = &operation_read_address;
             }
@@ -364,7 +341,7 @@ void WD1793::do_command(uint8_t command)
         case 0xe0:
             if (command & 0x10) {
                 // Write track [Type 3]: 1 1 1 1 0 E 0 0
-                std::println("WD1793 do command: Write track");
+                BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Write track";
                 state.status = Status::StatusBusy | StatusNotReady;
                 state.current_operation = &operation_write_track;
                 state.offset = 0;
@@ -372,7 +349,7 @@ void WD1793::do_command(uint8_t command)
             }
             else {
                 // Read track [Type 3]: 1 1 1 0 0 E 0 0
-                std::println("WD1793 do command: Read track");
+                BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Read track";
                 state.status = Status::StatusBusy | StatusNotReady;
                 state.current_operation = &operation_read_track;
                 state.offset = 0;
@@ -385,10 +362,11 @@ void WD1793::do_command(uint8_t command)
 
 bool WD1793::set_track(uint8_t track)
 {
-    std::println("WD1793 set track: set to: {}", track);
+    BOOST_LOG_TRIVIAL(debug) << "WD1793 - track set to: " << (int)track;
+
     auto* disk_image = drive->get_disk_image();
     if (! disk_image) {
-        std::println("WD1793 set track: No disk image!");
+        BOOST_LOG_TRIVIAL(debug) << "WD1793 - set track: No disk image!";
         drive->interrupt_set();
         state.current_track_number = 0;
         return false;
@@ -403,13 +381,10 @@ bool WD1793::set_track(uint8_t track)
 
     auto* track_ptr = disk_image->get_track(state.side, track);
     if (track_ptr == nullptr) {
-        std::println("WD1793 set track: Unable to get track data!");
+        BOOST_LOG_TRIVIAL(error) << "WD1793 - set track: Unable to get track data!";
         return false;
     }
     state.current_track = track_ptr;
-
-    std::println("WD1793 set track: OK");
-    std::println("Current track sector count: {}", state.current_track->sector_count());
 
     state.track = track;
     state.current_track_number = track;
@@ -426,7 +401,7 @@ bool WD1793::set_track(uint8_t track)
 bool WD1793::set_sector(uint8_t sector)
 {
     if (! state.current_track) {
-        std::println("WD1793 set sector: no track selected!");
+        BOOST_LOG_TRIVIAL(debug) << "WD1793 - set sector: no track selected!";
         drive->interrupt_set();
         state.current_track_number = 0;
         state.current_sector_number = 0;
@@ -435,12 +410,26 @@ bool WD1793::set_sector(uint8_t sector)
 
     auto* sector_ptr = state.current_track->get_sector(sector);
     if (sector_ptr == nullptr) {
-        std::println("WD1793 set track: Unable to get sector data!");
+       BOOST_LOG_TRIVIAL(debug) << "WD1793 - Unable to get sector data!";
         return false;
     }
+
     state.current_sector = sector_ptr;
     state.current_sector_number = sector;
-    std::println("WD1793 set sector: sector set to: {}", sector);
+    BOOST_LOG_TRIVIAL(debug) << "WD1793 - sector set to: " << (int)sector;
 
     return true;
 }
+
+void WD1793::save_to_snapshot(Snapshot& snapshot)
+{
+    snapshot.wd1793 = state;
+}
+
+void WD1793::load_from_snapshot(Snapshot& snapshot)
+{
+    state = snapshot.wd1793;
+    set_track(state.current_track_number);
+    set_sector(state.current_sector_number);
+}
+

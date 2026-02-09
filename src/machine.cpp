@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2026 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 #include <boost/assign.hpp>
 #include <boost/log/trivial.hpp>
 
-#include "chip/memory_interface.hpp"
 #include "disk/drive_microdrive.hpp"
 #include "disk/drive_none.hpp"
 #include "frontends/sdl/frontend.hpp"
@@ -308,6 +307,7 @@ void Machine::save_snapshot()
     mos_6522->save_to_snapshot(*snapshot);
     memory.save_to_snapshot(*snapshot);
     ay3->save_to_snapshot(*snapshot);
+    disk->save_to_snapshot(*snapshot);
 
     frontend->get_status_bar().show_text_for("Saved snapshot", std::chrono::seconds(2));
 }
@@ -323,6 +323,7 @@ void Machine::load_snapshot()
     mos_6522->load_from_snapshot(*snapshot);
     memory.load_from_snapshot(*snapshot);
     ay3->load_from_snapshot(*snapshot);
+    disk->load_from_snapshot(*snapshot);
 
     frontend->get_status_bar().show_text_for("Loaded snapshot", std::chrono::seconds(2));
 }

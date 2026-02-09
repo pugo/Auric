@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2026 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -23,7 +23,8 @@
 
 #include "chip/mos6522.hpp"
 #include "chip/ay3_8912.hpp"
-
+#include "chip/wd1793.hpp"
+#include "disk/drive_microdrive.hpp"
 
 /**
  * State for MOS6502 (CPU).
@@ -70,6 +71,8 @@ public:
     MOS6502_state mos6502;
     MOS6522::State mos6522;
     AY3_8912::SoundState ay3_8919;
+    WD1793::State wd1793;
+    DriveMicrodrive::State drive_microdrive;
 
     std::vector<uint8_t> memory;
 };

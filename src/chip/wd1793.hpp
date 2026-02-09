@@ -1,5 +1,5 @@
 // =========================================================================
-//   Copyright (C) 2009-2025 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2026 by Anders Piniesjö <pugo@pugo.org>
 //
 //   This program is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -19,9 +19,8 @@
 #define CHIP_WD1793_H
 
 #include <cstdint>
-#include <string>
 
-#include <disk/disk_image.hpp>
+#include "disk/disk_image.hpp"
 
 class Drive;
 class Machine;
@@ -29,14 +28,16 @@ class Memory;
 class Snapshot;
 class WD1793;
 
+
 class Operation
 {
 public:
-    Operation(WD1793& wd1793) : wd1793(wd1793) { printf("HEEEEJ!\n"); }
+    Operation(WD1793& wd1793) : wd1793(wd1793) { }
     virtual ~Operation() = default;
 
     virtual uint8_t read_data_reg() const = 0;
     virtual void write_data_reg(uint8_t value) = 0;
+
 
 protected:
     WD1793& wd1793;
@@ -101,7 +102,6 @@ public:
     uint8_t read_data_reg() const override;
     void write_data_reg(uint8_t value) override;
 };
-
 
 
 class WD1793
@@ -173,20 +173,17 @@ public:
      */
     void exec(uint8_t cycles);
 
+    /**
+     * Set drive number.
+     * @param drive
+     */
     void set_drive_number(uint8_t drive) { state.drive = drive; }
+
+    /**
+     * Set side number.
+     * @param drive
+     */
     void set_side_number(uint8_t side) { state.side = side; }
-
-    /**
-     * Save WD1793 state to snapshot.
-     * @param snapshot reference to snapshot
-     */
-    void save_to_snapshot(Snapshot& snapshot);
-
-    /**
-     * Load WD1793 state from snapshot.
-     * @param snapshot reference to snapshot
-     */
-    void load_from_snapshot(Snapshot& snapshot);
 
     /**
      * Read register value.
@@ -207,6 +204,18 @@ public:
      * @return reference to current WD1793 state
      */
     WD1793::State& get_state() { return state; }
+
+    /**
+     * Save WD1793 state to snapshot.
+     * @param snapshot reference to snapshot
+     */
+    void save_to_snapshot(Snapshot& snapshot);
+
+    /**
+     * Load WD1793 state from snapshot.
+     * @param snapshot reference to snapshot
+     */
+    void load_from_snapshot(Snapshot& snapshot);
 
     friend class OperationIdle;
     friend class OperationReadSector;
