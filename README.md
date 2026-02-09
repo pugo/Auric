@@ -1,8 +1,11 @@
-# Pugo Oric
+<p align="center">
+<img style="width: 60%; " src="images/auric_logo.png"/>
+</p>
 
-<img style="width: 40%;" src="images/oric.jpg"/>
+*(Renamed from Pugo-Oric 2026)*
 
-This project implements a basic Oric computer emulator with graphics, sound, etc.
+
+This project implements an Oric computer emulator with graphics, sound, tape and disk support.
 All code is written from scratch.
 
 It is my absolutely slowest project, just made out of love to programming and to my first computer.
@@ -16,7 +19,7 @@ It is my absolutely slowest project, just made out of love to programming and to
 ## Background
 
 This is the result of a *very* long and low intensive hobby project I have worked on
-since 2009, which currently is 14 years.
+since 2009, which currently is 17 years.
 
 The purpose was to develop an emulator of the first computer I ever got,
 as a Christmas gift some 40 years ago. The computer was an Oric 1, and it
@@ -27,6 +30,9 @@ complete than this project ever likely will be. The purpose of my emulator
 project has been to learn more about how emulators work and to close the circle
 by learning more about the computer I got as a kid.
 
+<p align="center">
+<img style="width: 40%;" src="images/oric.jpg"/>
+</p>
 
 ## Building
 
@@ -138,6 +144,19 @@ CLOAD"
 To speed up the loading time it is possible to toggle warp mode with
 `F12`.
 
+
+### Loading from disk image
+
+Auric support loading from Microdisk images.
+
+To specify which tape TAP file to use, use the `--disk` or `-d` command line
+argument:
+
+```
+$ ./build/oric --disk disk/oricpetscii.dsk
+```
+
+
 ## Exiting
 
 Since the emulator does not have any GUI with interaction at this point
@@ -159,20 +178,22 @@ The monitor has commands like the following.
 ```
 Available monitor commands:
 
-h              : help (showing this text)
-g              : go (continue)
-g <address>    : go to address and run
-pc <address>   : set program counter to address
-s [n]          : step one or possible n steps
-ay             : print AY-3-8912 sound chip info
-i              : print machine info
-v              : print VIA (6522) info
-d              : disassemble from PC
-d <address> <n>: disassemble from address and n bytes ahead
-m <address> <n>: dump memory from address and n bytes ahead
-quiet          : prevent debug output at run time
-debug          : show debug output at run time
-sr, softreset  : soft reset oric
+ay              : print AY-3-8912 sound chip info
+bs <address>    : set breakpoint for address
+d               : disassemble from last address or PC
+d <address> <n> : disassemble from address and n bytes ahead (example: d c000 10)
+debug           : show debug output at run time
+g               : go (continue)
+g <address>     : go to address and run (example: g 1f00)
+h               : help (showing this text)
+i               : print machine info
+m <address> <n> : dump memory from address and n bytes ahead (example: m 1f00 20)
+pc <address>    : set program counter to address
+quiet           : prevent debug output at run time
+q               : quit
+s [n]           : step one or possible n steps
+sr, softreset   : soft reset oric
+v               : print VIA (6522) info
 ```
  
 
@@ -197,7 +218,8 @@ The timeline is something like:
 * 2020: Tape loading
 * 2023: AY3-8912 sound
 * 2024: Cycle bug fixing, new monitor, blink mode, snapshots
-* 2025: Satus bar, new tape loading, zoom, 
+* 2025: Satus bar, new tape loading, zoom
+* 2026: Microdisk loading
 
 
 ## Contribution
@@ -205,11 +227,11 @@ The timeline is something like:
 Since this is a pet project I work on it only when I like to. Up to this point
 noone has wanted to contribute, but at this stage it could be fun to cooperate!
 
-The project exists on GitHub: https://github.com/pugo/Pugo-Oric
+The project exists on GitHub: https://github.com/pugo/Auric
 
 ## License
 
 All code is licensed with GPL v3.
 
 ---
-Sweden, Linghem 2024, Anders Piniesjö
+Sweden, Linghem 2026, Anders Piniesjö
