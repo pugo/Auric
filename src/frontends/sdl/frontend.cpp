@@ -38,6 +38,10 @@ static int32_t keytab[] = {
 
 // ----- Frontend ----------------
 
+constexpr uint16_t border_size_horizontal = 100;
+constexpr uint16_t border_size_vertical = 50;
+
+
 Frontend::Frontend(Oric& oric) :
     oric(oric),
     sdl_window(nullptr),
@@ -92,12 +96,18 @@ bool Frontend::init_graphics()
 
     oric_texture.set_render_zoom(zoom);
     status_bar.set_render_zoom(1);
-    status_bar.render_rect.y = oric_texture.render_rect.h;
 
-    uint16_t height = oric_texture.render_rect.h + status_bar.render_rect.h;
+    oric_texture.render_rect.x = border_size_horizontal;
+    oric_texture.render_rect.y = border_size_vertical;
+
+    uint16_t width = oric_texture.render_rect.w + (border_size_horizontal * 2);
+    uint16_t height = oric_texture.render_rect.h + status_bar.render_rect.h + (border_size_vertical * 2);
+
+    status_bar.render_rect.x = border_size_horizontal;
+    status_bar.render_rect.y = height - status_bar.render_rect.h;
 
     sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                  oric_texture.render_rect.w, height, SDL_WINDOW_SHOWN);
+                                  width, height, SDL_WINDOW_SHOWN);
     if (sdl_window == nullptr) {
         BOOST_LOG_TRIVIAL(error) << "Window could not be created! SDL_Error: " << SDL_GetError();
         return false;
@@ -123,7 +133,7 @@ bool Frontend::init_graphics()
     }
 
     // Initialize renderer color
-    SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
+    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xff);
     SDL_RenderClear(sdl_renderer);
 
     return true;

@@ -42,7 +42,6 @@ void OperationIdle::write_data_reg(uint8_t value)
 
 uint8_t OperationReadSector::read_data_reg() const
 {
-    // std::println("OperationReadSector::read_data_reg()");
     if (wd1793.state.current_sector == nullptr) {
         wd1793.state.current_operation = &wd1793.operation_idle;
         wd1793.state.status &= ~WD1793::Status::StatusBusy;
@@ -54,8 +53,6 @@ uint8_t OperationReadSector::read_data_reg() const
     }
 
     auto data_span = wd1793.state.current_sector->data;
-    // std::println("OperationReadSector::read_data_reg() span size: {}", data_span.size());
-    // std::println("OperationReadSector::read_data_reg() reading offset: {}", wd1793.state.offset);
 
     uint8_t v = data_span[wd1793.state.offset++];
 
@@ -71,10 +68,7 @@ uint8_t OperationReadSector::read_data_reg() const
             return 0x00;
         }
 
-        // Sista byten levererad -> command complete
-        // wd1793.state.status &= ~WD1793::Status::StatusBusy;
         wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
-        // wd1793.state.status &= ~WD1793::Status::StatusLostData;
         wd1793.drive->data_request_clear();
 
         wd1793.state.interrupt_counter = 32;
@@ -84,7 +78,7 @@ uint8_t OperationReadSector::read_data_reg() const
         wd1793.state.current_operation = &wd1793.operation_idle;
     }
     else {
-        wd1793.state.data_request_counter = 32; // eller 0 för "direkt"
+        wd1793.state.data_request_counter = 32;
     }
 
     return v;
@@ -125,7 +119,6 @@ void OperationReadAddress::write_data_reg(uint8_t value)
 
 uint8_t OperationReadTrack::read_data_reg() const
 {
-    std::println("////////////////////////////////////////////");
     std::println("OperationReadTrack::read_data_reg()");
     uint8_t data = wd1793.state.current_track->data[wd1793.state.offset++];
     wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
@@ -148,7 +141,6 @@ void OperationWriteTrack::write_data_reg(uint8_t value)
 {
     std::println("OperationWriteTrack::write_data_reg(): {}", value);
 }
-
 
 
 // ===== WD1793 =============================================

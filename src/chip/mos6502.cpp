@@ -460,7 +460,6 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
 
         else if (irq_flags) {
             PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
-            // irq_flags = 0;
         }
     }
 
