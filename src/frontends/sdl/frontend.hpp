@@ -18,8 +18,6 @@
 #ifndef FRONTENDS_SDL_FRONTEND_H
 #define FRONTENDS_SDL_FRONTEND_H
 
-#include <map>
-#include <memory>
 #include <vector>
 
 #include <SDL.h>
@@ -30,10 +28,6 @@
 
 class Oric;
 class Memory;
-
-typedef std::map<int32_t, uint8_t> KeyMap_t;
-typedef std::pair<int32_t, bool> KeyPress_t;
-typedef std::map<KeyPress_t, KeyPress_t> KeyTranslation_t;
 
 
 class Frontend
@@ -125,9 +119,6 @@ protected:
 
     Texture oric_texture;
     StatusBar status_bar;
-
-    KeyMap_t key_map;
-    KeyTranslation_t key_translations;
 
     std::vector<uint8_t> status_pixels;
 

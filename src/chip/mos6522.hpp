@@ -252,6 +252,18 @@ public:
      */
     void set_ifr(uint8_t value) { state.ifr = value; }
 
+    /**
+     * Set IRA (Input Register A). Used mainly for unit testing.
+     * @param value new IRA value
+     */
+    void set_ira(uint8_t value) { state.ira = value; }
+
+    /**
+     * Set IRB (Input Register B). Used mainly for unit testing.
+     * @param value new IRB value
+     */
+    void set_irb(uint8_t value) { state.irb = value; }
+
     f_orb_changed_handler orb_changed_handler;
     f_ca2_changed_handler ca2_changed_handler;
     f_cb2_changed_handler cb2_changed_handler;

@@ -64,7 +64,7 @@ void Oric::init()
     frontend->init_graphics();
     frontend->init_sound();
 
-    frontend->get_status_bar().show_text_for("Starting ORIC!", std::chrono::seconds(3));
+    frontend->get_status_bar().show_text_for("Starting Auric!", std::chrono::seconds(3));
 
     machine->set_disassemble_execution(false);
 

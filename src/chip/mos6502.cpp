@@ -124,7 +124,6 @@ void MOS6502::Reset()
     C = false;
 
     PC = memory_read_byte_handler(machine, RESET_VECTOR_L) + (memory_read_byte_handler(machine, RESET_VECTOR_H) << 8);
-    std::print("PC: ${:04X}\t", PC);
     SP = 0xff;
     irq_flags = 0;
     nmi_flag = false;

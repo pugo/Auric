@@ -37,18 +37,18 @@ TEST_F(MOS6522TestTimerT2, T2_tick_down)
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_L), 0x11);
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_H), 0x47);
 
-    mos6522->exec();
+    mos6522->exec(1);
 
     // Load takes one cycle, before ticking down counter. Expect original value.
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_L), 0x11);
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_H), 0x47);
 
-    mos6522->exec();
+    mos6522->exec(1);
 
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_L), 0x10);
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_H), 0x47);
 
-    mos6522->exec();
+    mos6522->exec(1);
 
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_L), 0x0f);
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_H), 0x47);
@@ -59,13 +59,13 @@ TEST_F(MOS6522TestTimerT2, T2_tick_down_low_high_boundary)
     mos6522->write_byte(MOS6522::T2C_L, 0x01);
     mos6522->write_byte(MOS6522::T2C_H, 0x47);
 
-    mos6522->exec();  // Initial load
-    mos6522->exec();
+    mos6522->exec(1);  // Initial load
+    mos6522->exec(1);
 
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_L), 0x00);
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_H), 0x47);
 
-    mos6522->exec();
+    mos6522->exec(1);
 
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_L), 0xff);
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_H), 0x46);
@@ -79,23 +79,23 @@ TEST_F(MOS6522TestTimerT2, T2_tick_down_and_interrupt)
     mos6522->write_byte(MOS6522::T2C_L, 0x05);
     mos6522->write_byte(MOS6522::T2C_H, 0x00);
 
-    mos6522->exec();  // Initial load
+    mos6522->exec(1);  // Initial load
 
     for (int i = 4; i > 0; i--) {
-        mos6522->exec();
+        mos6522->exec(1);
         ASSERT_EQ(mos6522->get_t2_counter(), (uint8_t)i);
     }
 
-    mos6522->exec();
+    mos6522->exec(1);
     ASSERT_EQ(mos6522->get_t2_counter(), 0x00);
 
-    mos6522->exec();
+    mos6522->exec(1);
     ASSERT_EQ(mos6522->get_t2_counter(), 0xffff);
 
     // Expect interrupt
     ASSERT_EQ(mos6522->read_byte(MOS6522::IFR), MOS6522::IRQ_T2 | 0x80);
 
-    mos6522->exec();
+    mos6522->exec(1);
     ASSERT_EQ(mos6522->get_t2_counter(), 0xfffe);
 }
 
@@ -107,10 +107,10 @@ TEST_F(MOS6522TestTimerT2, T2_interrupt_clear_on_read)
     mos6522->write_byte(MOS6522::T2C_L, 0x01);
     mos6522->write_byte(MOS6522::T2C_H, 0x00);
 
-    mos6522->exec();  // Initial load
-    mos6522->exec();
-    mos6522->exec();
-    mos6522->exec();
+    mos6522->exec(1);  // Initial load
+    mos6522->exec(1);
+    mos6522->exec(1);
+    mos6522->exec(1);
 
     // Expect interrupt on counter reaching 0.
     ASSERT_EQ(mos6522->read_byte(MOS6522::IFR), MOS6522::IRQ_T2 | 0x80);
@@ -129,7 +129,7 @@ TEST_F(MOS6522TestTimerT2, T2_pulse_counting)
     mos6522->write_byte(MOS6522::T2C_L, 0x05);
     mos6522->write_byte(MOS6522::T2C_H, 0x00);
 
-    mos6522->exec();  // Initial load
+    mos6522->exec(1);  // Initial load
 
     ASSERT_EQ(mos6522->get_t2_counter(), 0x05);
 
@@ -171,18 +171,18 @@ TEST_F(MOS6522TestTimerT2, T2OneShotMode)
     EXPECT_EQ(mos6522->get_t2_counter(), 2);
 
     // Load cycle
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_EQ(mos6522->get_t2_counter(), 2);
     EXPECT_EQ(mos6522->get_state().ifr & MOS6522::IRQ_T2, 0);
 
     // Countdown cycles
-    mos6522->exec(); // Counter = 1
+    mos6522->exec(1); // Counter = 1
     EXPECT_EQ(mos6522->get_t2_counter(), 1);
-    mos6522->exec(); // Counter = 0
+    mos6522->exec(1); // Counter = 0
     EXPECT_EQ(mos6522->get_t2_counter(), 0);
 
     // Interrupt cycle
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_T2, 0);
     EXPECT_FALSE(mos6522->get_state().t2_run); // One-shot stops
 
@@ -204,36 +204,36 @@ TEST_F(MOS6522TestTimerT2, T2PulseCountingMode)
     mos6522->write_byte(MOS6522::T2C_H, 0x00);
 
     // Load cycle
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_EQ(mos6522->get_t2_counter(), 3);
 
     // In pulse counting mode, timer doesn't decrement with clock cycles
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_EQ(mos6522->get_t2_counter(), 3);
 
     // Simulate negative edges on PB6 to decrement counter
     mos6522->set_irb_bit(6, true);   // PB6 high
-    mos6522->exec();
+    mos6522->exec(1);
     mos6522->set_irb_bit(6, false);  // PB6 low (negative edge)
-    mos6522->exec();
+    mos6522->exec(1);
 
     EXPECT_EQ(mos6522->get_t2_counter(), 2); // Should decrement on negative edge
 
     // Continue pulsing until timer expires
     for (int pulses = 0; pulses < 2; pulses++) {
         mos6522->set_irb_bit(6, true);
-        mos6522->exec();
+        mos6522->exec(1);
         mos6522->set_irb_bit(6, false);
-        mos6522->exec();
+        mos6522->exec(1);
     }
 
     EXPECT_EQ(mos6522->get_t2_counter(), 0);
 
     // One more pulse to trigger interrupt
     mos6522->set_irb_bit(6, true);
-    mos6522->exec();
+    mos6522->exec(1);
     mos6522->set_irb_bit(6, false);
-    mos6522->exec();
+    mos6522->exec(1);
 
     EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_T2, 0);
 }

@@ -19,7 +19,7 @@ else ()
     set(BOOST_LIBRARIES ${Boost_LIBRARIES})
     set(SDL2_LIBRARIES ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
 
-    target_link_libraries(oric_lib PUBLIC chip frontend tape ${BOOST_LIBRARIES} ${SDL2_LIBRARIES})
+    target_link_libraries(auric_lib PUBLIC chip frontend tape ${BOOST_LIBRARIES} ${SDL2_LIBRARIES})
 endif ()
 
 add_subdirectory(chip)
@@ -28,7 +28,7 @@ add_subdirectory(tape)
 add_subdirectory(frontends)
 
 # Static library (for reuse by tests, etc.)
-add_library(oric_lib STATIC
+add_library(auric_lib STATIC
         oric.cpp
         memory.cpp
         machine.cpp
@@ -37,11 +37,11 @@ add_library(oric_lib STATIC
         snapshot.cpp
 )
 
-target_include_directories(oric_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(oric_lib PUBLIC chip frontend tape ${BOOST_LIBRARIES} ${SDL2_LIBRARIES})
+target_include_directories(auric_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(auric_lib PUBLIC chip frontend tape ${BOOST_LIBRARIES} ${SDL2_LIBRARIES})
 
 # Link everything here (chip/tape/frontend libs defined in their subdirs)
-target_link_libraries(oric_lib
+target_link_libraries(auric_lib
         PUBLIC
         chip
         disk
@@ -51,7 +51,7 @@ target_link_libraries(oric_lib
 )
 
 # Main executable
-add_executable(oric main.cpp)
-target_link_libraries(oric PRIVATE oric_lib)
+add_executable(auric main.cpp)
+target_link_libraries(auric PRIVATE auric_lib)
 
-install(TARGETS oric RUNTIME DESTINATION bin)
+install(TARGETS auric RUNTIME DESTINATION bin)

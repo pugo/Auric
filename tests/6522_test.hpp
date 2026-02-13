@@ -18,8 +18,8 @@
 #include <memory>
 #include <gtest/gtest.h>
 
-#include "../config.hpp"
-#include "../oric.hpp"
+#include "../src/config.hpp"
+#include "../src/oric.hpp"
 
 
 namespace Unittest {
@@ -36,6 +36,7 @@ protected:
 
         oric = new Oric(config);
         oric->init_machine();
+        oric->get_machine().init_cpu();
         oric->get_machine().init_mos6522();
 
         mos6522 = oric->get_machine().mos_6522.get();

@@ -41,6 +41,7 @@ TEST_F(MOS6522TestRegisters, WriteReadDDRA)
 // Set data direction to input for all bits. Expect no result from ORA.
 TEST_F(MOS6522TestRegisters, ReadORAAllInputs)
 {
+    mos6522->set_ira(0x00);
     mos6522->write_byte(MOS6522::DDRA, 0x00);
     mos6522->write_byte(MOS6522::ORA, 0xff);
     ASSERT_EQ(mos6522->read_byte(MOS6522::ORA), 0x00);
@@ -56,6 +57,7 @@ TEST_F(MOS6522TestRegisters, ReadORAAllOutputs)
 
 TEST_F(MOS6522TestRegisters, ReadORALatching)
 {
+    mos6522->set_ira(0x00);
     mos6522->write_byte(MOS6522::ACR, 0x01);   // enable PA latching
     mos6522->write_byte(MOS6522::DDRA, 0x00);  // all inputs
 
@@ -138,6 +140,7 @@ TEST_F(MOS6522TestRegisters, WriteReadDDRB)
 // Set data direction to input for all bits. Expect no result from ORB.
 TEST_F(MOS6522TestRegisters, ReadORBAllInputs)
 {
+    mos6522->set_irb(0x00);
     mos6522->write_byte(MOS6522::DDRB, 0x00);
     mos6522->write_byte(MOS6522::ORB, 0xff);
     ASSERT_EQ(mos6522->read_byte(MOS6522::ORB), 0x00);
@@ -153,6 +156,7 @@ TEST_F(MOS6522TestRegisters, ReadORBAllOutputs)
 
 TEST_F(MOS6522TestRegisters, ReadORBLatching_NoLatchUntilIRQ)
 {
+    mos6522->set_irb(0x00);
     mos6522->write_byte(MOS6522::IER, 0xFF);
     mos6522->write_byte(MOS6522::ACR, 0x02);     // PB latching enable
     mos6522->write_byte(MOS6522::DDRB, 0x00);    // all inputs
@@ -187,7 +191,7 @@ TEST_F(MOS6522TestRegisters, PortBLatchingEnabled)
 
     // Trigger CB1 to latch data
     mos6522->write_cb1(true);
-    mos6522->exec();
+    mos6522->exec(1);
 
     // Change keyboard state
     mos6522->set_irb_bit(3, false);

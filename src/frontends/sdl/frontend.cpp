@@ -17,23 +17,28 @@
 
 #include <boost/assign.hpp>
 #include <boost/log/trivial.hpp>
+#include <unordered_map>
 
+#include <SDL_hints.h>
 #include <SDL_image.h>
+#include <SDL_scancode.h>
 
 #include "frontend.hpp"
 #include "chip/ay3_8912.hpp"
 #include "oric.hpp"
 
+static SDL_Scancode scancode_map[] = {
+    SDL_SCANCODE_7,     SDL_SCANCODE_N,     SDL_SCANCODE_5,         SDL_SCANCODE_V,     SDL_SCANCODE_UNKNOWN,   SDL_SCANCODE_1,         SDL_SCANCODE_X,             SDL_SCANCODE_3,
+    SDL_SCANCODE_J,     SDL_SCANCODE_T,     SDL_SCANCODE_R,         SDL_SCANCODE_F,     SDL_SCANCODE_UNKNOWN,   SDL_SCANCODE_ESCAPE,    SDL_SCANCODE_Q,             SDL_SCANCODE_D,
+    SDL_SCANCODE_M,     SDL_SCANCODE_6,     SDL_SCANCODE_B,         SDL_SCANCODE_4,     SDL_SCANCODE_LCTRL,     SDL_SCANCODE_Z,         SDL_SCANCODE_2,             SDL_SCANCODE_C,
+    SDL_SCANCODE_K,     SDL_SCANCODE_9,     SDL_SCANCODE_SEMICOLON, SDL_SCANCODE_MINUS, SDL_SCANCODE_UNKNOWN,   SDL_SCANCODE_UNKNOWN,   SDL_SCANCODE_BACKSLASH,     SDL_SCANCODE_APOSTROPHE,
+    SDL_SCANCODE_SPACE, SDL_SCANCODE_COMMA, SDL_SCANCODE_PERIOD,    SDL_SCANCODE_UP,    SDL_SCANCODE_LSHIFT,    SDL_SCANCODE_LEFT,      SDL_SCANCODE_DOWN,          SDL_SCANCODE_RIGHT,
+    SDL_SCANCODE_U,     SDL_SCANCODE_I,     SDL_SCANCODE_O,         SDL_SCANCODE_P,     SDL_SCANCODE_LALT,      SDL_SCANCODE_BACKSPACE, SDL_SCANCODE_RIGHTBRACKET,  SDL_SCANCODE_LEFTBRACKET,
+    SDL_SCANCODE_Y,     SDL_SCANCODE_H,     SDL_SCANCODE_G,         SDL_SCANCODE_E,     SDL_SCANCODE_UNKNOWN,   SDL_SCANCODE_A,         SDL_SCANCODE_S,             SDL_SCANCODE_W,
+    SDL_SCANCODE_8,     SDL_SCANCODE_L,     SDL_SCANCODE_0,         SDL_SCANCODE_SLASH, SDL_SCANCODE_RSHIFT,    SDL_SCANCODE_RETURN,    SDL_SCANCODE_UNKNOWN,       SDL_SCANCODE_EQUALS
+};
 
-static int32_t keytab[] = {
-    '7'        , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,     // 7
-    'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,     // 15
-    'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,     // 23
-    'k'        , '9'        , ';'        , '-'        , 0          , 0          , '\\'       , '\''       ,     // 31
-    SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,     //
-    'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
-    'y'        , 'h'        , 'g'        , 'e'        , 0          , 'a'        , 's'        , 'w'        ,
-    '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
+std::unordered_map<SDL_Scancode, uint8_t> oric_key_map;
 
 
 // ----- Frontend ----------------
@@ -51,20 +56,11 @@ Frontend::Frontend(Oric& oric) :
     sound_audio_device_id(),
     audio_locked(false)
 {
-    for (uint8_t i=0; i < 64; ++i) {
-        if (keytab[i] != 0) {
-            key_map[keytab[i]] = i;
+    for (uint8_t i = 0; i < 64; ++i) {
+        if (scancode_map[i] != 0) {
+            oric_key_map[scancode_map[i]] = i;
         }
     }
-
-    // Note: It is possible that this breaks for some keyboard layouts. Should rework this.
-    boost::assign::insert(key_translations)
-        (std::make_pair(0xe4, false), std::make_pair('/', false))
-        (std::make_pair(0xe4, true), std::make_pair('/', false))
-        (std::make_pair(0xf6, false), std::make_pair(';', false))
-        (std::make_pair(0xf6, true), std::make_pair(';', false))
-        (std::make_pair(0x2b, false), std::make_pair('=', false))
-        (std::make_pair(0x2b, true), std::make_pair('=', false));
 }
 
 Frontend::~Frontend()
@@ -75,6 +71,8 @@ Frontend::~Frontend()
 
 bool Frontend::init_graphics()
 {
+    SDL_SetHint(SDL_HINT_APP_NAME, "Auric");
+
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         BOOST_LOG_TRIVIAL(error) << "SDL could not initialize! SDL_Error: " << SDL_GetError();
@@ -106,7 +104,7 @@ bool Frontend::init_graphics()
     status_bar.render_rect.x = border_size_horizontal;
     status_bar.render_rect.y = height - status_bar.render_rect.h;
 
-    sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+    sdl_window = SDL_CreateWindow("Auric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   width, height, SDL_WINDOW_SHOWN);
     if (sdl_window == nullptr) {
         BOOST_LOG_TRIVIAL(error) << "Window could not be created! SDL_Error: " << SDL_GetError();
@@ -199,34 +197,34 @@ bool Frontend::handle_frame()
             case SDL_KEYDOWN:
             case SDL_KEYUP:
             {
-                auto sym = event.key.keysym.sym;
+                auto scancode = event.key.keysym.scancode;
                 bool special_pressed{false};
 
                 if (event.type == SDL_KEYDOWN) {
                     if (event.key.keysym.mod & KMOD_CTRL) {
-                        if (event.key.keysym.sym == SDLK_w) {
+                        if (scancode == SDL_SCANCODE_W) {
                             oric.get_machine().toggle_warp_mode();
                             special_pressed = true;
                         }
 
-                        else if (event.key.keysym.sym == SDLK_r) {
+                        else if (scancode == SDL_SCANCODE_R) {
                             oric.get_machine().cpu->NMI();
                             special_pressed = true;
                         }
 
-                        else if (event.key.keysym.sym == SDLK_b) {
+                        else if (scancode == SDL_SCANCODE_B) {
                             oric.get_machine().stop();
                             oric.do_break();
                             special_pressed = true;
                         }
                     }
                     else {
-                        if (event.key.keysym.sym == SDLK_F1) {
+                        if (scancode == SDL_SCANCODE_F1) {
                             oric.get_machine().save_snapshot();
                             special_pressed = true;
                         }
 
-                        else if (event.key.keysym.sym == SDLK_F2) {
+                        else if (scancode == SDL_SCANCODE_F2) {
                             oric.get_machine().load_snapshot();
                             special_pressed = true;
                         }
@@ -234,14 +232,11 @@ bool Frontend::handle_frame()
                 }
 
                 if (! special_pressed) {
-                    auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
-                    if (trans != key_translations.end()) {
-                        sym = trans->second.first;
-                    }
-
-                    auto key = key_map.find(sym);
-                    if (key != key_map.end()) {
-                        oric.get_machine().key_press(key->second, event.type == SDL_KEYDOWN);
+                    if (!special_pressed) {
+                        auto key = oric_key_map.find(scancode);
+                        if (key != oric_key_map.end()) {
+                            oric.get_machine().key_press(key->second, event.type == SDL_KEYDOWN);
+                        }
                     }
                 }
                 break;

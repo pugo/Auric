@@ -25,9 +25,8 @@ The purpose was to develop an emulator of the first computer I ever got,
 as a Christmas gift some 40 years ago. The computer was an Oric 1, and it
 was fantastic back then!
 
-There already is a brilliant emulator of Oric: Oricutron, which is more
-complete than this project ever likely will be. The purpose of my emulator
-project has been to learn more about how emulators work and to close the circle
+There already is a brilliant emulator of Oric: Oricutron. The purpose of my emulator
+is not to compete, but to learn more about how emulators work and to close the circle
 by learning more about the computer I got as a kid.
 
 <p align="center">
@@ -96,7 +95,7 @@ The program currently looks for ROM files from the `ROMS` directory in the proje
 root, so you might want to run the program from there:
 
 ```
-$ ./build/oric
+$ ./build/auric
 ```
 
 ### Command line arguments
@@ -104,9 +103,9 @@ $ ./build/oric
 Run the emulator with flag `-?` (or `--help`) to see available parameters.
 
 ```
-$ ./build/oric -?
+$ ./build/auric -?
 
-Usage: oric [options]
+Usage: auric [options]
 Allowed options:
   -? [ --help ]          produce help message
   -z [ --zoom ] arg (=3) window zoom 1-10 (default: 3)
@@ -132,7 +131,7 @@ To specify which tape TAP file to use, use the `--tape` or `-t` command line
 argument:
 
 ```
-$ ./build/oric --tape taps/hunchbk.tap
+$ ./build/auric --tape taps/hunchbk.tap
 ```
 
 To load a tape program from the emulator you can try the following.
@@ -153,7 +152,7 @@ To specify which tape TAP file to use, use the `--disk` or `-d` command line
 argument:
 
 ```
-$ ./build/oric --disk disk/oricpetscii.dsk
+$ ./build/auric --disk disk/oricpetscii.dsk
 ```
 
 

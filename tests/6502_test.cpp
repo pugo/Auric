@@ -18,8 +18,8 @@
 #include <memory>
 #include <gtest/gtest.h>
 
-#include "../config.hpp"
-#include "../oric.hpp"
+#include "../src/config.hpp"
+#include "../src/oric.hpp"
 
 
 namespace Unittest {
@@ -49,6 +49,7 @@ protected:
     void run(Machine& machine) {
         bool brk = false;
         while (! brk) {
+            machine.cpu->time_instruction();
             machine.cpu->exec(true, brk);
         }
     }

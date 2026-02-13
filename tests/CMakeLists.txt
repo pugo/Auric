@@ -1,5 +1,8 @@
 project(tests)
 
+find_package(Boost REQUIRED)
+find_package(SDL2 REQUIRED)
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -11,6 +14,7 @@ FetchContent_MakeAvailable(googletest)
 
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 include_directories(${gmock_SOURCE_DIR}/include ${gmock_SOURCE_DIR})
+include_directories(src)
 
 add_executable(gtests_run
         6502_test.cpp
@@ -23,6 +27,8 @@ add_executable(gtests_run
         mocks/test_machine.h
 )
 
-target_link_libraries(gtests_run  gtest_main gmock oric_lib)
+target_include_directories(gtests_run PUBLIC ../src)
+
+target_link_libraries(gtests_run  gtest_main gmock auric_lib ${BOOST_LIBRARIES} ${SDL2_LIBRARIES})
 
 add_test(NAME gtests_run COMMAND gtests_run)

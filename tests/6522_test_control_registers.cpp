@@ -59,12 +59,12 @@ TEST_F(MOS6522TestCR, CA1InterruptOnPositiveEdge)
 
     // CA1 low initially
     mos6522->write_ca1(false);
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_EQ(mos6522->get_state().ifr & MOS6522::IRQ_CA1, 0);
 
     // Rising edge should trigger interrupt
     mos6522->write_ca1(true);
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_CA1, 0);
 
     // Clear interrupt by reading ORA
@@ -102,12 +102,12 @@ TEST_F(MOS6522TestCR, CA1InterruptOnNegativeEdge)
 
     // CA1 high initially
     mos6522->write_ca1(true);
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_EQ(mos6522->get_state().ifr & MOS6522::IRQ_CA1, 0);
 
     // Falling edge should trigger interrupt
     mos6522->write_ca1(false);
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_CA1, 0);
 }
 
@@ -193,7 +193,7 @@ TEST_F(MOS6522TestCR, CA2_handshake_mode)
     mos6522->read_byte(MOS6522::ORA);           // Should trigger CA2 to go low.
     ASSERT_EQ(mos6522->get_state().ca2, false);
 
-    mos6522->exec();                            // A cycle exec should not return CA2 to high.
+    mos6522->exec(1);                            // A cycle exec should not return CA2 to high.
     ASSERT_EQ(mos6522->get_state().ca2, false);
 
     mos6522->write_ca1(true);                   // But a write to CA1 should reset it.
@@ -215,7 +215,7 @@ TEST_F(MOS6522TestCR, CA2_pulse_output_mode)
     mos6522->read_byte(MOS6522::ORA);           // Should trigger CA2 to go low 1 cyle.
     ASSERT_EQ(mos6522->get_state().ca2, false);
 
-    mos6522->exec();                            // Should make CA2 high again.
+    mos6522->exec(1);                            // Should make CA2 high again.
     ASSERT_EQ(mos6522->get_state().ca2, true);
 }
 
@@ -247,7 +247,7 @@ TEST_F(MOS6522TestCR, CA2OutputModePulse)
     EXPECT_TRUE(mos6522->get_state().ca2_do_pulse);
 
     // After exec, CA2 should return high
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_TRUE(mos6522->get_state().ca2);
     EXPECT_FALSE(mos6522->get_state().ca2_do_pulse);
 }
@@ -306,9 +306,9 @@ TEST_F(MOS6522TestCR, CB1InterruptTapeInput)
 
     // Simulate tape signal rising edge
     mos6522->write_cb1(false);
-    mos6522->exec();
+    mos6522->exec(1);
     mos6522->write_cb1(true);
-    mos6522->exec();
+    mos6522->exec(1);
 
     EXPECT_NE(mos6522->get_state().ifr & MOS6522::IRQ_CB1, 0);
 
@@ -400,7 +400,7 @@ TEST_F(MOS6522TestCR, CB2_handshake_mode)
     mos6522->read_byte(MOS6522::ORB);           // Should trigger CB2 to go low.
     ASSERT_EQ(mos6522->get_state().cb2, false);
 
-    mos6522->exec();                            // A cycle exec should not return CB2 to high.
+    mos6522->exec(1);                            // A cycle exec should not return CB2 to high.
     ASSERT_EQ(mos6522->get_state().cb2, false);
 
     mos6522->write_cb1(true);                   // But a write to CB1 should reset it.
@@ -422,7 +422,7 @@ TEST_F(MOS6522TestCR, CB2_pulse_output_mode)
     mos6522->read_byte(MOS6522::ORB);           // Should trigger CB2 to go low 1 cyle.
     ASSERT_EQ(mos6522->get_state().cb2, false);
 
-    mos6522->exec();                            // Should make CB2 high again.
+    mos6522->exec(1);                            // Should make CB2 high again.
     ASSERT_EQ(mos6522->get_state().cb2, true);
 }
 
@@ -430,12 +430,12 @@ TEST_F(MOS6522TestCR, CB2PSGControl)
 {
     mos6522->write_byte(MOS6522::PCR, 0xC0);    // Set CB2 to manual output for PSG BDIR control
 
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_FALSE(mos6522->get_state().cb2);
 
     mos6522->write_byte(MOS6522::PCR, 0xE0);    // Set CB2 high for PSG write operation
 
-    mos6522->exec();
+    mos6522->exec(1);
     EXPECT_TRUE(mos6522->get_state().cb2);
 }
 

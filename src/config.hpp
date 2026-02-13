@@ -70,7 +70,6 @@ public:
      */
     bool verbose() const { return _verbose; }
 
-
 protected:
     bool _start_in_monitor;
     bool _use_oric1_rom;
