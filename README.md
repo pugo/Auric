@@ -35,59 +35,13 @@ by learning more about the computer I got as a kid.
 
 ## Building
 
-The project should be possible to compile on Linux and macOS using CMake.
+Auric has been developed and tested on Linux and MacOS. It should be possible to build it on Windows as well, 
+but I have not tried that.
 
-It can be built with local libraries as well as with vcpkg.
+All building instructions are located in the `doc` directory.
 
-### Dependencies
-
-The following dependencies are required.
-
- * `boost`
- * `sdl2`
- * `sdl2_image`
-
-If building with vcpkg the dependencies does not need not exist as system-wide
-packages, such as DEB or brew packages.
-
-### Compile with CMake using vcpkg
-
-It is possible to build the emulator using the vcpkg dependency manager.
-
-#### Prerequisites
-
-This requires a working vcpkg installation. 
-
-The environment variable `VCPKG_ROOT` should point to the root of the vcpkg installation.
-
-#### Install dependencies
-
-The `vcpkg.json` file contains all the dependencies. To install them, do as follows.
-
-```
-$ vcpkg install
-$ vcpkg integrate install
-```
-
-There is a predefined CMake preset for using vcpkg, use it as follows.
-
-```
-$ mkdir build
-$ cd build
-$ cmake --preset=vcpkg ..
-$ make -j10
-```
-
-### Compile with CMake with existing dependencies
-
-This should typically be done like the following.
-
-```
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make -j10
-```
+ * To build with vcpkg, see [doc/BUILD_VCPKG.md](doc/BUILD_VCPKG.md).
+ * To build with host libraries, see [doc/BUILD_HOST.md](doc/BUILD_HOST.md).
 
 ## Running
 

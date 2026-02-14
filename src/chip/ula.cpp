@@ -16,7 +16,6 @@
 // =========================================================================
 
 #include <vector>
-#include <boost/assign.hpp>
 
 #include <machine.hpp>
 #include "ula.hpp"

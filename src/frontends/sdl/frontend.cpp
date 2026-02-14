@@ -15,7 +15,6 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <boost/assign.hpp>
 #include <boost/log/trivial.hpp>
 #include <unordered_map>
 

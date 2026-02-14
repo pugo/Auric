@@ -23,7 +23,6 @@
 #include <print>
 #include <vector>
 #include <string>
-#include <boost/assign.hpp>
 
 #include "tape_tap.hpp"
 

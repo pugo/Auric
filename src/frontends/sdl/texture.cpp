@@ -15,10 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <SDL_image.h>
-
 #include "frontend.hpp"
-
 
 Texture::Texture(uint16_t width, uint16_t height, uint8_t bpp) :
     width(width),

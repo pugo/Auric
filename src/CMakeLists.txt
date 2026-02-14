@@ -3,11 +3,11 @@
 if (DEFINED CMAKE_TOOLCHAIN_FILE)
     message("Using vcpkg")
 
-    find_package(Boost REQUIRED COMPONENTS log program_options assign circular_buffer)
+    find_package(Boost REQUIRED COMPONENTS log program_options circular_buffer)
     find_package(SDL2 CONFIG REQUIRED)
     find_package(SDL2_image CONFIG REQUIRED)
 
-    set(BOOST_LIBRARIES Boost::log Boost::program_options Boost::assign Boost::circular_buffer)
+    set(BOOST_LIBRARIES Boost::log Boost::program_options Boost::circular_buffer)
     set(SDL2_LIBRARIES SDL2::SDL2 SDL2_image::SDL2_image-static)
 else ()
     message("Not using vcpkg")
@@ -18,8 +18,6 @@ else ()
 
     set(BOOST_LIBRARIES ${Boost_LIBRARIES})
     set(SDL2_LIBRARIES ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
-
-    target_link_libraries(auric_lib PUBLIC chip frontend tape ${BOOST_LIBRARIES} ${SDL2_LIBRARIES})
 endif ()
 
 add_subdirectory(chip)
