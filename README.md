@@ -91,8 +91,22 @@ $ make -j10
 
 ## Running
 
+This section describes how to run the emulator.
+
+### ROM files
+
 The program currently looks for ROM files from the `ROMS` directory in the project
-root, so you might want to run the program from there:
+root. It expects the following ROM files to exist.
+
+| ROM file name | Description                        |
+|---------------|------------------------------------|
+| `basic10.rom`   | Oric 1 ROM (for Oric 1 mode)       |
+| `basic11b.rom`  | Oric Atmos ROM (for Atmos mode)    |
+| `microdis.rom`  | For Microdisc disc drive emulation |
+
+_I plan to add a configuration file options to specify ROM locations and ROM file names._
+
+### Starting the emulator
 
 ```
 $ ./build/auric
@@ -111,7 +125,9 @@ Allowed options:
   -z [ --zoom ] arg (=3) window zoom 1-10 (default: 3)
   -m [ --monitor ]       start in monitor mode
   -1 [ --oric1 ]         use Oric 1 mode (default: Atmos mode)
-  -t [ --tape ] arg      tape file to use
+  -d [ --disk ] arg      disk image file to use
+  -t [ --tape ] arg      tape image file to use
+  -v [ --verbose ]       verbose logging output
 ```
 
 ### Control keys
@@ -218,7 +234,7 @@ The timeline is something like:
 * 2023: AY3-8912 sound
 * 2024: Cycle bug fixing, new monitor, blink mode, snapshots
 * 2025: Satus bar, new tape loading, zoom
-* 2026: Microdisk loading
+* 2026: Microdisk loading, renaming project
 
 
 ## Contribution
