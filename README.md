@@ -98,11 +98,11 @@ This section describes how to run the emulator.
 The program currently looks for ROM files from the `ROMS` directory in the project
 root. It expects the following ROM files to exist.
 
-| ROM file name | Description                        |
-|---------------|------------------------------------|
-| `basic10.rom`   | Oric 1 ROM (for Oric 1 mode)       |
-| `basic11b.rom`  | Oric Atmos ROM (for Atmos mode)    |
-| `microdis.rom`  | For Microdisc disc drive emulation |
+| ROM file name  | Description                        |
+|----------------|------------------------------------|
+| `basic10.rom`  | Oric 1 ROM (for Oric 1 mode)       |
+| `basic11b.rom` | Oric Atmos ROM (for Atmos mode)    |
+| `microdis.rom` | For Microdisc disc drive emulation |
 
 _I plan to add a configuration file options to specify ROM locations and ROM file names._
 
