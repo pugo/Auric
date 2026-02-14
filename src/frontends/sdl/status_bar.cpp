@@ -101,7 +101,7 @@ bool StatusBar::init(SDL_Renderer* sdl_renderer)
 {
     BOOST_LOG_TRIVIAL(debug) << "Status bar: Reading font: '" << font_path << "'";
 
-    std::ifstream file (font_path, std::ios::in | std::ios::binary | std::ios::ate);
+    std::ifstream file(font_path, std::ios::in | std::ios::binary | std::ios::ate);
     if (file.is_open())
     {
         file.seekg (0, file.end);

@@ -51,7 +51,7 @@ Frontend::Frontend(Oric& oric) :
     sdl_window(nullptr),
     sdl_renderer(nullptr),
     oric_texture(texture_width, texture_height, texture_bpp),
-    status_bar(texture_width * oric.get_config().zoom(), 16, texture_bpp),
+    status_bar((texture_width * oric.get_config().zoom()) + border_size_horizontal * 2, 16, texture_bpp),
     sound_audio_device_id(),
     audio_locked(false)
 {
@@ -92,7 +92,6 @@ bool Frontend::init_graphics()
     BOOST_LOG_TRIVIAL(debug) << "Setting zoom to: " << static_cast<int>(zoom);
 
     oric_texture.set_render_zoom(zoom);
-    status_bar.set_render_zoom(1);
 
     oric_texture.render_rect.x = border_size_horizontal;
     oric_texture.render_rect.y = border_size_vertical;
@@ -100,7 +99,7 @@ bool Frontend::init_graphics()
     uint16_t width = oric_texture.render_rect.w + (border_size_horizontal * 2);
     uint16_t height = oric_texture.render_rect.h + status_bar.render_rect.h + (border_size_vertical * 2);
 
-    status_bar.render_rect.x = border_size_horizontal;
+    status_bar.render_rect.x = 0;
     status_bar.render_rect.y = height - status_bar.render_rect.h;
 
     sdl_window = SDL_CreateWindow("Auric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
