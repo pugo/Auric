@@ -341,10 +341,12 @@ void AY3_8912::SoundState::exec_register_change(RegisterChange& change)
         case ENV_DURATION_LOW:
         case ENV_DURATION_HIGH:
             audio_registers[change.register_index] = change.value;
-            envelope.period = ((audio_registers[ENV_DURATION_HIGH] << 8) + audio_registers[CH_A_PERIOD_LOW]) * 16;
-            if (envelope.period == 0) { envelope.period = 1; }
+            envelope.period = ((audio_registers[ENV_DURATION_HIGH] << 8) + audio_registers[ENV_DURATION_LOW]) * 16;
             break;
         case ENV_SHAPE:
+            if (change.value == 0xff) {
+                break;
+            }
             audio_registers[change.register_index] = change.value;
             envelope.shape = change.value & 0x0f;
             envelope.holding = false;

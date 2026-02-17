@@ -19,7 +19,6 @@
 #include <thread>
 #include <unistd.h>
 
-#include <boost/assign.hpp>
 #include <boost/log/trivial.hpp>
 
 #include "disk/drive_microdrive.hpp"
