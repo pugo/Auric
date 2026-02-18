@@ -72,46 +72,19 @@ using namespace std;
 // Volume table from Oricutron.
 uint32_t voltab[] = {0, 513/4, 828/4, 1239/4, 1923/4, 3238/4, 4926/4, 9110/4, 10344/4, 17876/4, 24682/4, 30442/4, 38844/4, 47270/4, 56402/4, 65535/4};
 
-static const uint8_t ay38910_shapes[16][32] = {
-    // CONTINUE ATTACK ALTERNATE HOLD
-    // 0 0 X X
-    { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    // 0 1 X X
-    { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    // 1 0 0 0
-    { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 },
-    // 1 0 0 1
-    { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    // 1 0 1 0
-    { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 },
-    // 1 0 1 1
-    { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 },
-    // 1 1 0 0
-    { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 },
-    // 1 1 0 1
-    { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 },
-    // 1 1 1 0
-    { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 },
-    // 1 1 1 1
-    { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-};
-
 constexpr uint8_t cycle_shift = 12;
 constexpr uint32_t cycles_per_second = 998400;
 constexpr uint32_t audio_frequency = 44100;
 
+
+// ------- Channel -------------------------------------------------------------------------
 
 Channel::Channel() :
     volume(0),
     tone_period(0),
     counter(0),
     value(0),
+    output_bit(0),
     disabled(1),
     noise_diabled(1),
     use_envelope(false)
@@ -123,46 +96,54 @@ void Channel::reset()
     tone_period = 0;
     counter = 0;
     value = 0;
+    output_bit = 0;
     disabled = 1;
     noise_diabled = 1;
     use_envelope = false;
 }
 
+// ------- Noise ---------------------------------------------------------------------------
 
 Noise::Noise() :
-    period(0), counter(0), bit(0), rng(1)
+    period(0),
+    counter(0),
+    output_bit(0),
+    rng(1)
 {}
 
 void Noise::reset()
 {
     period = 0;
     counter = 0;
+    output_bit = 0;
+    rng = 1;
 }
 
+// ------- Envelope ------------------------------------------------------------------------
 
 Envelope::Envelope() :
-    period(0),
-    counter(0),
     shape(0),
     shape_counter(0),
-    out_level(0),
-    cont(false),
-    hold(false),
-    holding(false)
+    period(0),
+    counter(0)
 {}
 
 void Envelope::reset()
 {
-    period = 0;
-    counter = 0;
     shape = 0;
     shape_counter = 0;
-    out_level = 0;
-    cont = false;
-    hold = false;
-    holding = false;
+    period = 0;
+    counter = 0;
 }
 
+void Envelope::set_envelope_shape(uint8_t new_shape)
+{
+    shape = new_shape;
+    counter = 0;
+    shape_counter = 0;
+}
+
+// ------- RegisterChanges -----------------------------------------------------------------
 
 RegisterChanges::RegisterChanges() :
     log_cycle(0),
@@ -180,16 +161,7 @@ void RegisterChanges::reset()
     buffer.set_capacity(register_changes_size);
 }
 
-void RegisterChanges::exec(uint8_t cycles)
-{
-    if (update_log_cycle) {
-        log_cycle = new_log_cycle;
-        update_log_cycle = false;
-    }
-
-    log_cycle += cycles;
-}
-
+// ------- AY3_8912 ------------------------------------------------------------------------
 
 AY3_8912::SoundState::SoundState() :
     bdir(false),
@@ -209,7 +181,6 @@ AY3_8912::SoundState::SoundState() :
     for (auto& c : channels) { c.reset(); }
     noise.reset();
 }
-
 
 void AY3_8912::SoundState::reset()
 {
@@ -312,7 +283,7 @@ void AY3_8912::SoundState::exec_register_change(RegisterChange& change)
             audio_registers[change.register_index] = change.value;
             channels[0].use_envelope = (change.value & 0x10) != 0;
             if (channels[0].use_envelope) {
-                channels[0].volume = voltab[ay38910_shapes[envelope.shape][envelope.shape_counter]];
+                channels[0].volume = voltab[envelope_shapes[envelope.shape][envelope.shape_counter]];
             }
             else {
                 channels[0].volume = voltab[change.value & 0x0f];
@@ -322,7 +293,7 @@ void AY3_8912::SoundState::exec_register_change(RegisterChange& change)
             audio_registers[change.register_index] = change.value;
             channels[1].use_envelope = (change.value & 0x10) != 0;
             if (channels[1].use_envelope) {
-                channels[1].volume = voltab[ay38910_shapes[envelope.shape][envelope.shape_counter]];
+                channels[1].volume = voltab[envelope_shapes[envelope.shape][envelope.shape_counter]];
             }
             else {
                 channels[1].volume = voltab[change.value & 0x0f];
@@ -332,7 +303,7 @@ void AY3_8912::SoundState::exec_register_change(RegisterChange& change)
             audio_registers[change.register_index] = change.value;
             channels[2].use_envelope = (change.value & 0x10) != 0;
             if (channels[2].use_envelope) {
-                channels[2].volume = voltab[ay38910_shapes[envelope.shape][envelope.shape_counter]];
+                channels[2].volume = voltab[envelope_shapes[envelope.shape][envelope.shape_counter]];
             }
             else {
                 channels[2].volume = voltab[change.value & 0x0f];
@@ -341,24 +312,18 @@ void AY3_8912::SoundState::exec_register_change(RegisterChange& change)
         case ENV_DURATION_LOW:
         case ENV_DURATION_HIGH:
             audio_registers[change.register_index] = change.value;
-            envelope.period = ((audio_registers[ENV_DURATION_HIGH] << 8) + audio_registers[ENV_DURATION_LOW]) * 16;
+            envelope.set_period(((audio_registers[ENV_DURATION_HIGH] << 8) + audio_registers[ENV_DURATION_LOW]) * 16);
             break;
         case ENV_SHAPE:
             if (change.value == 0xff) {
                 break;
             }
             audio_registers[change.register_index] = change.value;
-            envelope.shape = change.value & 0x0f;
-            envelope.holding = false;
-            envelope.counter = 0;
-            envelope.shape_counter = 0;
-
-            envelope.cont = change.value & 0x08;
-            envelope.hold = change.value & 0x01;
+            envelope.set_envelope_shape(change.value & 0x0f);
 
             for (uint8_t channel = 0; channel < 3; channel++) {
                 if (channels[channel].use_envelope) {
-                    channels[channel].volume = voltab[ay38910_shapes[envelope.shape][envelope.shape_counter]];
+                    channels[channel].volume = voltab[envelope_shapes[envelope.shape][envelope.shape_counter]];
                 }
             }
             break;
@@ -369,56 +334,37 @@ void AY3_8912::SoundState::exec_audio(uint32_t cycle)
 {
     if (cycle <= last_cycle) { return; }
 
-    uint16_t cycles = cycle - last_cycle;
+    const uint16_t cycles = cycle - last_cycle;
+    int32_t out = 0;
 
     for (uint16_t c = 0; c < cycles; c++) {
-        // Tones
-        for (uint8_t channel = 0; channel < 3; channel++) {
-            if (++channels[channel].counter >= channels[channel].tone_period) {
-                channels[channel].counter = 0;
-                channels[channel].value ^= 1;
-            }
-        }
-
-        // Noise
-        if (++noise.counter >= noise.period) {
-            noise.counter = 0;
-            noise.bit ^= 1;
-            if (noise.bit) {
-                noise.rng ^= (((noise.rng & 1) ^ ((noise.rng >> 3) & 1)) << 17);
-                noise.rng >>= 1;
-            }
-        }
+        channels[0].exec_cycle();
+        channels[1].exec_cycle();
+        channels[2].exec_cycle();
+        noise.exec_cycle();
 
         // Envelope
-        if (++envelope.counter >= envelope.period) {
-            envelope.counter = 0;
-
-            if (! envelope.holding) {
-                envelope.shape_counter = (envelope.shape_counter + 1) % 0x20;
-                if (envelope.shape_counter == 0x1f) {
-                    if (! envelope.cont || envelope.hold) {
-                        envelope.holding = true;
-                    }
-                }
-            }
-
+        if (envelope.exec_cycle()) {
             for (uint8_t channel = 0; channel < 3; channel++) {
                 if (channels[channel].use_envelope) {
-                    channels[channel].volume = voltab[ay38910_shapes[envelope.shape][envelope.shape_counter]];
+                    channels[channel].volume = voltab[envelope_shapes[envelope.shape][envelope.shape_counter]];
                 }
             }
         }
 
-        uint32_t out = 0;
         for (auto& channel : channels) {
-            out += ((channel.value | channel.disabled) &
-                    ((noise.rng & 1) | channel.noise_diabled)) * channel.volume;
+            const uint32_t tone_gate  = (channel.output_bit | channel.disabled);
+            const uint32_t noise_gate = (noise.output_bit | channel.noise_diabled);
+            channel.value = (tone_gate & noise_gate) ? channel.volume : 0;
+            out += channel.value;
         }
 
-        if (out > 32767) { out = 32767; }
-        audio_out = out;
     }
+
+    out = out / cycles;
+
+    if (out > 32767) { out = 32767; }
+    audio_out = out;
 
     last_cycle = cycle;
 }
@@ -449,10 +395,9 @@ void AY3_8912::load_from_snapshot(Snapshot& snapshot)
     state = snapshot.ay3_8919;
 }
 
-short AY3_8912::exec(uint8_t cycles)
+void AY3_8912::exec(uint8_t cycles)
 {
     state.changes.exec(cycles);
-    return 0;
 }
 
 void AY3_8912::update_state()

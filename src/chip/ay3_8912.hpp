@@ -30,12 +30,27 @@ typedef uint8_t (*f_write_data_handler)(Machine &oric);
 constexpr size_t register_changes_size = 32768;
 
 
+// ------- Channel -------------------------------------------------------------------------
+
 class Channel
 {
 public:
     Channel();
 
     void reset();
+
+    void exec_cycle()
+    {
+        if (tone_period == 0) {
+            output_bit = 1;
+            return;
+        }
+
+        if (++counter >= tone_period) {
+            counter = 0;
+            output_bit ^= 1;
+        }
+    }
 
     void print_status(uint8_t channel) const {
         std::println(" ------- Channel {} -------------------------", channel);
@@ -53,11 +68,13 @@ public:
     uint32_t tone_period;
     uint32_t counter;
     uint16_t value;
+    uint16_t output_bit;
     uint8_t disabled;
     uint16_t noise_diabled;
     bool use_envelope;
 };
 
+// ------- Noise ---------------------------------------------------------------------------
 
 class Noise
 {
@@ -66,21 +83,70 @@ public:
 
     void reset();
 
+    void exec_cycle()
+    {
+        if (++counter >= period) {
+            counter = 0;
+
+            uint32_t right_bit = (rng & 1) ^ ((rng >> 2) & 1);
+            rng = (rng >> 1) | (right_bit << 16);
+            output_bit ^= (right_bit & 1);
+        }
+    }
+
     void print_status() const {
         std::println(" ------- Noise -------------------------");
-        std::println("     Period: {}", period);
-        std::println("    Counter: {}", counter);
-        std::println("        Bit: {}", bit);
-        std::println("        Rng: {}", rng);
+        std::println("      Period: {}", period);
+        std::println("     Counter: {}", counter);
+        std::println("  Output bit: {}", output_bit);
+        std::println("         Rng: {}", rng);
         std::println();
     }
 
+    uint16_t output_bit;
     uint16_t period;
-    uint16_t counter;
-    uint8_t bit;
+
+private:
+        uint16_t counter;
     uint32_t rng;
 };
 
+
+// ------- Envelope ------------------------------------------------------------------------
+
+constexpr uint8_t env_goto = 0x80;
+using envelope_shape_t = std::vector<uint8_t>;
+
+static const std::vector<envelope_shape_t> envelope_shapes = {
+    // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  10
+    // CONTINUE ATTACK ALTERNATE HOLD
+    // 0 0 X X
+    { 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,     env_goto | 0xf },
+    { 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,     env_goto | 0xf },
+    { 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,     env_goto | 0xf },
+    { 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,     env_goto | 0xf },
+    // 0 1 X X
+    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,  0, env_goto | 0x10 },
+    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,  0, env_goto | 0x10 },
+    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,  0, env_goto | 0x10 },
+    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,  0, env_goto | 0x10 },
+    // 1 0 0 0
+    { 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,     env_goto | 0},
+    // 1 0 0 1
+    { 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,     env_goto | 0xf },
+    // 1 0 1 0
+    { 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, env_goto | 0 },
+    // 1 0 1 1
+    { 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0, 15, env_goto | 0x10 },
+    // 1 1 0 0
+    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,     env_goto | 0 },
+    // 1 1 0 1
+    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,     env_goto | 0xf },
+    // 1 1 1 0
+    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0, env_goto | 0 },
+    // 1 1 1 1
+    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,  0, env_goto | 0x10 },
+};
 
 class Envelope
 {
@@ -89,18 +155,37 @@ public:
 
     void reset();
 
-    uint32_t period;
-    uint32_t counter;
+    bool exec_cycle()
+    {
+        if (++counter >= period) {
+            counter = 0;
+
+            ++shape_counter;
+            if (envelope_shapes[shape][shape_counter] & env_goto) {
+                shape_counter = envelope_shapes[shape][shape_counter] & 0x7f;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    void set_period(uint16_t value)
+    {
+        period = value;
+    }
+
+    void set_envelope_shape(uint8_t new_shape);
 
     uint8_t shape;
     uint8_t shape_counter;
-    uint8_t out_level;
 
-    bool cont;
-    bool hold;
-    bool holding;
+private:
+    uint32_t period;
+    uint32_t counter;
 };
 
+
+// ------- RegisterChanges -----------------------------------------------------------------
 
 struct RegisterChange
 {
@@ -116,7 +201,16 @@ public:
     RegisterChanges();
 
     void reset();
-    void exec(uint8_t cycles);
+
+    void exec(uint8_t cycles)
+    {
+        if (update_log_cycle) {
+            log_cycle = new_log_cycle;
+            update_log_cycle = false;
+        }
+
+        log_cycle += cycles;
+    }
 
     boost::circular_buffer<RegisterChange> buffer;
 
@@ -125,6 +219,8 @@ public:
     bool update_log_cycle;
 };
 
+
+// ------- AY3_8912 ------------------------------------------------------------------------
 
 class AY3_8912
 {
@@ -240,7 +336,7 @@ public:
     /**
      * Execute a number of clock cycles.
      */
-    short exec(uint8_t cycles);
+    void exec(uint8_t cycles);
 
     /**
      * Update AY state based on BC1 and BDIR.
