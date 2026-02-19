@@ -19,6 +19,7 @@
 #define FRONTENDS_SDL_STATUSBAR_H
 
 #include <condition_variable>
+#include <filesystem>
 #include <memory>
 #include <thread>
 #include <SDL.h>
@@ -43,7 +44,7 @@ public:
      * @param sdl_renderer SDL renderer
      * @return true on success
      */
-    bool init(SDL_Renderer* sdl_renderer);
+    bool init(SDL_Renderer* sdl_renderer, std::filesystem::path font_path);
 
     /**
      * Notify status bar that the contents should be repainted.

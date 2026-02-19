@@ -1,0 +1,21 @@
+# This is the Auric configuration file.
+
+roms:
+  # Path to the ROMS directory.
+  roms_directory: ./ROMS
+
+  # Names of the ROM files.
+  file_names:
+    oric_1: basic10.rom
+    oric_atmos: basic11b.rom
+    microdisk: microdis.rom
+
+media:
+  # Path to the images directory.
+  images_path: ./images
+  # Path to the fonts directory.
+  fonts_path: ./fonts
+
+video:
+  # Controls the zoom level of the display (1-10).
+  zoom: 3

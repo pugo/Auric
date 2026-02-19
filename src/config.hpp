@@ -19,6 +19,18 @@
 #define CONFIG_H
 
 #include <filesystem>
+#include <yaml-cpp/yaml.h>
+
+
+/**
+ * Enum representing different types of ROMs supported.
+ */
+enum class RomType
+{
+    Oric1,
+    OricAtmos,
+    Microdisk
+};
 
 
 class Config
@@ -33,6 +45,13 @@ public:
      * @return false if program should exit
      */
     bool parse(int argc, char **argv);
+
+    /**
+     * Read configuration file.
+     * @param config_path path to configuration file
+     * @return false if program should exit
+     */
+    bool read_config_file(std::filesystem::path config_path);
 
     /**
      * Path to disk image.
@@ -70,6 +89,31 @@ public:
      */
     bool verbose() const { return _verbose; }
 
+    /**
+     * Return ROMS directory path.
+     * @return path to ROMS directory
+     */
+    std::filesystem::path roms_path() const { return _roms_path; }
+
+    /**
+     * Return ROM name for given `RomType`.
+     * @param type type of ROM to get name for
+     * @return name of requested ROM.
+     */
+    std::string rom_name(RomType type) const { return _rom_names.at(type); }
+
+    /**
+     * Return fonts directory path.
+     * @return fonts directory path
+     */
+    std::filesystem::path fonts_path() const { return _fonts_path; }
+
+    /**
+     * Return images directory path.
+     * @return images directory path
+     */
+    std::filesystem::path images_path() const { return _images_path; }
+
 protected:
     bool _start_in_monitor;
     bool _use_oric1_rom;
@@ -77,6 +121,14 @@ protected:
     std::filesystem::path _tape_path;
     uint8_t _zoom;
     bool _verbose;
+
+    // ROMS
+    std::filesystem::path _roms_path;
+    std::map<RomType, std::string> _rom_names;
+
+    // Media
+    std::filesystem::path _fonts_path;
+    std::filesystem::path _images_path;
 };
 
 #endif // CONFIG_H

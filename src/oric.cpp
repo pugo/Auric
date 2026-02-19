@@ -34,10 +34,6 @@
 
 namespace po = boost::program_options;
 
-const std::string_view rom_basic10{"ROMS/basic10.rom"};
-const std::string_view rom_basic11b{"ROMS/basic11b.rom"};
-const std::string_view rom_microdisk{"ROMS/microdis.rom"};
-
 
 Oric::Oric(Config& config) :
     config(config),
@@ -55,26 +51,34 @@ Oric::~Oric()
 {
 }
 
+void check_rom_exists(std::filesystem::path path)
+{
+    if (! std::filesystem::exists(path)) {
+        throw std::runtime_error(std::format("'{}' does not exist", path.string()));
+    }
+
+    if (! std::filesystem::is_regular_file(path)) {
+        throw std::runtime_error(std::format("'{}' is not a file", path.string()));
+    }
+}
+
 void Oric::init()
 {
     machine = std::make_unique<Machine>(*this);
     frontend = std::make_unique<Frontend>(*this);
 
     machine->init(frontend.get());
-    frontend->init_graphics();
-    frontend->init_sound();
-
-    frontend->get_status_bar().show_text_for("Starting Auric!", std::chrono::seconds(3));
-
-    machine->set_disassemble_execution(false);
 
     try {
         if (config.use_oric1_rom()) {
-            //    	machine->memory.load("ROMS/test108k.rom", 0xc000);
-            machine->oric_rom.load(rom_basic10, 0x0000);
+            auto path = config.roms_path() / config.rom_name(RomType::Oric1);
+            check_rom_exists(path);
+            machine->oric_rom.load(path, 0x0000);
         }
         else {
-            machine->oric_rom.load(rom_basic11b, 0x0000);
+            auto path = config.roms_path() / config.rom_name(RomType::OricAtmos);
+            check_rom_exists(path);
+            machine->oric_rom.load(path, 0x0000);
         }
     }
     catch (const std::runtime_error& err) {
@@ -82,11 +86,20 @@ void Oric::init()
     }
 
     try {
-        machine->disk_rom.load(rom_microdisk, 0x0000);
+        auto path = config.roms_path() / config.rom_name(RomType::Microdisk);
+        check_rom_exists(path);
+        machine->disk_rom.load(path, 0x0000);
     }
     catch (const std::runtime_error& err) {
         throw(std::runtime_error(std::format("Failed loading disk drive ROM: {}", err.what())));
     }
+
+    frontend->init_graphics();
+    frontend->init_sound();
+
+    frontend->get_status_bar().show_text_for("Starting Auric!", std::chrono::seconds(3));
+
+    machine->set_disassemble_execution(false);
 }
 
 void Oric::init_machine()

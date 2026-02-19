@@ -45,6 +45,9 @@ std::unordered_map<SDL_Scancode, uint8_t> oric_key_map;
 constexpr uint16_t border_size_horizontal = 100;
 constexpr uint16_t border_size_vertical = 50;
 
+constexpr std::string window_title = "Auric";
+constexpr std::string window_icon_name = "window_icon.png";
+
 
 Frontend::Frontend(Oric& oric) :
     oric(oric),
@@ -70,7 +73,7 @@ Frontend::~Frontend()
 
 bool Frontend::init_graphics()
 {
-    SDL_SetHint(SDL_HINT_APP_NAME, "Auric");
+    SDL_SetHint(SDL_HINT_APP_NAME, window_title.c_str());
 
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -102,7 +105,7 @@ bool Frontend::init_graphics()
     status_bar.render_rect.x = 0;
     status_bar.render_rect.y = height - status_bar.render_rect.h;
 
-    sdl_window = SDL_CreateWindow("Auric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+    sdl_window = SDL_CreateWindow(window_title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   width, height, SDL_WINDOW_SHOWN);
     if (sdl_window == nullptr) {
         BOOST_LOG_TRIVIAL(error) << "Window could not be created! SDL_Error: " << SDL_GetError();
@@ -110,9 +113,12 @@ bool Frontend::init_graphics()
     }
 
     // Try to load a window icon.
-    SDL_Surface* icon = IMG_Load("images/window_icon.png");
-    if (icon) {
-        SDL_SetWindowIcon(sdl_window, icon);
+    auto path = oric.get_config().images_path() / window_icon_name;
+    if (std::filesystem::exists(path)) {
+        SDL_Surface* icon = IMG_Load(path.c_str());
+        if (icon) {
+            SDL_SetWindowIcon(sdl_window, icon);
+        }
     }
 
     // Create renderer for window
@@ -123,9 +129,18 @@ bool Frontend::init_graphics()
         return false;
     }
 
-    if (! oric_texture.create_texture(sdl_renderer) ||
-        ! status_bar.init(sdl_renderer)) {
+    if (! oric_texture.create_texture(sdl_renderer)) {
         return false;
+    }
+
+    // Init status bar
+    auto font_path = oric.get_config().fonts_path() / "light.bin";
+    if (std::filesystem::exists(font_path)) {
+        status_bar.init(sdl_renderer, font_path);
+        BOOST_LOG_TRIVIAL(debug) << "Initialized staus bar with font: " << font_path;
+    }
+    else {
+        BOOST_LOG_TRIVIAL(warning) << "Status bar font file not found: " << font_path;
     }
 
     // Initialize renderer color

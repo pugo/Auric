@@ -27,8 +27,6 @@
 #include "frontend.hpp"
 
 
-std::filesystem::path font_path = "fonts/light.bin";
-
 const uint8_t ascii_to_glyph[128] = {
     // Control characters 0–31 (map to themselves or custom handling)
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -97,7 +95,7 @@ StatusBar::~StatusBar()
 }
 
 
-bool StatusBar::init(SDL_Renderer* sdl_renderer)
+bool StatusBar::init(SDL_Renderer* sdl_renderer, std::filesystem::path font_path)
 {
     BOOST_LOG_TRIVIAL(debug) << "Status bar: Reading font: '" << font_path << "'";
 

@@ -16,11 +16,7 @@
 // =========================================================================
 
 #include <csignal>
-
 #include <print>
-
-#include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include "oric.hpp"
 
@@ -55,9 +51,17 @@ void init_signals()
 
 int main(int argc, char *argv[])
 {
+    std::println("Starting Auric emulator");
+
+    // Read config file.
     Config config;
+    if (! config.read_config_file("auric.yaml")) {
+        return 2;
+    }
+
+    // Read config from command line flags. Can override file config.
     if (! config.parse(argc, argv)) {
-        return 0;
+        return 1;
     }
 
     oric = std::make_unique<Oric>(config);
@@ -68,11 +72,10 @@ int main(int argc, char *argv[])
     }
     catch (const std::exception &err) {
         std::println("Error initializing: {}", err.what());
-        return 1;
+        return 3;
     }
 
     oric->get_machine().reset();
-
     oric->run();
 
     return 0;

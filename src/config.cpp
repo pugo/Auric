@@ -43,10 +43,16 @@ static const char* severity_color(logging::trivial::severity_level lvl) {
 
 
 Config::Config() :
-    _start_in_monitor(false),
-    _use_oric1_rom(false),
-    _zoom(3),
-    _verbose(false)
+    _start_in_monitor{false},
+    _use_oric1_rom{false},
+    _zoom{3},
+    _verbose{false},
+    _roms_path{"./ROMS"},
+    _rom_names{{RomType::Oric1, "basic10.rom"},
+               {RomType::OricAtmos, "basic11b.roms"},
+               {RomType::Microdisk, "microdis.rom"}},
+    _fonts_path{"./fonts"},
+    _images_path{"./images"}
 {
 }
 
@@ -60,7 +66,7 @@ bool Config::parse(int argc, char **argv)
 
         desc.add_options()
             ("help,?", "produce help message")
-            ("zoom,z", po::value<int>(&zoom_arg)->default_value(3), "window zoom 1-10 (default: 3)")
+            ("zoom,z", po::value<int>(&zoom_arg), "window zoom 1-10")
             ("monitor,m", po::bool_switch(&_start_in_monitor), "start in monitor mode")
             ("oric1,1", po::bool_switch(&_use_oric1_rom), "use Oric 1 mode (default: Atmos mode)")
             ("disk,d", po::value<std::filesystem::path>(&_disk_path), "disk image file to use")
@@ -77,9 +83,11 @@ bool Config::parse(int argc, char **argv)
             return false;
         }
 
-        // Clamp zoom to 1-10.
-        zoom_arg = std::clamp<int>(zoom_arg, 1, 10);
-        _zoom = static_cast<uint8_t>(zoom_arg);
+        // Read zoom only if provided.
+        if (!vm["zoom"].empty()) {
+            zoom_arg = std::clamp<int>(zoom_arg, 1, 10);  // Clamp zoom to 1-10.
+            _zoom = static_cast<uint8_t>(zoom_arg);
+        }
 
         if (_verbose) {
             boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::debug);
@@ -107,3 +115,53 @@ bool Config::parse(int argc, char **argv)
     return true;
 }
 
+
+
+bool Config::read_config_file(std::filesystem::path config_path)
+{
+    YAML::Node yaml_config;
+    try {
+        yaml_config = YAML::LoadFile(config_path);
+    }
+    catch (YAML::Exception& e) {
+        std::println("Error parsing config file: {}", e.what());
+        return false;
+    }
+
+    if (yaml_config["foo"]) {
+        std::println("Found foo in config file");
+    }
+    else {
+        std::println("No foo in config file");
+    }
+
+    if (yaml_config["roms"]["roms_directory"]) {
+        _roms_path = yaml_config["roms"]["roms_directory"].as<std::string>();
+
+        if (!is_directory(_roms_path)) {
+            std::println("ROMs directory '{}' is not a directory", _roms_path.string());
+        }
+
+        _rom_names[RomType::Oric1] = yaml_config["roms"]["file_names"]["oric_1"].as<std::string>();
+        _rom_names[RomType::OricAtmos] = yaml_config["roms"]["file_names"]["oric_atmos"].as<std::string>();
+        _rom_names[RomType::Microdisk] = yaml_config["roms"]["file_names"]["microdisk"].as<std::string>();
+
+        std::println("Found roms directory: {}", _roms_path.string());
+    }
+
+    if (yaml_config["media"]["fonts_path"]) {
+        _fonts_path = yaml_config["media"]["fonts_path"].as<std::string>();
+    }
+
+    if (yaml_config["media"]["images_path"]) {
+        _images_path = yaml_config["media"]["images_path"].as<std::string>();
+    }
+
+    if (yaml_config["video"]["zoom"]) {
+        int zoom_arg = yaml_config["video"]["zoom"].as<int>();
+        zoom_arg = std::clamp<int>(zoom_arg, 1, 10);
+        _zoom = static_cast<uint8_t>(zoom_arg);
+    }
+
+    return true;
+}
