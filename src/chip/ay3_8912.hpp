@@ -264,7 +264,7 @@ public:
          * @param cycle current cycle
          */
         void exec_register_changes(uint32_t cycle) {
-            while (cycle >= changes.buffer[0].cycle && !changes.buffer.empty()) {
+            while (!changes.buffer.empty() && cycle >= changes.buffer[0].cycle) {
                 exec_register_change(changes.buffer[0]);
                 changes.buffer.pop_front();
             }

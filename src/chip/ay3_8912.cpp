@@ -166,7 +166,7 @@ void RegisterChanges::reset()
 AY3_8912::SoundState::SoundState() :
     bdir(false),
     bc1(false),
-    bc2(false),
+    bc2(true),
     current_register(0),
     audio_out(0),
     cycle_count(0),
@@ -186,7 +186,7 @@ void AY3_8912::SoundState::reset()
 {
     bdir = false;
     bc1 = false;
-    bc2 = false;
+    bc2 = true;
 
     current_register = 0;
     audio_out = 0;
@@ -403,6 +403,7 @@ void AY3_8912::exec(uint8_t cycles)
 void AY3_8912::update_state()
 {
     if (state.bdir) {
+
         if (state.bc1) {  // 1 ? 1
             // Latch address: read address from data bus.
             if (uint8_t new_curr = m_read_data_handler(machine); new_curr < NUM_REGS) {

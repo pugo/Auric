@@ -359,6 +359,16 @@ void WD1793::do_command(uint8_t command)
     }
 }
 
+void WD1793::set_side_number(uint8_t side)
+{
+    if (state.side == side) {
+        return;  // No change
+    }
+
+    state.side = side;
+
+    set_track(state.current_track_number);
+}
 
 bool WD1793::set_track(uint8_t track)
 {

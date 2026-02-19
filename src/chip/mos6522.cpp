@@ -471,14 +471,15 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
                 case 0x08:
                     // set CA2 to low on read/write of ORA if CA2-ctrl is 100.
                     state.ca2 = false;
+                    if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
                     break;
                 case 0x0a:
                     // pulse low for one cycle if CA2-ctrl is 101.
                     state.ca2 = false;
                     state.ca2_do_pulse = true;
+                    if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
                     break;
             }
-            if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
             if (psg_changed_handler) { psg_changed_handler(machine); }
             break;
         case DDRB:
@@ -543,35 +544,44 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
             break;
         }
         case PCR:
+        {
+            bool update_ca2 = false;
+            bool update_cb2 = false;
             state.pcr = value;
-            // Manual output modes
 
+            // Manual output modes
             switch (value & 0x0e) {
                 case 0x0a:
                     state.ca2 = true;
                     state.ca2_do_pulse = true;
+                    update_ca2 = true;
                     break;
                 case 0x0c:
                     state.ca2 = false;
                     state.ca2_do_pulse = false;
+                    update_ca2 = true;
                     break;
                 case 0x0e:
                     state.ca2 = true;
+                    update_ca2 = true;
                     break;
             }
 
             if ((state.pcr & 0xe0) == 0xc0) {
                 state.cb2 = false;
                 state.cb2_do_pulse = false;
+                update_cb2 = true;
             }
             else if ((state.pcr & 0xe0) == 0xe0) {
                 state.cb2 = true;
+                update_cb2 = true;
             }
 
-            if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
-            if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
-            if (psg_changed_handler) { psg_changed_handler(machine); }
+            if (update_ca2 && ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
+            if (update_cb2 && cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
+            if ((update_ca2 || update_cb2) && psg_changed_handler) { psg_changed_handler(machine); }
             break;
+        }
         case IFR:
             // Interrupt flag bits are cleared by writing 1:s for corresponding bit.
             state.ifr &= (~value) & 0x7f;
@@ -594,7 +604,7 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
             break;
         case IORA2:
             state.ora = value;
-            if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
+            // if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
             if (psg_changed_handler) { psg_changed_handler(machine); }
             break;
     }
@@ -618,7 +628,6 @@ void MOS6522::set_irb_bit(uint8_t bit, bool value)
         if (bit == 6 && (original_bit_6 & 0x40) && !value) {
             state.t2_counter--;
             if (state.t2_run && (state.t2_counter == 0)) {
-
                 irq_set(IRQ_T2);
                 state.t2_run = false;
             }

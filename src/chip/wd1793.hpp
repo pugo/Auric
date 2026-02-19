@@ -183,7 +183,7 @@ public:
      * Set side number.
      * @param drive
      */
-    void set_side_number(uint8_t side) { state.side = side; }
+    void set_side_number(uint8_t side);
 
     /**
      * Read register value.
