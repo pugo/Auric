@@ -22,6 +22,10 @@
 #include <SDL_image.h>
 #include <SDL_scancode.h>
 
+#include <imgui.h>
+#include <imgui_impl_sdl2.h>
+#include <../imgui/imgui_impl_sdlrenderer2.h>
+
 #include "frontend.hpp"
 #include "chip/ay3_8912.hpp"
 #include "oric.hpp"
@@ -146,6 +150,19 @@ bool Frontend::init_graphics()
     // Initialize renderer color
     SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xff);
     SDL_RenderClear(sdl_renderer);
+
+    // Initialize Dear ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    // Setup ImGui style
+    ImGui::StyleColorsDark();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplSDL2_InitForSDLRenderer(sdl_window, sdl_renderer);
+    ImGui_ImplSDLRenderer2_Init(sdl_renderer);
 
     return true;
 }
@@ -275,12 +292,32 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     SDL_UpdateTexture(oric_texture.texture, nullptr, &pixels[0], oric_texture.width * oric_texture.bpp);
     SDL_RenderCopy(sdl_renderer, oric_texture.texture, nullptr, &oric_texture.render_rect );
     SDL_RenderCopy(sdl_renderer, status_bar.texture, nullptr, &status_bar.render_rect);
+
+    // Start ImGui frame
+    ImGui_ImplSDLRenderer2_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+
+    // Render ImGui window with "Hello world"
+    ImGui::Begin("Hello ImGui");
+    ImGui::Text("Hello world");
+    ImGui::End();
+
+    // Render ImGui
+    ImGui::Render();
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), sdl_renderer);
+
     SDL_RenderPresent(sdl_renderer);
 }
 
 
 void Frontend::close_graphics()
 {
+    // Shutdown ImGui
+    ImGui_ImplSDLRenderer2_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+
     if (sdl_renderer != nullptr) {
         SDL_DestroyRenderer(sdl_renderer);
         sdl_renderer = nullptr;
