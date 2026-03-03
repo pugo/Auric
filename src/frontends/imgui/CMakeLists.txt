@@ -1,0 +1,21 @@
+add_subdirectory(backends)
+
+add_library(frontends_imgui
+        imgui.cpp
+        imgui_draw.cpp
+        imgui_tables.cpp
+        imgui_widgets.cpp
+)
+
+target_include_directories(frontends_imgui
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(frontends_imgui
+        PUBLIC
+        ${SDL2_LIBRARIES}
+        frontends_imgui_backends
+
+)
+

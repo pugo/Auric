@@ -7,13 +7,12 @@ add_library(chip
    wd1793.cpp
 )
 
-target_include_directories(chip PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(chip PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(chip
         PUBLIC
         ${BOOST_LIBRARIES}
-        ${SDL2_LIBRARIES}
+        auric_lib
 )
 
-target_link_libraries(chip PUBLIC ${BOOST_LIBRARIES})
 
