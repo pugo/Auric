@@ -1,4 +1,3 @@
-add_subdirectory(backends)
 
 add_library(frontends_imgui
         imgui.cpp
@@ -9,7 +8,7 @@ add_library(frontends_imgui
 
 target_include_directories(frontends_imgui
         PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        .
 )
 
 target_link_libraries(frontends_imgui

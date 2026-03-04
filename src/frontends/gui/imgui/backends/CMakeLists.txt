@@ -6,7 +6,7 @@ add_library(frontends_imgui_backends
 
 target_include_directories(frontends_imgui_backends
         PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        .
 )
 
 target_link_libraries(frontends_imgui_backends

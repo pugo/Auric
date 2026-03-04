@@ -25,6 +25,9 @@
 
 #include "texture.hpp"
 #include "status_bar.hpp"
+#include <gui.hpp>
+
+#include "frontends/gui/gui.hpp"
 
 class Oric;
 class Memory;
@@ -117,6 +120,7 @@ protected:
     SDL_Window* sdl_window;
     SDL_Renderer* sdl_renderer;
 
+    Gui gui;
     Texture oric_texture;
     StatusBar status_bar;
 

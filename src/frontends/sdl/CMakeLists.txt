@@ -15,6 +15,6 @@ target_link_libraries(frontend_sdl2
         chip
         ${BOOST_LIBRARIES}
         ${SDL2_LIBRARIES}
-        frontends_imgui
+        frontends_gui
 )
 

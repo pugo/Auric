@@ -1,5 +1,4 @@
-
-add_subdirectory(imgui)
+add_subdirectory(gui)
 add_subdirectory(sdl)
 
 add_library(frontend INTERFACE)
