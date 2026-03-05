@@ -2,6 +2,7 @@
 add_library(frontends_imgui
         imgui.cpp
         imgui_draw.cpp
+        imgui_stdlib.cpp
         imgui_tables.cpp
         imgui_widgets.cpp
 )

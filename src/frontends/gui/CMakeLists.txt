@@ -13,7 +13,8 @@ target_include_directories(frontends_gui
 target_link_libraries(frontends_gui
         PUBLIC
         chip
-        ${SDL2_LIBRARIES}
+        frontend
         frontends_imgui
+        ${SDL2_LIBRARIES}
 )
 

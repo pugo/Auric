@@ -20,21 +20,25 @@
 
 #include <SDL.h>
 
+
+class Oric;
+
 class Gui
 {
 public:
-    Gui();
+    Gui(Oric& oric);
     ~Gui() = default;
 
     void init(SDL_Window* sdl_window, SDL_Renderer* sdl_renderer);
     void close();
-    void handle_event(SDL_Event& event);
+    void handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse);
     void render();
 
 private:
+    Oric& oric;
+
     SDL_Window* sdl_window;
     SDL_Renderer* sdl_renderer;
-    bool foo;
 };
 
 

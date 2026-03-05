@@ -20,8 +20,10 @@
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
+#include <imgui_stdlib.h>
+#include "oric.hpp"
 
-Gui::Gui() : foo(false)
+Gui::Gui(Oric& oric) : oric(oric)
 {
 }
 
@@ -51,9 +53,13 @@ void Gui::close()
     ImGui::DestroyContext();
 }
 
-void Gui::handle_event(SDL_Event& event)
+void Gui::handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse)
 {
     ImGui_ImplSDL2_ProcessEvent(&event);
+
+    const ImGuiIO& io = ImGui::GetIO();
+    wanted_key = io.WantCaptureKeyboard;
+    wanted_mouse = io.WantCaptureMouse;
 }
 
 void Gui::render()
@@ -63,14 +69,32 @@ void Gui::render()
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    // Render ImGui window with "Hello world"
-    ImGui::Begin("Hello ImGui");
-    ImGui::Text("I like fistelspricka!");
-    ImGui::Checkbox("Demo Window", &foo);
-    ImGui::End();
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+    ImGui::Begin("Main menu", nullptr, ImGuiWindowFlags_NoMove);
 
-    ImGui::Begin("Tomten");
-    ImGui::Text("Finns inte.");
+    ImGui::Text("Snapshots:");
+    if (ImGui::Button("Save snapshot")) {
+        oric.get_machine().save_snapshot();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Load snapshot")) {
+        oric.get_machine().load_snapshot();
+    }
+
+    ImGui::Text("Machine:");
+    // if (ImGui::Button("Reset")) {
+    //     oric.get_machine().cpu.reset();
+    // }
+    // ImGui::SameLine();
+    if (ImGui::Button("NMI")) {
+        oric.get_machine().cpu->NMI();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Enter debugger")) {
+        oric.get_machine().stop();
+        oric.do_break();
+    }
+
     ImGui::End();
 
     // Render ImGui

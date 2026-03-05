@@ -53,6 +53,8 @@ Frontend::Frontend(Oric& oric) :
     oric(oric),
     sdl_window(nullptr),
     sdl_renderer(nullptr),
+    gui_active(false),
+    gui(oric),
     oric_texture(texture_width, texture_height, texture_bpp),
     status_bar((texture_width * oric.get_config().zoom()) + border_size_horizontal * 2, 16, texture_bpp),
     sound_audio_device_id(),
@@ -208,62 +210,81 @@ bool Frontend::handle_frame()
     SDL_Event event;
 
     while (SDL_PollEvent(&event)) {
-        gui.handle_event(event);
-        switch (event.type)
-        {
-            case SDL_KEYDOWN:
-            case SDL_KEYUP:
+        bool wanted_key, wanted_mouse = false;
+        if (gui_active) {
+            gui.handle_event(event, wanted_key, wanted_mouse);
+        }
+
+        auto scancode = event.key.keysym.scancode;
+
+        // Toggle gui regardless of ImGui.
+        if (event.type == SDL_KEYDOWN) {
+            if (scancode == SDL_SCANCODE_F1) {
+                gui_active = !gui_active;
+            }
+        }
+
+        if (!wanted_key) {
+            switch (event.type) {
+                case SDL_KEYDOWN:
+                case SDL_KEYUP:
+                {
+                    bool special_pressed{false};
+
+                    if (event.type == SDL_KEYDOWN) {
+                        if (event.key.keysym.mod & KMOD_CTRL) {
+                            if (scancode == SDL_SCANCODE_W) {
+                                oric.get_machine().toggle_warp_mode();
+                                special_pressed = true;
+                            }
+
+                            else if (scancode == SDL_SCANCODE_R) {
+                                oric.get_machine().cpu->NMI();
+                                special_pressed = true;
+                            }
+
+                            else if (scancode == SDL_SCANCODE_B) {
+                                oric.get_machine().stop();
+                                oric.do_break();
+                                special_pressed = true;
+                            }
+                        }
+                        else {
+                            if (scancode == SDL_SCANCODE_F2) {
+                                oric.get_machine().save_snapshot();
+                                special_pressed = true;
+                            }
+
+                            else if (scancode == SDL_SCANCODE_F3) {
+                                oric.get_machine().load_snapshot();
+                                special_pressed = true;
+                            }
+                        }
+                    }
+
+                    if (! special_pressed) {
+                        if (!special_pressed) {
+                            auto key = oric_key_map.find(scancode);
+                            if (key != oric_key_map.end()) {
+                                oric.get_machine().key_press(key->second, event.type == SDL_KEYDOWN);
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (!wanted_mouse) {
+            switch (event.type)
             {
-                auto scancode = event.key.keysym.scancode;
-                bool special_pressed{false};
-
-                if (event.type == SDL_KEYDOWN) {
-                    if (event.key.keysym.mod & KMOD_CTRL) {
-                        if (scancode == SDL_SCANCODE_W) {
-                            oric.get_machine().toggle_warp_mode();
-                            special_pressed = true;
-                        }
-
-                        else if (scancode == SDL_SCANCODE_R) {
-                            oric.get_machine().cpu->NMI();
-                            special_pressed = true;
-                        }
-
-                        else if (scancode == SDL_SCANCODE_B) {
-                            oric.get_machine().stop();
-                            oric.do_break();
-                            special_pressed = true;
-                        }
+                case SDL_WINDOWEVENT:
+                    if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                        oric.do_quit();
+                        return false;
                     }
-                    else {
-                        if (scancode == SDL_SCANCODE_F1) {
-                            oric.get_machine().save_snapshot();
-                            special_pressed = true;
-                        }
-
-                        else if (scancode == SDL_SCANCODE_F2) {
-                            oric.get_machine().load_snapshot();
-                            special_pressed = true;
-                        }
-                    }
-                }
-
-                if (! special_pressed) {
-                    if (!special_pressed) {
-                        auto key = oric_key_map.find(scancode);
-                        if (key != oric_key_map.end()) {
-                            oric.get_machine().key_press(key->second, event.type == SDL_KEYDOWN);
-                        }
-                    }
-                }
                 break;
             }
-
-            case SDL_WINDOWEVENT:
-                if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
-                    oric.do_quit();
-                    return false;
-                }
         }
     }
     return true;
@@ -282,7 +303,10 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     SDL_UpdateTexture(oric_texture.texture, nullptr, &pixels[0], oric_texture.width * oric_texture.bpp);
     SDL_RenderCopy(sdl_renderer, oric_texture.texture, nullptr, &oric_texture.render_rect );
     SDL_RenderCopy(sdl_renderer, status_bar.texture, nullptr, &status_bar.render_rect);
-    gui.render();
+
+    if (gui_active) {
+        gui.render();
+    }
 
     SDL_RenderPresent(sdl_renderer);
 }
@@ -315,4 +339,3 @@ void Frontend::close_sdl()
 {
     SDL_Quit(); // Quit all SDL subsystems
 }
-

@@ -104,6 +104,9 @@ public:
      */
     void close_sound() const;
 
+    void snapshot_save() const;
+    void snapshot_load() const;
+
 protected:
     /**
      * Close graphics output.
@@ -120,7 +123,9 @@ protected:
     SDL_Window* sdl_window;
     SDL_Renderer* sdl_renderer;
 
+    bool gui_active;
     Gui gui;
+
     Texture oric_texture;
     StatusBar status_bar;
 
