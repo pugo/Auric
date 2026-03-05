@@ -37,7 +37,7 @@ protected:
         oric = new Oric(config);
         oric->init_machine();
         oric->get_machine().init_cpu();
-        oric->get_machine().reset();
+        oric->get_machine().reset_cpu();
         oric->get_machine().cpu->set_pc(0);
     }
 

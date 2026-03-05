@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
         return 3;
     }
 
-    oric->get_machine().reset();
+    oric->get_machine().reset_cpu();
     oric->run();
 
     return 0;

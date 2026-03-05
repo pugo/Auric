@@ -143,6 +143,10 @@ MOS6522::MOS6522(Machine& a_Machine) :
     state.reset();
 }
 
+void MOS6522::reset()
+{
+    state.reset();
+}
 
 void MOS6522::save_to_snapshot(Snapshot& snapshot)
 {

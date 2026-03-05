@@ -44,6 +44,16 @@ public:
     ~Machine() = default;
 
     /**
+     * Reset the machine.
+     */
+    void reset();
+
+    /**
+     * Reset the CPU.
+     */
+    void reset_cpu();
+
+    /**
      * Init the machine.
      * @param frontend pointer to Frontend object
      */
@@ -78,11 +88,6 @@ public:
      * Import the tape support.
      */
     void init_tape();
-
-    /**
-     * Reset the machine.
-     */
-    void reset() const;
 
     /**
      * Get debug monitor.

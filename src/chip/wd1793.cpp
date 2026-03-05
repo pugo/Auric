@@ -156,6 +156,7 @@ void WD1793::State::reset()
     data_request_counter = 0;
 
     current_track = nullptr;
+    current_sector = nullptr;
 }
 
 void WD1793::State::print() const
@@ -207,6 +208,12 @@ void WD1793::exec(uint8_t cycles)
             drive->data_request_set();
         }
     }
+}
+
+void WD1793::reset()
+{
+    state.reset();
+    state.current_operation = &operation_idle;
 }
 
 uint8_t WD1793::read_byte(uint16_t offset)
@@ -442,4 +449,3 @@ void WD1793::load_from_snapshot(Snapshot& snapshot)
     set_track(state.current_track_number);
     set_sector(state.current_sector_number);
 }
-

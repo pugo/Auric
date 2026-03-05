@@ -174,6 +174,11 @@ public:
     void exec(uint8_t cycles);
 
     /**
+     * Reset controller state.
+     */
+    void reset();
+
+    /**
      * Set drive number.
      * @param drive
      */

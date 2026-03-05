@@ -64,6 +64,8 @@ DiskImage* DriveMicrodrive::get_disk_image()
 
 void DriveMicrodrive::reset()
 {
+    state.reset();
+    wd1793.reset();
 }
 
 void DriveMicrodrive::print_stat()

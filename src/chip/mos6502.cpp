@@ -85,7 +85,7 @@ MOS6502::MOS6502(Machine& a_Machine) :
     V(false),
     B(false),
     D(false),
-    I(false),
+    I(true),
     C(false),
     PC(0),
     SP(0),
@@ -110,7 +110,7 @@ MOS6502::MOS6502(Machine& a_Machine) :
 }
 
 
-void MOS6502::Reset()
+void MOS6502::reset()
 {
     A = 0;
     X = 0;

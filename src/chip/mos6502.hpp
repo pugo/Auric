@@ -95,7 +95,7 @@ public:
     /**
      * Reset the processor.
      */
-    void Reset();
+    void reset();
 
     /**
      * Calculate CPU cycles used by instruction at PC.

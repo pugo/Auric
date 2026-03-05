@@ -41,6 +41,12 @@ public:
     virtual void reset() = 0;
 
     /**
+     * Return true if diskdrive ROM shall be enabled initially.
+     * @return true if diskdrive ROM shall be enabled initially
+     */
+    virtual bool shall_use_diskdrive_rom() = 0;
+
+    /**
      * Insert disk image.
      * @param path path to disk image
      * @return true on success

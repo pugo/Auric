@@ -38,6 +38,12 @@ public:
     void reset() override;
 
     /**
+     * Return true if diskdrive ROM shall be enabled initially.
+     * @return true if diskdrive ROM shall be enabled initially
+     */
+    bool shall_use_diskdrive_rom() override { return false; }
+
+    /**
      * Insert disk image.
      * @param path path to disk image
      * @return true on success

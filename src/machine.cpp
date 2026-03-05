@@ -86,6 +86,27 @@ Machine::Machine(Oric& oric) :
     }
 }
 
+void Machine::reset()
+{
+    frontend->lock_audio();
+    init_ram();
+    mos_6522->reset();
+    ay3->reset();
+    disk->reset();
+    disk_rom_enabled = disk->shall_use_diskdrive_rom();
+    oric_rom_enabled = !disk_rom_enabled;
+
+    tape->reset();
+    cpu->reset();
+
+    frontend->unlock_audio();
+}
+
+void Machine::reset_cpu()
+{
+    cpu->reset();
+}
+
 void Machine::init(Frontend* frontend)
 {
     this->frontend = frontend;
@@ -186,12 +207,6 @@ void Machine::init_tape()
         tape = std::make_unique<TapeBlank>();
     }
 }
-
-void Machine::reset() const
-{
-    cpu->Reset();
-}
-
 
 void Machine::run(Oric* oric)
 {

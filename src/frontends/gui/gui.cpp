@@ -82,10 +82,10 @@ void Gui::render()
     }
 
     ImGui::Text("Machine:");
-    // if (ImGui::Button("Reset")) {
-    //     oric.get_machine().cpu.reset();
-    // }
-    // ImGui::SameLine();
+    if (ImGui::Button("Reset")) {
+        oric.get_machine().reset();
+    }
+    ImGui::SameLine();
     if (ImGui::Button("NMI")) {
         oric.get_machine().cpu->NMI();
     }

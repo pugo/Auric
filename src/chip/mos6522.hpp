@@ -146,6 +146,11 @@ public:
     ~MOS6522() = default;
 
     /**
+     * Reset the MOS 6522..
+     */
+    void reset();
+
+    /**
      * Execute one clock cycle.
      */
     void exec(uint8_t cycles);
