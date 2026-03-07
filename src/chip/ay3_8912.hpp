@@ -170,7 +170,7 @@ public:
         return false;
     }
 
-    void set_period(uint16_t value)
+    void set_period(uint32_t value)
     {
         period = value;
     }
