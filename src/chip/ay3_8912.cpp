@@ -483,27 +483,93 @@ void AY3_8912::update_state_callback(Machine& machine)
 {
     machine.ay3->update_state();
 }
+//
+// void AY3_8912::audio_callback(void* user_data, SDL_AudioStream* raw_buffer, int additional_amount, int total_amount)
+// {
+//     AY3_8912* ay = reinterpret_cast<AY3_8912*>(user_data);
+//     uint16_t* buffer = (uint16_t*)raw_buffer;
+//     uint16_t samples = additional_amount/4;
+//
+//     uint32_t current_sample = 0;
+//
+//     if (ay->machine.warpmode_on) return;
+//
+//
+//     // 1. Skapa en temporär buffer för din emulator-data
+//     // (Använd en fast buffer eller SDL_stack_alloc för prestanda)
+//     Uint8 *buf = (Uint8 *)SDL_malloc(additional_amount);
+//
+//     if (buf) {
+//         // 2. Generera ditt ljud här (precis som du gjorde i SDL2)
+//         // FillEmulatorAudio(userdata, buf, additional_amount);
+//         for (size_t sample = 0; sample < samples; sample++) {
+//             uint32_t current_cycle = ay->state.cycle_count >> cycle_shift;
+//
+//             ay->state.exec_register_changes(current_cycle);
+//             ay->state.exec_audio(current_cycle);
+//
+//             buf[current_sample++] = ay->state.audio_out;
+//             buf[current_sample++] = ay->state.audio_out;
+//
+//             ay->state.cycle_count += ay->state.cycles_per_sample;
+//         }
+//
+//         // 3. Skicka datan till strömmen
+//         SDL_PutAudioStreamData(stream, buf, additional_amount);
+//
+//         SDL_free(buf);
+//     }
+//
+//     ay->state.trim_register_changes();
+//
+//     ay->state.cycle_count -= ay->state.last_cycle << cycle_shift;
+//     ay->state.last_cycle = 0;
+//
+//     ay->state.changes.new_log_cycle = ay->state.cycle_count >> cycle_shift;
+//     ay->state.changes.update_log_cycle = true;
+// }
 
-void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
+void AY3_8912::audio_callback(void* user_data,
+                              SDL_AudioStream* stream,
+                              int additional_amount,
+                              int total_amount)
 {
     AY3_8912* ay = reinterpret_cast<AY3_8912*>(user_data);
-    uint16_t* buffer = (uint16_t*)raw_buffer;
-    uint16_t samples = len/4;
 
-    uint32_t current_sample = 0;
+    if (ay->machine.warpmode_on) {
+        return;
+    }
 
-    if (ay->machine.warpmode_on) return;
+    // S16LE stereo = 4 bytes per sample frame
+    const int bytes_per_frame = sizeof(int16_t) * 2;
+    const int frames = additional_amount / bytes_per_frame;
 
-    for (size_t sample = 0; sample < samples; sample++) {
+    if (frames <= 0) {
+        return;
+    }
+
+    std::vector<int16_t> buf(frames * 2); // stereo: L,R,L,R,...
+
+    int out = 0;
+    for (int i = 0; i < frames; ++i) {
         uint32_t current_cycle = ay->state.cycle_count >> cycle_shift;
 
         ay->state.exec_register_changes(current_cycle);
         ay->state.exec_audio(current_cycle);
 
-        buffer[current_sample++] = ay->state.audio_out;
-        buffer[current_sample++] = ay->state.audio_out;
+        // Anpassa detta beroende på range i audio_out.
+        // Här antar jag att audio_out är 0..255 och mappar till signed 16-bit.
+        const int16_t sample =
+            static_cast<int16_t>((static_cast<int>(ay->state.audio_out) - 128) << 8);
+
+        buf[out++] = sample; // left
+        buf[out++] = sample; // right
 
         ay->state.cycle_count += ay->state.cycles_per_sample;
+    }
+
+    if (!SDL_PutAudioStreamData(stream, buf.data(), frames * bytes_per_frame)) {
+        // valfritt: logga SDL_GetError()
     }
 
     ay->state.trim_register_changes();

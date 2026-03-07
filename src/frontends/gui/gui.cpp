@@ -18,8 +18,8 @@
 #include "gui.hpp"
 
 #include <imgui.h>
-#include <imgui_impl_sdl2.h>
-#include <imgui_impl_sdlrenderer2.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
 #include <imgui_stdlib.h>
 #include "oric.hpp"
 
@@ -42,20 +42,20 @@ void Gui::init(SDL_Window* sdl_window, SDL_Renderer* sdl_renderer)
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
-    ImGui_ImplSDL2_InitForSDLRenderer(sdl_window, sdl_renderer);
-    ImGui_ImplSDLRenderer2_Init(sdl_renderer);
+    ImGui_ImplSDL3_InitForSDLRenderer(sdl_window, sdl_renderer);
+    ImGui_ImplSDLRenderer3_Init(sdl_renderer);
 }
 
 void Gui::close()
 {
-    ImGui_ImplSDLRenderer2_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
+    ImGui_ImplSDLRenderer3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
 }
 
 void Gui::handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse)
 {
-    ImGui_ImplSDL2_ProcessEvent(&event);
+    ImGui_ImplSDL3_ProcessEvent(&event);
 
     const ImGuiIO& io = ImGui::GetIO();
     wanted_key = io.WantCaptureKeyboard;
@@ -65,8 +65,8 @@ void Gui::handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse)
 void Gui::render()
 {
     // Start ImGui frame
-    ImGui_ImplSDLRenderer2_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
+    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
     ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
@@ -99,5 +99,5 @@ void Gui::render()
 
     // Render ImGui
     ImGui::Render();
-    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), sdl_renderer);
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), sdl_renderer);
 }

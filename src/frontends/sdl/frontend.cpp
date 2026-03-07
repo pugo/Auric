@@ -18,9 +18,8 @@
 #include <boost/log/trivial.hpp>
 #include <unordered_map>
 
-#include <SDL_hints.h>
-#include <SDL_image.h>
-#include <SDL_scancode.h>
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 
 #include "frontend.hpp"
 #include "chip/ay3_8912.hpp"
@@ -57,7 +56,7 @@ Frontend::Frontend(Oric& oric) :
     gui(oric),
     oric_texture(texture_width, texture_height, texture_bpp),
     status_bar((texture_width * oric.get_config().zoom()) + border_size_horizontal * 2, 16, texture_bpp),
-    sound_audio_device_id(),
+    sound_audio_stream(nullptr),
     audio_locked(false)
 {
     for (uint8_t i = 0; i < 64; ++i) {
@@ -78,20 +77,20 @@ bool Frontend::init_graphics()
     SDL_SetHint(SDL_HINT_APP_NAME, window_title.c_str());
 
     // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         BOOST_LOG_TRIVIAL(error) << "SDL could not initialize! SDL_Error: " << SDL_GetError();
         return false;
     }
 
-    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
-        BOOST_LOG_TRIVIAL(error) << "Could not initialize sdl2_image: " << IMG_GetError();
-        return false;
-    }
+    // if (!(IMG_Init(IMG_isPNG))) {
+    //     BOOST_LOG_TRIVIAL(error) << "Could not initialize sdl3_image: " << IMG_GetError();
+    //     return false;
+    // }
 
     // Set texture filtering to linear
-    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
-        BOOST_LOG_TRIVIAL(warning) << "Linear texture filtering not enabled!";
-    }
+    // if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear")) {
+    //     BOOST_LOG_TRIVIAL(warning) << "Linear texture filtering not enabled!";
+    // }
 
     auto zoom = oric.get_config().zoom();
     BOOST_LOG_TRIVIAL(debug) << "Setting zoom to: " << static_cast<int>(zoom);
@@ -107,8 +106,7 @@ bool Frontend::init_graphics()
     status_bar.render_rect.x = 0;
     status_bar.render_rect.y = height - status_bar.render_rect.h;
 
-    sdl_window = SDL_CreateWindow(window_title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                  width, height, SDL_WINDOW_SHOWN);
+    sdl_window = SDL_CreateWindow(window_title.c_str(), width, height, 0);
     if (sdl_window == nullptr) {
         BOOST_LOG_TRIVIAL(error) << "Window could not be created! SDL_Error: " << SDL_GetError();
         return false;
@@ -120,11 +118,12 @@ bool Frontend::init_graphics()
         SDL_Surface* icon = IMG_Load(path.c_str());
         if (icon) {
             SDL_SetWindowIcon(sdl_window, icon);
+            SDL_DestroySurface(icon);
         }
     }
 
     // Create renderer for window
-    sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
+    sdl_renderer = SDL_CreateRenderer(sdl_window, nullptr);
 
     if (sdl_renderer == nullptr) {
         BOOST_LOG_TRIVIAL(error) << "Renderer could not be created! SDL Error: " << SDL_GetError();
@@ -160,40 +159,35 @@ bool Frontend::init_sound()
 {
     BOOST_LOG_TRIVIAL(debug) << "Initializing sound..";
 
-    if (SDL_Init(SDL_INIT_AUDIO) < 0)
+    if (!SDL_Init(SDL_INIT_AUDIO))
     {
         BOOST_LOG_TRIVIAL(error) << "Error: failed initializing SDL: " << SDL_GetError();
         return false;
     }
 
-    SDL_AudioSpec audio_spec_want, audio_spec;
-    SDL_memset(&audio_spec_want, 0, sizeof(audio_spec_want));
+    SDL_AudioSpec audio_spec_want;
+    SDL_zero(audio_spec_want);
 
     audio_spec_want.freq     = 44100;
-    audio_spec_want.format   = AUDIO_S16SYS;
+    audio_spec_want.format   = SDL_AUDIO_S16LE;
     audio_spec_want.channels = 2;
-    audio_spec_want.samples  = 2048;
     AY3_8912* ay3 = oric.get_machine().ay3.get();
-    audio_spec_want.callback = AY3_8912::audio_callback;
-    audio_spec_want.userdata = (void*) ay3;
 
-    sound_audio_device_id = SDL_OpenAudioDevice(nullptr, 0, &audio_spec_want, &audio_spec, 0);
+    sound_audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &audio_spec_want,
+                                                    AY3_8912::audio_callback, (void*) ay3);
 
-    if (!sound_audio_device_id)
+    if (!sound_audio_stream)
     {
-        BOOST_LOG_TRIVIAL(error) << "Error: creating SDL audio device: " << SDL_GetError();
+        BOOST_LOG_TRIVIAL(error) << "Error: creating SDL audio stream: " << SDL_GetError();
         return false;
     }
 
-    if (audio_spec_want.format != audio_spec.format) {
-        BOOST_LOG_TRIVIAL(error) << "Failed to get the desired AudioSpec";
+    SDL_AudioSpec audio_spec;
+    if (SDL_GetAudioStreamFormat(sound_audio_stream, &audio_spec, nullptr)) {
+        BOOST_LOG_TRIVIAL(debug) << "Freq: " << std::dec << (int) audio_spec.freq;
+        BOOST_LOG_TRIVIAL(debug) << "format: " << (int) audio_spec.format;
+        BOOST_LOG_TRIVIAL(debug) << "channels: " << (int) audio_spec.channels;
     }
-
-    BOOST_LOG_TRIVIAL(debug) << "Freq: " << std::dec << (int) audio_spec.freq;
-    BOOST_LOG_TRIVIAL(debug) << "Silence: " << (int) audio_spec.silence;
-    BOOST_LOG_TRIVIAL(debug) << "format: " << (int) audio_spec.format;
-    BOOST_LOG_TRIVIAL(debug) << "channels: " << (int) audio_spec.channels;
-    BOOST_LOG_TRIVIAL(debug) << "samples: " << (int) audio_spec.samples;
 
     return true;
 }
@@ -201,7 +195,11 @@ bool Frontend::init_sound()
 
 void Frontend::pause_sound(bool pause_on)
 {
-    SDL_PauseAudioDevice(sound_audio_device_id, pause_on ? 1 : 0);
+    if (pause_on) {
+        SDL_PauseAudioStreamDevice(sound_audio_stream);
+    } else {
+        SDL_ResumeAudioStreamDevice(sound_audio_stream);
+    }
 }
 
 
@@ -210,15 +208,17 @@ bool Frontend::handle_frame()
     SDL_Event event;
 
     while (SDL_PollEvent(&event)) {
-        bool wanted_key, wanted_mouse = false;
+        bool wanted_key = false;
+        bool wanted_mouse = false;
+
         if (gui_active) {
             gui.handle_event(event, wanted_key, wanted_mouse);
         }
 
-        auto scancode = event.key.keysym.scancode;
+        auto scancode = event.key.scancode;
 
         // Toggle gui regardless of ImGui.
-        if (event.type == SDL_KEYDOWN) {
+        if (event.type == SDL_EVENT_KEY_DOWN) {
             if (scancode == SDL_SCANCODE_F1) {
                 gui_active = !gui_active;
             }
@@ -226,13 +226,13 @@ bool Frontend::handle_frame()
 
         if (!wanted_key) {
             switch (event.type) {
-                case SDL_KEYDOWN:
-                case SDL_KEYUP:
+                case SDL_EVENT_KEY_DOWN:
+                case SDL_EVENT_KEY_UP:
                 {
                     bool special_pressed{false};
 
-                    if (event.type == SDL_KEYDOWN) {
-                        if (event.key.keysym.mod & KMOD_CTRL) {
+                    if (event.type == SDL_EVENT_KEY_DOWN) {
+                        if (event.key.mod & SDL_KMOD_CTRL) {
                             if (scancode == SDL_SCANCODE_W) {
                                 oric.get_machine().toggle_warp_mode();
                                 special_pressed = true;
@@ -266,7 +266,7 @@ bool Frontend::handle_frame()
                         if (!special_pressed) {
                             auto key = oric_key_map.find(scancode);
                             if (key != oric_key_map.end()) {
-                                oric.get_machine().key_press(key->second, event.type == SDL_KEYDOWN);
+                                oric.get_machine().key_press(key->second, event.type == SDL_EVENT_KEY_DOWN);
                             }
                         }
                     }
@@ -278,11 +278,9 @@ bool Frontend::handle_frame()
         if (!wanted_mouse) {
             switch (event.type)
             {
-                case SDL_WINDOWEVENT:
-                    if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
-                        oric.do_quit();
-                        return false;
-                    }
+                case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                    oric.do_quit();
+                    return false;
                 break;
             }
         }
@@ -301,8 +299,8 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     }
 
     SDL_UpdateTexture(oric_texture.texture, nullptr, &pixels[0], oric_texture.width * oric_texture.bpp);
-    SDL_RenderCopy(sdl_renderer, oric_texture.texture, nullptr, &oric_texture.render_rect );
-    SDL_RenderCopy(sdl_renderer, status_bar.texture, nullptr, &status_bar.render_rect);
+    SDL_RenderTexture(sdl_renderer, oric_texture.texture, nullptr, &oric_texture.render_rect );
+    SDL_RenderTexture(sdl_renderer, status_bar.texture, nullptr, &status_bar.render_rect);
 
     if (gui_active) {
         gui.render();
@@ -330,8 +328,9 @@ void Frontend::close_graphics()
 
 void Frontend::close_sound() const
 {
-    SDL_PauseAudioDevice(sound_audio_device_id, true);
-    SDL_CloseAudioDevice(sound_audio_device_id);
+    if (sound_audio_stream) {
+        SDL_DestroyAudioStream(sound_audio_stream);
+    }
 }
 
 

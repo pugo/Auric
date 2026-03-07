@@ -20,6 +20,7 @@
 
 #include <print>
 #include <boost/circular_buffer.hpp>
+#include <SDL3/SDL_audio.h>
 
 class Snapshot;
 class Machine;
@@ -401,7 +402,7 @@ public:
      * @param raw_buffer buffer to fill with data
      * @param len buffer length
      */
-    static void audio_callback(void* user_data, uint8_t* raw_buffer, int len);
+    static void audio_callback(void* user_data, SDL_AudioStream* raw_buffer, int additional_amount, int total_amount);
 
 //    void write_register_change(RegisterChange& register_change);
 

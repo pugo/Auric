@@ -21,7 +21,9 @@
 #include <sstream>
 #include <thread>
 
-#include <SDL_image.h>
+#include <SDL3/SDL_surface.h>
+#include <SDL3_image/SDL_image.h>
+
 #include <boost/log/trivial.hpp>
 
 #include "frontend.hpp"
@@ -79,12 +81,12 @@ StatusBar::~StatusBar()
     stop_thread();
 
     if (front_surface) {
-        SDL_FreeSurface(front_surface);
+        SDL_DestroySurface(front_surface);
         front_surface = nullptr;
     }
 
     if (back_surface) {
-        SDL_FreeSurface(back_surface);
+        SDL_DestroySurface(back_surface);
         back_surface = nullptr;
     }
 
@@ -114,15 +116,15 @@ bool StatusBar::init(SDL_Renderer* sdl_renderer, std::filesystem::path font_path
         return false;
     }
 
-    front_surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_ARGB8888);
-    back_surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_ARGB8888);
+    front_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_ARGB8888);
+    back_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_ARGB8888);
     if (front_surface == nullptr || back_surface == nullptr) {
         return false;
     }
 
     // Clear front surface to opaque black
-    SDL_FillRect(front_surface, NULL, 0xff000000);
-    SDL_FillRect(back_surface, NULL, 0xff000000);
+    SDL_FillSurfaceRect(front_surface, NULL, 0xff000000);
+    SDL_FillSurfaceRect(back_surface, NULL, 0xff000000);
 
     texture = SDL_CreateTexture(sdl_renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
     if (!texture) {
@@ -262,7 +264,7 @@ void StatusBar::thread_main()
         }
 
         if (update_requested) {
-            SDL_FillRect(back_surface, NULL, 0xff000000);
+            SDL_FillSurfaceRect(back_surface, NULL, 0xff000000);
             update_requested = false;
             lock.unlock();
 

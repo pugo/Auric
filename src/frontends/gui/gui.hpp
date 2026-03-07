@@ -18,7 +18,7 @@
 #ifndef FRONTENDS_GUI_GUI_H
 #define FRONTENDS_GUI_GUI_H
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 
 class Oric;

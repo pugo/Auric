@@ -14,7 +14,7 @@ target_include_directories(frontends_imgui
 
 target_link_libraries(frontends_imgui
         PUBLIC
-        ${SDL2_LIBRARIES}
+        ${SDL3_LIBRARIES}
         frontends_imgui_backends
 
 )

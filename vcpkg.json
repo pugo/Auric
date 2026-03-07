@@ -5,8 +5,8 @@
     "boost-circular-buffer",
     "boost-log",
     "boost-program-options",
-    "sdl2",
-    "sdl2-image",
+    "sdl3",
+    "sdl3-image",
     "yaml-cpp"
   ]
 }

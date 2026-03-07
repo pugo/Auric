@@ -20,8 +20,8 @@
 
 #include <vector>
 
-#include <SDL.h>
-#include <SDL_audio.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_audio.h>
 
 #include "texture.hpp"
 #include "status_bar.hpp"
@@ -66,7 +66,7 @@ public:
      */
     virtual void lock_audio() {
         if (! audio_locked) {
-            SDL_LockAudioDevice(sound_audio_device_id);
+            SDL_LockAudioStream(sound_audio_stream);
             audio_locked = true;
         }
     }
@@ -76,7 +76,7 @@ public:
      */
     virtual void unlock_audio() {
         if (audio_locked) {
-            SDL_UnlockAudioDevice(sound_audio_device_id);
+            SDL_UnlockAudioStream(sound_audio_stream);
             audio_locked = false;
         }
     }
@@ -131,7 +131,7 @@ protected:
 
     std::vector<uint8_t> status_pixels;
 
-    SDL_AudioDeviceID sound_audio_device_id;
+    SDL_AudioStream* sound_audio_stream;
     bool audio_locked;
 };
 

@@ -18,7 +18,7 @@
 #ifndef FRONTENDS_SDL_TEXTURE_H
 #define FRONTENDS_SDL_TEXTURE_H
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 
 class Texture
@@ -34,7 +34,7 @@ public:
     const uint8_t bpp;
 
     SDL_Texture* texture;
-    SDL_Rect render_rect;
+    SDL_FRect render_rect;
 };
 
 #endif // FRONTENDS_SDL_TEXTURE_H

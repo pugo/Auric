@@ -22,8 +22,7 @@
 #include <filesystem>
 #include <memory>
 #include <thread>
-#include <SDL.h>
-#include <SDL_audio.h>
+#include <SDL3/SDL.h>
 #include <atomic>
 #include <mutex>
 #include <optional>
