@@ -189,7 +189,7 @@ The timeline is something like:
 * 2023: AY3-8912 sound
 * 2024: Cycle bug fixing, new monitor, blink mode, snapshots
 * 2025: Satus bar, new tape loading, zoom
-* 2026: Microdisk loading, renaming project
+* 2026: Microdisk loading, renaming project, moved to SDL3
 
 
 ## Contribution

@@ -14,12 +14,12 @@ else ()
     message("Not using vcpkg")
 
     find_package(Boost 1.71.0 COMPONENTS program_options log)
-    find_package(SDL3 REQUIRED)
+    find_package(SDL3 CONFIG REQUIRED)
     find_package(SDL3_image REQUIRED)
     find_package(yaml-cpp REQUIRED)
 
     set(BOOST_LIBRARIES ${Boost_LIBRARIES})
-    set(SDL3_LIBRARIES ${SDL3_LIBRARIES} ${SDL3_IMAGE_LIBRARIES})
+    set(SDL3_LIBRARIES SDL3::SDL3 SDL3_image::SDL3_image)
 endif ()
 
 add_subdirectory(chip)
