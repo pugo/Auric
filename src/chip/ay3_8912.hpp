@@ -412,6 +412,7 @@ public:
 private:
     Machine& machine;
     SoundState state;
+    std::vector<int16_t> audio_buffer;
 };
 
 #endif // AY3_8912_H

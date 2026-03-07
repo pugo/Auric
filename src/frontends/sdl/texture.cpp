@@ -24,7 +24,7 @@ Texture::Texture(uint16_t width, uint16_t height, uint8_t bpp) :
     texture(nullptr),
     render_rect()
 {
-    render_rect = {0, 0, width, height};
+    render_rect = {0.f, 0.0f, static_cast<float>(width), static_cast<float>(height)};
 }
 
 bool Texture::create_texture(SDL_Renderer* sdl_renderer)
@@ -38,6 +38,6 @@ bool Texture::create_texture(SDL_Renderer* sdl_renderer)
 
 void Texture::set_render_zoom(uint8_t zoom)
 {
-    render_rect = {0, 0, width * zoom, height * zoom};
+    render_rect = {0.0f, 0.0f, static_cast<float>(width * zoom), static_cast<float>(height * zoom)};
 }
 
