@@ -18,8 +18,9 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
-#include <memory>
 #include <chrono>
+#include <filesystem>
+#include <memory>
 #include <optional>
 
 #include "chip/mos6502.hpp"
@@ -33,7 +34,7 @@
 #include "disk/drive.hpp"
 
 class Oric;
-class Frontend;
+class FileDialogs;
 class AY3_8912;
 
 
@@ -57,7 +58,7 @@ public:
      * Init the machine.
      * @param frontend pointer to Frontend object
      */
-    void init(Frontend* frontend);
+    void init(FileDialogs* frontend);
 
     /**
      * Init the RAM.
@@ -177,6 +178,10 @@ public:
      * @return true if warp mode is on
      */
     bool toggle_warp_mode();
+
+    void insert_tape(std::filesystem::path path);
+
+    void insert_disk(std::filesystem::path path);
 
     /**
      * Set whether to disassemble executed instructions.
@@ -303,7 +308,7 @@ public:
     bool oric_rom_enabled;
     bool disk_rom_enabled;
 
-    Frontend* frontend;
+    FileDialogs* frontend;
     bool warpmode_on;
 
 protected:

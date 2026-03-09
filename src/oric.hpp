@@ -24,7 +24,7 @@
 #include "machine.hpp"
 #include "config.hpp"
 
-class Frontend;
+class FileDialogs;
 
 class Oric
 {
@@ -56,10 +56,16 @@ public:
     Config& get_config() { return config; }
 
     /**
-     * Ger current machine.
+     * Get current machine.
      * @return reference to machine
      */
     Machine& get_machine() { return *machine; }
+
+    /**
+     * Get frontend.
+     * @return reference to frontend
+     */
+    FileDialogs& get_frontend() { return *frontend; }
 
     /**
      * Run Oric.
@@ -82,7 +88,7 @@ protected:
 
     Config& config;
     State state;
-    std::unique_ptr<Frontend> frontend;
+    std::unique_ptr<FileDialogs> frontend;
     std::unique_ptr<Machine> machine;
     std::string last_command;
     uint16_t last_address;

@@ -18,6 +18,7 @@
 #ifndef FRONTENDS_SDL_FRONTEND_H
 #define FRONTENDS_SDL_FRONTEND_H
 
+#include <filesystem>
 #include <vector>
 
 #include <SDL3/SDL.h>
@@ -31,15 +32,15 @@ class Oric;
 class Memory;
 
 
-class Frontend
+class FileDialogs
 {
 public:
     static const uint8_t texture_width = 240;
     static const uint16_t texture_height = 224;
     static const uint8_t texture_bpp = 4;
 
-    explicit Frontend(Oric& oric);
-    ~Frontend();
+    explicit FileDialogs(Oric& oric);
+    ~FileDialogs();
 
     /**
      * Initialize graphics output.
@@ -97,13 +98,12 @@ public:
      */
     virtual StatusBar& get_status_bar() { return gui.status_bar(); }
 
+    virtual std::optional<std::filesystem::path> select_file(const std::string& title);
+
     /**
      * Close sound.
      */
     void close_sound() const;
-
-    void snapshot_save() const;
-    void snapshot_load() const;
 
 protected:
     /**

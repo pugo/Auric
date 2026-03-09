@@ -20,6 +20,7 @@
 
 #include <SDL3/SDL.h>
 
+#include "file_dialog.hpp"
 #include "frontend.hpp"
 #include "frontends/gui/status_bar.hpp"
 
@@ -50,7 +51,7 @@ constexpr std::string window_title = "Auric";
 constexpr std::string window_icon_name = "window_icon.png";
 
 
-Frontend::Frontend(Oric& oric) :
+FileDialogs::FileDialogs(Oric& oric) :
     oric(oric),
     sdl_window(nullptr),
     sdl_renderer(nullptr),
@@ -66,13 +67,13 @@ Frontend::Frontend(Oric& oric) :
     }
 }
 
-Frontend::~Frontend()
+FileDialogs::~FileDialogs()
 {
     close_graphics();
     close_sdl();
 }
 
-bool Frontend::init_graphics()
+bool FileDialogs::init_graphics()
 {
     SDL_SetHint(SDL_HINT_APP_NAME, window_title.c_str());
 
@@ -145,7 +146,7 @@ bool Frontend::init_graphics()
 }
 
 
-bool Frontend::init_sound()
+bool FileDialogs::init_sound()
 {
     BOOST_LOG_TRIVIAL(debug) << "Initializing sound..";
 
@@ -183,7 +184,7 @@ bool Frontend::init_sound()
 }
 
 
-void Frontend::pause_sound(bool pause_on)
+void FileDialogs::pause_sound(bool pause_on)
 {
     if (pause_on) {
         SDL_PauseAudioStreamDevice(sound_audio_stream);
@@ -193,7 +194,7 @@ void Frontend::pause_sound(bool pause_on)
 }
 
 
-bool Frontend::handle_frame()
+bool FileDialogs::handle_frame()
 {
     SDL_Event event;
 
@@ -276,7 +277,7 @@ bool Frontend::handle_frame()
 }
 
 
-void Frontend::render_graphics(std::vector<uint8_t>& pixels)
+void FileDialogs::render_graphics(std::vector<uint8_t>& pixels)
 {
     SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xff);
     SDL_RenderClear(sdl_renderer);
@@ -289,7 +290,37 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 }
 
 
-void Frontend::close_graphics()
+void SDLCALL open_file_callback(void *userdata, const char *const *filelist, int filter)
+{
+    if (!filelist) {
+        printf("No file selected\n");
+        return;
+    }
+
+    printf("Selected files:\n");
+
+    for (int i = 0; filelist[i]; i++) {
+        printf("  %s\n", filelist[i]);
+    }
+}
+
+
+std::optional<std::filesystem::path> FileDialogs::select_file(const std::string& title)
+{
+    auto result = FileSelectDialog::open(sdl_window, {"tap", "dsk", "rom"});
+    return result;
+}
+
+
+void FileDialogs::close_sound() const
+{
+    if (sound_audio_stream) {
+        SDL_DestroyAudioStream(sound_audio_stream);
+    }
+}
+
+
+void FileDialogs::close_graphics()
 {
     gui.close();
 
@@ -305,15 +336,8 @@ void Frontend::close_graphics()
 }
 
 
-void Frontend::close_sound() const
-{
-    if (sound_audio_stream) {
-        SDL_DestroyAudioStream(sound_audio_stream);
-    }
-}
-
-
-void Frontend::close_sdl()
+void FileDialogs::close_sdl()
 {
     SDL_Quit(); // Quit all SDL subsystems
 }
+

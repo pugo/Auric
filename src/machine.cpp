@@ -63,7 +63,7 @@ Machine::Machine(Oric& oric) :
     mos_6522(nullptr),
     ay3(nullptr),
     frontend(nullptr),
-    ula(*this, memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
+    ula(*this, memory, FileDialogs::texture_width, FileDialogs::texture_height, FileDialogs::texture_bpp),
     oric(oric),
     monitor(*this, Machine::read_byte),
     memory(oric_ram_size),
@@ -107,7 +107,7 @@ void Machine::reset_cpu()
     cpu->reset();
 }
 
-void Machine::init(Frontend* frontend)
+void Machine::init(FileDialogs* frontend)
 {
     this->frontend = frontend;
     init_ram();
@@ -357,6 +357,44 @@ bool Machine::toggle_warp_mode()
 
     BOOST_LOG_TRIVIAL(info) << "Warp mode: " << (warpmode_on ? "on" : "off");
     return warpmode_on;
+}
+
+void Machine::insert_tape(std::filesystem::path path)
+{
+    BOOST_LOG_TRIVIAL(info) << "Loading tape from: " << path.string();
+
+    if (! std::filesystem::exists(path)) {
+        BOOST_LOG_TRIVIAL(error) << "Tape file not found";
+        frontend->get_status_bar().show_text_for("Tape file not found", 2s);
+        tape = std::make_unique<TapeBlank>();
+    }
+
+    tape = std::make_unique<TapeTap>(*mos_6522, path);
+    if (!tape->init()) {
+        frontend->get_status_bar().show_text_for("Failed to load tape", 2s);
+    }
+
+    frontend->get_status_bar().show_text_for("Tape inserted", 2s);
+}
+
+void Machine::insert_disk(std::filesystem::path path)
+{
+    BOOST_LOG_TRIVIAL(info) << "Loading disk from: " << path.string();
+
+    if (! std::filesystem::exists(path)) {
+        BOOST_LOG_TRIVIAL(error) << "Disk file not found";
+        frontend->get_status_bar().show_text_for("Disk file not found", 2s);
+    }
+
+    disk = std::make_unique<DriveMicrodrive>(*this);
+    if (!disk->insert_disk(path)) {
+        BOOST_LOG_TRIVIAL(info) << "Failed to load disk image";
+        return;
+    }
+
+    BOOST_LOG_TRIVIAL(info) << "Starting disk drive";
+
+    frontend->get_status_bar().show_text_for("Disk inserted", 2s);
 }
 
 void Machine::PrintStat()
