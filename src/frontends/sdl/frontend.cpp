@@ -474,8 +474,6 @@ void Frontend::close_graphics()
         SDL_GL_MakeCurrent(sdl_window, gl_context);
     }
 
-    gui.close();
-
     oric_texture.destroy_texture();
 
     if (gl_vbo != 0) {
@@ -490,6 +488,9 @@ void Frontend::close_graphics()
         glDeleteProgram(gl_program);
         gl_program = 0;
     }
+
+    gui.close();
+
     if (gl_context != nullptr) {
         SDL_GL_DestroyContext(gl_context);
         gl_context = nullptr;

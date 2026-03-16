@@ -66,12 +66,6 @@ void Gui::close()
 
 void Gui::handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse)
 {
-    if (!initialized) {
-        wanted_key = false;
-        wanted_mouse = false;
-        return;
-    }
-
     ImGui_ImplSDL3_ProcessEvent(&event);
 
     const ImGuiIO& io = ImGui::GetIO();
@@ -81,10 +75,6 @@ void Gui::handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse)
 
 void Gui::render()
 {
-    if (!initialized) {
-        return;
-    }
-
     // Start ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
