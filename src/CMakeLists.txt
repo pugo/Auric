@@ -5,6 +5,7 @@ if (DEFINED CMAKE_TOOLCHAIN_FILE)
 
     find_package(Boost REQUIRED COMPONENTS log program_options circular_buffer)
     find_package(SDL3 CONFIG REQUIRED)
+    find_package(OpenGL REQUIRED)
     find_package(yaml-cpp CONFIG REQUIRED)
 
     set(BOOST_LIBRARIES Boost::log Boost::program_options Boost::circular_buffer)
@@ -14,6 +15,7 @@ else ()
 
     find_package(Boost 1.71.0 COMPONENTS program_options log)
     find_package(SDL3 CONFIG REQUIRED)
+    find_package(OpenGL REQUIRED)
     find_package(yaml-cpp REQUIRED)
 
     set(BOOST_LIBRARIES ${Boost_LIBRARIES})

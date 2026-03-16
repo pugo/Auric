@@ -19,6 +19,7 @@
 #define FRONTENDS_GUI_GUI_H
 
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_opengl.h>
 
 #include "frontends/gui/status_bar.hpp"
 
@@ -30,7 +31,7 @@ public:
     Gui(Oric& oric);
     ~Gui() = default;
 
-    void init(SDL_Window* sdl_window, SDL_Renderer* sdl_renderer);
+    void init(SDL_Window* sdl_window, SDL_GLContext gl_context);
     void close();
     void handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse);
     void render();
@@ -43,11 +44,12 @@ private:
     Oric& oric;
 
     SDL_Window* sdl_window;
-    SDL_Renderer* sdl_renderer;
+    SDL_GLContext gl_context;
 
     StatusBar _status_bar;
 
     bool show_gui{false};
+    bool initialized{false};
 };
 
 

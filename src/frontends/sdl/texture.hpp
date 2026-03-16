@@ -18,6 +18,7 @@
 #ifndef FRONTENDS_SDL_TEXTURE_H
 #define FRONTENDS_SDL_TEXTURE_H
 
+#include <cstdint>
 #include <SDL3/SDL.h>
 
 
@@ -26,14 +27,16 @@ class Texture
 public:
     Texture(uint16_t width, uint16_t height, uint8_t bpp);
 
-    bool create_texture(SDL_Renderer* sdl_renderer);
+    bool create_texture();
+    void update_pixels(const uint8_t* pixels) const;
+    void destroy_texture();
     void set_render_zoom(uint8_t zoom);
 
     const uint16_t width;
     const uint16_t height;
     const uint8_t bpp;
 
-    SDL_Texture* texture;
+    uint32_t texture;
     SDL_FRect render_rect;
 };
 

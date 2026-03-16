@@ -19,19 +19,23 @@
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
-#include <imgui_impl_sdlrenderer3.h>
+#include <imgui_impl_opengl3.h>
 #include <imgui_stdlib.h>
 #include "oric.hpp"
 
 Gui::Gui(Oric& oric) :
-    oric(oric), sdl_window(nullptr), sdl_renderer(nullptr), _status_bar(0, 0)
+    oric(oric), sdl_window(nullptr), gl_context(nullptr), _status_bar(0, 0)
 {
 }
 
-void Gui::init(SDL_Window* sdl_window, SDL_Renderer* sdl_renderer)
+void Gui::init(SDL_Window* sdl_window, SDL_GLContext gl_context)
 {
+    if (initialized) {
+        return;
+    }
+
     this->sdl_window = sdl_window;
-    this->sdl_renderer = sdl_renderer;
+    this->gl_context = gl_context;
 
     // Initialize Dear ImGui
     IMGUI_CHECKVERSION();
@@ -43,19 +47,31 @@ void Gui::init(SDL_Window* sdl_window, SDL_Renderer* sdl_renderer)
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
-    ImGui_ImplSDL3_InitForSDLRenderer(sdl_window, sdl_renderer);
-    ImGui_ImplSDLRenderer3_Init(sdl_renderer);
+    ImGui_ImplSDL3_InitForOpenGL(sdl_window, gl_context);
+    ImGui_ImplOpenGL3_Init("#version 150");
+    initialized = true;
 }
 
 void Gui::close()
 {
-    ImGui_ImplSDLRenderer3_Shutdown();
+    if (!initialized) {
+        return;
+    }
+
+    ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
+    initialized = false;
 }
 
 void Gui::handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse)
 {
+    if (!initialized) {
+        wanted_key = false;
+        wanted_mouse = false;
+        return;
+    }
+
     ImGui_ImplSDL3_ProcessEvent(&event);
 
     const ImGuiIO& io = ImGui::GetIO();
@@ -65,8 +81,12 @@ void Gui::handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse)
 
 void Gui::render()
 {
+    if (!initialized) {
+        return;
+    }
+
     // Start ImGui frame
-    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
@@ -119,5 +139,6 @@ void Gui::render()
 
     // Render ImGui
     ImGui::Render();
-    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), sdl_renderer);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 }
