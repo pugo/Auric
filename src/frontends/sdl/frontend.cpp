@@ -51,7 +51,7 @@ constexpr std::string window_title = "Auric";
 constexpr std::string window_icon_name = "window_icon.png";
 
 
-FileDialogs::FileDialogs(Oric& oric) :
+Frontend::Frontend(Oric& oric) :
     oric(oric),
     sdl_window(nullptr),
     sdl_renderer(nullptr),
@@ -67,13 +67,13 @@ FileDialogs::FileDialogs(Oric& oric) :
     }
 }
 
-FileDialogs::~FileDialogs()
+Frontend::~Frontend()
 {
     close_graphics();
     close_sdl();
 }
 
-bool FileDialogs::init_graphics()
+bool Frontend::init_graphics()
 {
     SDL_SetHint(SDL_HINT_APP_NAME, window_title.c_str());
 
@@ -146,7 +146,7 @@ bool FileDialogs::init_graphics()
 }
 
 
-bool FileDialogs::init_sound()
+bool Frontend::init_sound()
 {
     BOOST_LOG_TRIVIAL(debug) << "Initializing sound..";
 
@@ -184,7 +184,7 @@ bool FileDialogs::init_sound()
 }
 
 
-void FileDialogs::pause_sound(bool pause_on)
+void Frontend::pause_sound(bool pause_on)
 {
     if (pause_on) {
         SDL_PauseAudioStreamDevice(sound_audio_stream);
@@ -194,7 +194,7 @@ void FileDialogs::pause_sound(bool pause_on)
 }
 
 
-bool FileDialogs::handle_frame()
+bool Frontend::handle_frame()
 {
     SDL_Event event;
 
@@ -277,7 +277,7 @@ bool FileDialogs::handle_frame()
 }
 
 
-void FileDialogs::render_graphics(std::vector<uint8_t>& pixels)
+void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 {
     SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xff);
     SDL_RenderClear(sdl_renderer);
@@ -305,14 +305,14 @@ void SDLCALL open_file_callback(void *userdata, const char *const *filelist, int
 }
 
 
-std::optional<std::filesystem::path> FileDialogs::select_file(const std::string& title)
+std::optional<std::filesystem::path> Frontend::select_file(const std::string& title)
 {
     auto result = FileSelectDialog::open(sdl_window, {"tap", "dsk", "rom"});
     return result;
 }
 
 
-void FileDialogs::close_sound() const
+void Frontend::close_sound() const
 {
     if (sound_audio_stream) {
         SDL_DestroyAudioStream(sound_audio_stream);
@@ -320,7 +320,7 @@ void FileDialogs::close_sound() const
 }
 
 
-void FileDialogs::close_graphics()
+void Frontend::close_graphics()
 {
     gui.close();
 
@@ -336,7 +336,7 @@ void FileDialogs::close_graphics()
 }
 
 
-void FileDialogs::close_sdl()
+void Frontend::close_sdl()
 {
     SDL_Quit(); // Quit all SDL subsystems
 }

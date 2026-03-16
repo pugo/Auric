@@ -34,7 +34,7 @@
 #include "disk/drive.hpp"
 
 class Oric;
-class FileDialogs;
+class Frontend;
 class AY3_8912;
 
 
@@ -58,7 +58,7 @@ public:
      * Init the machine.
      * @param frontend pointer to Frontend object
      */
-    void init(FileDialogs* frontend);
+    void init(Frontend* frontend);
 
     /**
      * Init the RAM.
@@ -308,7 +308,7 @@ public:
     bool oric_rom_enabled;
     bool disk_rom_enabled;
 
-    FileDialogs* frontend;
+    Frontend* frontend;
     bool warpmode_on;
 
 protected:

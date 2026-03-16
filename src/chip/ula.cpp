@@ -100,7 +100,7 @@ void ULA::update_graphics(uint8_t raster_line)
     text_attrib = 0;
     blink = 0x3f;
 
-    auto* texture_line = reinterpret_cast<uint32_t*>(&pixels[raster_line * FileDialogs::texture_width * FileDialogs::texture_bpp]);
+    auto* texture_line = reinterpret_cast<uint32_t*>(&pixels[raster_line * Frontend::texture_width * Frontend::texture_bpp]);
     uint16_t row = calcRowAddr(raster_line, video_attrib);
 
     // 40 characters wide, regardless of lores or hires.

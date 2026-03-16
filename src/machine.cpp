@@ -63,7 +63,7 @@ Machine::Machine(Oric& oric) :
     mos_6522(nullptr),
     ay3(nullptr),
     frontend(nullptr),
-    ula(*this, memory, FileDialogs::texture_width, FileDialogs::texture_height, FileDialogs::texture_bpp),
+    ula(*this, memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
     oric(oric),
     monitor(*this, Machine::read_byte),
     memory(oric_ram_size),
@@ -107,7 +107,7 @@ void Machine::reset_cpu()
     cpu->reset();
 }
 
-void Machine::init(FileDialogs* frontend)
+void Machine::init(Frontend* frontend)
 {
     this->frontend = frontend;
     init_ram();

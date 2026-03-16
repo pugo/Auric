@@ -65,7 +65,7 @@ void check_rom_exists(std::filesystem::path path)
 void Oric::init()
 {
     machine = std::make_unique<Machine>(*this);
-    frontend = std::make_unique<FileDialogs>(*this);
+    frontend = std::make_unique<Frontend>(*this);
 
     machine->init(frontend.get());
 

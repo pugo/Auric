@@ -32,15 +32,15 @@ class Oric;
 class Memory;
 
 
-class FileDialogs
+class Frontend
 {
 public:
     static const uint8_t texture_width = 240;
     static const uint16_t texture_height = 224;
     static const uint8_t texture_bpp = 4;
 
-    explicit FileDialogs(Oric& oric);
-    ~FileDialogs();
+    explicit Frontend(Oric& oric);
+    ~Frontend();
 
     /**
      * Initialize graphics output.
