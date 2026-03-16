@@ -19,6 +19,7 @@
 #define FRONTENDS_SDL_FRONTEND_H
 
 #include <filesystem>
+#include <cstdint>
 #include <vector>
 
 #include <SDL3/SDL.h>
@@ -119,7 +120,12 @@ protected:
     Oric& oric;
 
     SDL_Window* sdl_window;
-    SDL_Renderer* sdl_renderer;
+    SDL_GLContext gl_context;
+
+    uint32_t gl_program;
+    uint32_t gl_vao;
+    uint32_t gl_vbo;
+    int32_t gl_u_texture;
 
     Gui gui;
     Texture oric_texture;
@@ -128,6 +134,10 @@ protected:
 
     SDL_AudioStream* sound_audio_stream;
     bool audio_locked;
+
+    int32_t gl_u_enable_scanlines;
+    int32_t gl_u_enable_vertical_lines;
+    float gl_u_vignette_strength;
 };
 
 

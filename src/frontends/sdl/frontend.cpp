@@ -22,6 +22,7 @@
 
 #include "file_dialog.hpp"
 #include "frontend.hpp"
+#include "gl_loader.hpp"
 #include "frontends/gui/status_bar.hpp"
 
 #include "chip/ay3_8912.hpp"
@@ -50,11 +51,130 @@ constexpr uint16_t border_size_vertical = 50;
 constexpr std::string window_title = "Auric";
 constexpr std::string window_icon_name = "window_icon.png";
 
+namespace
+{
+GLuint compile_shader(GLenum type, const char* source)
+{
+    GLuint shader = glCreateShader(type);
+    glShaderSource(shader, 1, &source, nullptr);
+    glCompileShader(shader);
+
+    GLint success = GL_FALSE;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (success == GL_FALSE) {
+        GLchar log[512];
+        glGetShaderInfoLog(shader, static_cast<GLsizei>(sizeof(log)), nullptr, log);
+        BOOST_LOG_TRIVIAL(error) << "OpenGL shader compilation failed: " << log;
+        glDeleteShader(shader);
+        return 0;
+    }
+
+    return shader;
+}
+
+GLuint create_screen_program()
+{
+    constexpr const char* vertex_shader = R"(
+        #version 150
+        in vec2 a_pos;
+        in vec2 a_uv;
+        out vec2 v_uv;
+        void main()
+        {
+            v_uv = a_uv;
+            gl_Position = vec4(a_pos, 0.0, 1.0);
+        }
+    )";
+
+    constexpr const char* fragment_shader = R"(
+        #version 150
+        in vec2 v_uv;
+        out vec4 out_color;
+        uniform sampler2D u_texture;
+        uniform int u_enable_scanlines;
+        uniform int u_enable_vertical_lines;
+        uniform float u_vignette_strength;
+
+        float hash(vec2 p)
+        {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+        }
+
+        void main()
+        {
+            vec2 uv = v_uv;
+
+            // One screen pixel in UV space at current output resolution.
+            vec2 texel = vec2(abs(dFdx(v_uv.x)), abs(dFdy(v_uv.y)));
+            vec4 c0 = texture(u_texture, uv).bgra;
+            vec4 c1 = texture(u_texture, clamp(uv + vec2(texel.x, 0.0), 0.0, 1.0)).bgra;
+            vec4 c2 = texture(u_texture, clamp(uv - vec2(texel.x, 0.0), 0.0, 1.0)).bgra;
+            vec4 c3 = texture(u_texture, clamp(uv + vec2(0.0, texel.y), 0.0, 1.0)).bgra;
+            vec4 c4 = texture(u_texture, clamp(uv - vec2(0.0, texel.y), 0.0, 1.0)).bgra;
+            vec4 color = c0 * 0.50 + (c1 + c2) * 0.20 + (c3 + c4) * 0.05;
+
+            float scanline = 0.94 + 0.06 * sin(gl_FragCoord.y/2 * 3.14159265);
+            float mask = 0.96 + 0.04 * sin(gl_FragCoord.x * 0.5);
+            vec2 centered = abs(v_uv * 2.0 - 1.0);
+            float edge = max(centered.x * 0.85, centered.y);
+            float vignette = 1.0 - u_vignette_strength * pow(edge, 2.2);
+            float noise = (hash(gl_FragCoord.xy) - 0.5) * 0.02;
+
+            if (u_enable_scanlines != 0) {
+                color.rgb *= scanline;
+            }
+
+            if (u_enable_vertical_lines != 0) {
+                color.rgb *= mask;
+            }
+
+            color.rgb *= vignette;
+            color.rgb += noise;
+            out_color = vec4(clamp(color.rgb, 0.0, 1.0), 1.0);
+        }
+    )";
+
+    GLuint vs = compile_shader(GL_VERTEX_SHADER, vertex_shader);
+    if (vs == 0) {
+        return 0;
+    }
+    GLuint fs = compile_shader(GL_FRAGMENT_SHADER, fragment_shader);
+    if (fs == 0) {
+        glDeleteShader(vs);
+        return 0;
+    }
+
+    GLuint program = glCreateProgram();
+    glAttachShader(program, vs);
+    glAttachShader(program, fs);
+    glLinkProgram(program);
+
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+
+    GLint success = GL_FALSE;
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
+    if (success == GL_FALSE) {
+        GLchar log[512];
+        glGetProgramInfoLog(program, static_cast<GLsizei>(sizeof(log)), nullptr, log);
+        BOOST_LOG_TRIVIAL(error) << "OpenGL program link failed: " << log;
+        glDeleteProgram(program);
+        return 0;
+    }
+
+    return program;
+}
+}
+
 
 Frontend::Frontend(Oric& oric) :
     oric(oric),
     sdl_window(nullptr),
-    sdl_renderer(nullptr),
+    gl_context(nullptr),
+    gl_program(0),
+    gl_vao(0),
+    gl_vbo(0),
+    gl_u_texture(-1),
     gui(oric),
     oric_texture(texture_width, texture_height, texture_bpp),
     sound_audio_stream(nullptr),
@@ -102,9 +222,27 @@ bool Frontend::init_graphics()
     gui.status_bar().set_size(width, status_bar_height);
     gui.status_bar().set_position(0, height - status_bar_height);
 
-    sdl_window = SDL_CreateWindow(window_title.c_str(), width, height, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    sdl_window = SDL_CreateWindow(window_title.c_str(), width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (sdl_window == nullptr) {
         BOOST_LOG_TRIVIAL(error) << "Window could not be created! SDL_Error: " << SDL_GetError();
+        return false;
+    }
+
+    gl_context = SDL_GL_CreateContext(sdl_window);
+    if (gl_context == nullptr) {
+        BOOST_LOG_TRIVIAL(error) << "OpenGL context could not be created! SDL_Error: " << SDL_GetError();
+        return false;
+    }
+    SDL_GL_MakeCurrent(sdl_window, gl_context);
+    SDL_GL_SetSwapInterval(1);
+
+    if (!load_gl_functions()) {
+        BOOST_LOG_TRIVIAL(error) << "Failed to initialize GLAD OpenGL function loader";
         return false;
     }
 
@@ -123,24 +261,48 @@ bool Frontend::init_graphics()
         }
     }
 
-    // Create renderer for window
-    sdl_renderer = SDL_CreateRenderer(sdl_window, nullptr);
-
-    if (sdl_renderer == nullptr) {
-        BOOST_LOG_TRIVIAL(error) << "Renderer could not be created! SDL Error: " << SDL_GetError();
+    gl_program = create_screen_program();
+    if (gl_program == 0) {
+        return false;
+    }
+    const GLint pos_attr = glGetAttribLocation(gl_program, "a_pos");
+    const GLint uv_attr = glGetAttribLocation(gl_program, "a_uv");
+    if (pos_attr < 0 || uv_attr < 0) {
+        BOOST_LOG_TRIVIAL(error) << "Failed to resolve OpenGL shader attributes";
+        return false;
+    }
+    gl_u_texture = glGetUniformLocation(gl_program, "u_texture");
+    if (gl_u_texture < 0) {
+        BOOST_LOG_TRIVIAL(error) << "Failed to resolve OpenGL shader uniforms";
         return false;
     }
 
-    if (! oric_texture.create_texture(sdl_renderer)) {
+    gl_u_enable_scanlines = glGetUniformLocation(gl_program, "u_enable_scanlines");
+    gl_u_enable_vertical_lines = glGetUniformLocation(gl_program, "u_enable_vertical_lines");
+    gl_u_vignette_strength = glGetUniformLocation(gl_program, "u_vignette_strength");
+
+    glGenVertexArrays(1, &gl_vao);
+    glBindVertexArray(gl_vao);
+    glGenBuffers(1, &gl_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, gl_vbo);
+    glBufferData(GL_ARRAY_BUFFER, 16 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(static_cast<GLuint>(pos_attr));
+    glVertexAttribPointer(static_cast<GLuint>(pos_attr), 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<void*>(0));
+    glEnableVertexAttribArray(static_cast<GLuint>(uv_attr));
+    glVertexAttribPointer(static_cast<GLuint>(uv_attr), 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    if (! oric_texture.create_texture()) {
         return false;
     }
 
-    // Initialize renderer color
-    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xff);
-    SDL_RenderClear(sdl_renderer);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    SDL_GL_SwapWindow(sdl_window);
 
     // Initialize Dear Imgui GUI.
-    gui.init(sdl_window, sdl_renderer);
+    gui.init(sdl_window, gl_context);
 
     return true;
 }
@@ -267,8 +429,10 @@ bool Frontend::handle_frame()
             switch (event.type)
             {
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                    oric.do_quit();
-                    return false;
+                    if (event.window.windowID == SDL_GetWindowID(sdl_window)) {
+                        oric.do_quit();
+                        return false;
+                    }
                 break;
             }
         }
@@ -279,14 +443,48 @@ bool Frontend::handle_frame()
 
 void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 {
-    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xff);
-    SDL_RenderClear(sdl_renderer);
+    int window_width = 0;
+    int window_height = 0;
+    SDL_GetWindowSizeInPixels(sdl_window, &window_width, &window_height);
 
-    SDL_UpdateTexture(oric_texture.texture, nullptr, &pixels[0], oric_texture.width * oric_texture.bpp);
-    SDL_RenderTexture(sdl_renderer, oric_texture.texture, nullptr, &oric_texture.render_rect );
+    glViewport(0, 0, window_width, window_height);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    oric_texture.update_pixels(pixels.data());
+
+    const float left = (oric_texture.render_rect.x / static_cast<float>(window_width)) * 2.0f - 1.0f;
+    const float right = ((oric_texture.render_rect.x + oric_texture.render_rect.w) / static_cast<float>(window_width)) * 2.0f - 1.0f;
+    const float top = 1.0f - (oric_texture.render_rect.y / static_cast<float>(window_height)) * 2.0f;
+    const float bottom = 1.0f - ((oric_texture.render_rect.y + oric_texture.render_rect.h) / static_cast<float>(window_height)) * 2.0f;
+
+    const float vertices[] = {
+        left,  top,    0.0f, 0.0f,
+        left,  bottom, 0.0f, 1.0f,
+        right, top,    1.0f, 0.0f,
+        right, bottom, 1.0f, 1.0f
+    };
+
+    glUseProgram(gl_program);
+    glUniform1i(gl_u_enable_scanlines, 1);
+    glUniform1i(gl_u_enable_vertical_lines, 1);
+    glUniform1f(gl_u_vignette_strength, 0.2);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, oric_texture.texture);
+    glUniform1i(gl_u_texture, 0);
+
+    glBindVertexArray(gl_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, gl_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glUseProgram(0);
+
     gui.render();
 
-    SDL_RenderPresent(sdl_renderer);
+    SDL_GL_SwapWindow(sdl_window);
 }
 
 
@@ -322,11 +520,30 @@ void Frontend::close_sound() const
 
 void Frontend::close_graphics()
 {
+    if (sdl_window != nullptr && gl_context != nullptr) {
+        SDL_GL_MakeCurrent(sdl_window, gl_context);
+    }
+
+    oric_texture.destroy_texture();
+
+    if (gl_vbo != 0) {
+        glDeleteBuffers(1, &gl_vbo);
+        gl_vbo = 0;
+    }
+    if (gl_vao != 0) {
+        glDeleteVertexArrays(1, &gl_vao);
+        gl_vao = 0;
+    }
+    if (gl_program != 0) {
+        glDeleteProgram(gl_program);
+        gl_program = 0;
+    }
+
     gui.close();
 
-    if (sdl_renderer != nullptr) {
-        SDL_DestroyRenderer(sdl_renderer);
-        sdl_renderer = nullptr;
+    if (gl_context != nullptr) {
+        SDL_GL_DestroyContext(gl_context);
+        gl_context = nullptr;
     }
 
     if (sdl_window != nullptr) {
@@ -340,4 +557,3 @@ void Frontend::close_sdl()
 {
     SDL_Quit(); // Quit all SDL subsystems
 }
-

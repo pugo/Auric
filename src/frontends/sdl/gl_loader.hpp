@@ -15,29 +15,25 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef FRONTENDS_SDL_TEXTURE_H
-#define FRONTENDS_SDL_TEXTURE_H
+#ifndef FRONTENDS_SDL_GL_LOADER_H
+#define FRONTENDS_SDL_GL_LOADER_H
 
-#include <cstdint>
 #include <SDL3/SDL.h>
 
-
-class Texture
+#if __has_include(<glad/gl.h>)
+#include <glad/gl.h>
+inline bool load_gl_functions()
 {
-public:
-    Texture(uint16_t width, uint16_t height, uint8_t bpp);
+    return gladLoadGL(reinterpret_cast<GLADloadfunc>(SDL_GL_GetProcAddress)) != 0;
+}
+#elif __has_include(<glad/glad.h>)
+#include <glad/glad.h>
+inline bool load_gl_functions()
+{
+    return gladLoadGLLoader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress)) != 0;
+}
+#else
+#error "No glad header found (expected <glad/gl.h> or <glad/glad.h>)."
+#endif
 
-    bool create_texture();
-    void update_pixels(const uint8_t* pixels) const;
-    void destroy_texture();
-    void set_render_zoom(uint8_t zoom);
-
-    const uint16_t width;
-    const uint16_t height;
-    const uint8_t bpp;
-
-    uint32_t texture;
-    SDL_FRect render_rect;
-};
-
-#endif // FRONTENDS_SDL_TEXTURE_H
+#endif // FRONTENDS_SDL_GL_LOADER_H

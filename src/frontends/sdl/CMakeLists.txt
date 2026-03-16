@@ -12,8 +12,8 @@ target_include_directories(frontend_sdl3
 target_link_libraries(frontend_sdl3
         PUBLIC
         chip
+        ${GLAD_TARGET}
         ${BOOST_LIBRARIES}
         ${SDL3_LIBRARIES}
         frontends_gui
 )
-

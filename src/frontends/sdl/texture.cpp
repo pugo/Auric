@@ -15,29 +15,54 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include "frontend.hpp"
+#include "texture.hpp"
+#include "gl_loader.hpp"
 
 Texture::Texture(uint16_t width, uint16_t height, uint8_t bpp) :
     width(width),
     height(height),
     bpp(bpp),
-    texture(nullptr),
+    texture(0),
     render_rect()
 {
     render_rect = {0.f, 0.0f, static_cast<float>(width), static_cast<float>(height)};
 }
 
-bool Texture::create_texture(SDL_Renderer* sdl_renderer)
+bool Texture::create_texture()
 {
-    texture = SDL_CreateTexture(sdl_renderer,
-                                SDL_PIXELFORMAT_ARGB8888,
-                                SDL_TEXTUREACCESS_STREAMING,
-                                width, height);
-    return texture != nullptr;
+    glGenTextures(1, &texture);
+    if (texture == 0) {
+        return false;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return true;
+}
+
+void Texture::update_pixels(const uint8_t* pixels) const
+{
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Texture::destroy_texture()
+{
+    if (texture != 0) {
+        glDeleteTextures(1, &texture);
+        texture = 0;
+    }
 }
 
 void Texture::set_render_zoom(uint8_t zoom)
 {
     render_rect = {0.0f, 0.0f, static_cast<float>(width * zoom), static_cast<float>(height * zoom)};
 }
-
