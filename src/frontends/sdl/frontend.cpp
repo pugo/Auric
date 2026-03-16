@@ -91,9 +91,46 @@ GLuint create_screen_program()
         in vec2 v_uv;
         out vec4 out_color;
         uniform sampler2D u_texture;
+        uniform int u_enable_scanlines;
+        uniform int u_enable_vertical_lines;
+        uniform float u_vignette_strength;
+
+        float hash(vec2 p)
+        {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+        }
+
         void main()
         {
-            out_color = texture(u_texture, v_uv).bgra;
+            vec2 uv = v_uv;
+
+            // One screen pixel in UV space at current output resolution.
+            vec2 texel = vec2(abs(dFdx(v_uv.x)), abs(dFdy(v_uv.y)));
+            vec4 c0 = texture(u_texture, uv).bgra;
+            vec4 c1 = texture(u_texture, clamp(uv + vec2(texel.x, 0.0), 0.0, 1.0)).bgra;
+            vec4 c2 = texture(u_texture, clamp(uv - vec2(texel.x, 0.0), 0.0, 1.0)).bgra;
+            vec4 c3 = texture(u_texture, clamp(uv + vec2(0.0, texel.y), 0.0, 1.0)).bgra;
+            vec4 c4 = texture(u_texture, clamp(uv - vec2(0.0, texel.y), 0.0, 1.0)).bgra;
+            vec4 color = c0 * 0.50 + (c1 + c2) * 0.20 + (c3 + c4) * 0.05;
+
+            float scanline = 0.94 + 0.06 * sin(gl_FragCoord.y/2 * 3.14159265);
+            float mask = 0.96 + 0.04 * sin(gl_FragCoord.x * 0.5);
+            vec2 centered = abs(v_uv * 2.0 - 1.0);
+            float edge = max(centered.x * 0.85, centered.y);
+            float vignette = 1.0 - u_vignette_strength * pow(edge, 2.2);
+            float noise = (hash(gl_FragCoord.xy) - 0.5) * 0.02;
+
+            if (u_enable_scanlines != 0) {
+                color.rgb *= scanline;
+            }
+
+            if (u_enable_vertical_lines != 0) {
+                color.rgb *= mask;
+            }
+
+            color.rgb *= vignette;
+            color.rgb += noise;
+            out_color = vec4(clamp(color.rgb, 0.0, 1.0), 1.0);
         }
     )";
 
@@ -137,6 +174,7 @@ Frontend::Frontend(Oric& oric) :
     gl_program(0),
     gl_vao(0),
     gl_vbo(0),
+    gl_u_texture(-1),
     gui(oric),
     oric_texture(texture_width, texture_height, texture_bpp),
     sound_audio_stream(nullptr),
@@ -233,6 +271,15 @@ bool Frontend::init_graphics()
         BOOST_LOG_TRIVIAL(error) << "Failed to resolve OpenGL shader attributes";
         return false;
     }
+    gl_u_texture = glGetUniformLocation(gl_program, "u_texture");
+    if (gl_u_texture < 0) {
+        BOOST_LOG_TRIVIAL(error) << "Failed to resolve OpenGL shader uniforms";
+        return false;
+    }
+
+    gl_u_enable_scanlines = glGetUniformLocation(gl_program, "u_enable_scanlines");
+    gl_u_enable_vertical_lines = glGetUniformLocation(gl_program, "u_enable_vertical_lines");
+    gl_u_vignette_strength = glGetUniformLocation(gl_program, "u_vignette_strength");
 
     glGenVertexArrays(1, &gl_vao);
     glBindVertexArray(gl_vao);
@@ -419,9 +466,12 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     };
 
     glUseProgram(gl_program);
+    glUniform1i(gl_u_enable_scanlines, 1);
+    glUniform1i(gl_u_enable_vertical_lines, 1);
+    // glUniform1f(gl_u_vignette_strength, 0.8);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, oric_texture.texture);
-    glUniform1i(glGetUniformLocation(gl_program, "u_texture"), 0);
+    glUniform1i(gl_u_texture, 0);
 
     glBindVertexArray(gl_vao);
     glBindBuffer(GL_ARRAY_BUFFER, gl_vbo);
