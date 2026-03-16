@@ -16,7 +16,7 @@
 // =========================================================================
 
 #include "texture.hpp"
-#include "frontends/gui/imgui/backends/imgui_impl_opengl3_loader.h"
+#include "gl_loader.hpp"
 
 Texture::Texture(uint16_t width, uint16_t height, uint8_t bpp) :
     width(width),

@@ -22,8 +22,8 @@
 
 #include "file_dialog.hpp"
 #include "frontend.hpp"
+#include "gl_loader.hpp"
 #include "frontends/gui/status_bar.hpp"
-#include "frontends/gui/imgui/backends/imgui_impl_opengl3_loader.h"
 
 #include "chip/ay3_8912.hpp"
 #include "oric.hpp"
@@ -241,8 +241,8 @@ bool Frontend::init_graphics()
     SDL_GL_MakeCurrent(sdl_window, gl_context);
     SDL_GL_SetSwapInterval(1);
 
-    if (imgl3wInit() != GL3W_OK) {
-        BOOST_LOG_TRIVIAL(error) << "Failed to initialize OpenGL function loader";
+    if (!load_gl_functions()) {
+        BOOST_LOG_TRIVIAL(error) << "Failed to initialize GLAD OpenGL function loader";
         return false;
     }
 
@@ -468,7 +468,7 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     glUseProgram(gl_program);
     glUniform1i(gl_u_enable_scanlines, 1);
     glUniform1i(gl_u_enable_vertical_lines, 1);
-    // glUniform1f(gl_u_vignette_strength, 0.8);
+    glUniform1f(gl_u_vignette_strength, 0.2);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, oric_texture.texture);
     glUniform1i(gl_u_texture, 0);

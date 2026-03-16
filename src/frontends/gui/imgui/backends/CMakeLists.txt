@@ -12,5 +12,11 @@ target_include_directories(frontends_imgui_backends
 target_link_libraries(frontends_imgui_backends
         PUBLIC
         frontends_imgui
+        ${GLAD_TARGET}
         OpenGL::GL
+)
+
+target_compile_definitions(frontends_imgui_backends
+        PRIVATE
+        IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 )

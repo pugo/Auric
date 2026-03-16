@@ -15,41 +15,25 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef FRONTENDS_GUI_GUI_H
-#define FRONTENDS_GUI_GUI_H
+#ifndef FRONTENDS_SDL_GL_LOADER_H
+#define FRONTENDS_SDL_GL_LOADER_H
 
 #include <SDL3/SDL.h>
 
-#include "frontends/gui/status_bar.hpp"
-
-class Oric;
-
-class Gui
+#if __has_include(<glad/gl.h>)
+#include <glad/gl.h>
+inline bool load_gl_functions()
 {
-public:
-    Gui(Oric& oric);
-    ~Gui() = default;
+    return gladLoadGL(reinterpret_cast<GLADloadfunc>(SDL_GL_GetProcAddress)) != 0;
+}
+#elif __has_include(<glad/glad.h>)
+#include <glad/glad.h>
+inline bool load_gl_functions()
+{
+    return gladLoadGLLoader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress)) != 0;
+}
+#else
+#error "No glad header found (expected <glad/gl.h> or <glad/glad.h>)."
+#endif
 
-    void init(SDL_Window* sdl_window, SDL_GLContext gl_context);
-    void close();
-    void handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse);
-    void render();
-
-    StatusBar& status_bar() { return _status_bar; }
-
-    void toggle_gui() { show_gui = !show_gui; }
-
-private:
-    Oric& oric;
-
-    SDL_Window* sdl_window;
-    SDL_GLContext gl_context;
-
-    StatusBar _status_bar;
-
-    bool show_gui{false};
-    bool initialized{false};
-};
-
-
-#endif // FRONTENDS_GUI_GUI_H
+#endif // FRONTENDS_SDL_GL_LOADER_H

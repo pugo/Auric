@@ -5,6 +5,7 @@
     "boost-circular-buffer",
     "boost-log",
     "boost-program-options",
+    "glad",
     "sdl3",
     "yaml-cpp"
   ]
