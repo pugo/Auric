@@ -135,9 +135,17 @@ protected:
     SDL_AudioStream* sound_audio_stream;
     bool audio_locked;
 
+    // Variables bound to GL shader.
     int32_t gl_u_enable_scanlines;
     int32_t gl_u_enable_vertical_lines;
+    int32_t gl_u_enable_vignette;
     float gl_u_vignette_strength;
+
+    // Current video shader config.
+    int32_t enable_scanlines;
+    int32_t enable_vertical_lines;
+    int32_t enable_vignette;
+    float vignette_strength;
 };
 
 

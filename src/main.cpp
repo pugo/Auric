@@ -55,7 +55,13 @@ int main(int argc, char *argv[])
 
     // Read config file.
     Config config;
-    if (! config.read_config_file("auric.yaml")) {
+    try {
+        if (! config.read_config_file("auric.yaml")) {
+            return 2;
+        }
+    }
+    catch (const std::exception &err) {
+        std::println("Error reading config file: {}", err.what());
         return 2;
     }
 

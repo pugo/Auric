@@ -19,3 +19,15 @@ media:
 video:
   # Controls the zoom level of the display (1-10).
   zoom: 3
+
+  # Enable/disable CRT scan line artifacts.
+  enable_scanlines: true
+
+  # Enable/disable CRT vertical line artifacts.
+  enable_vertical_lines: true
+
+  # Enable/disable CRT vignette.
+  enable_vignette: true
+
+  # Controls CRT vignette strength (0 - 1).
+  vignette_strength: 0.2

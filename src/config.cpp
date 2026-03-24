@@ -157,10 +157,30 @@ bool Config::read_config_file(std::filesystem::path config_path)
         _images_path = yaml_config["media"]["images_path"].as<std::string>();
     }
 
-    if (yaml_config["video"]["zoom"]) {
-        int zoom_arg = yaml_config["video"]["zoom"].as<int>();
-        zoom_arg = std::clamp<int>(zoom_arg, 1, 10);
-        _zoom = static_cast<uint8_t>(zoom_arg);
+    if (yaml_config["video"]) {
+        if (yaml_config["video"]["zoom"]) {
+            int zoom_arg = yaml_config["video"]["zoom"].as<int>();
+            zoom_arg = std::clamp<int>(zoom_arg, 1, 10);
+            _zoom = static_cast<uint8_t>(zoom_arg);
+        }
+
+        if (yaml_config["video"]["enable_scanlines"]) {
+            _enable_scanlines = yaml_config["video"]["enable_scanlines"].as<bool>();
+        }
+
+        if (yaml_config["video"]["enable_vertical_lines"]) {
+            _enable_vertical_lines = yaml_config["video"]["enable_vertical_lines"].as<bool>();
+        }
+
+        if (yaml_config["video"]["enable_vignette"]) {
+            _enable_vignette = yaml_config["video"]["enable_vignette"].as<bool>();
+        }
+
+        if (yaml_config["video"]["vignette_strength"]) {
+            int vignette_arg = yaml_config["video"]["vignette_strength"].as<float>();
+            vignette_arg = std::clamp<float>(vignette_arg, 0, 1);
+            _vignette_strength = vignette_arg;
+        }
     }
 
     return true;

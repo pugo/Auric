@@ -114,6 +114,13 @@ public:
      */
     std::filesystem::path images_path() const { return _images_path; }
 
+    bool enable_scanlines() const { return _enable_scanlines; }
+    bool enable_vertical_lines() const { return _enable_vertical_lines; }
+    bool enable_vignette() const { return _enable_vignette; }
+
+    float vignette_strength() const { return _vignette_strength; }
+
+
 protected:
     bool _start_in_monitor;
     bool _use_oric1_rom;
@@ -129,6 +136,13 @@ protected:
     // Media
     std::filesystem::path _fonts_path;
     std::filesystem::path _images_path;
+
+    // Video
+    bool _enable_scanlines;
+    bool _enable_vertical_lines;
+    bool _enable_vignette;
+
+    float _vignette_strength;
 };
 
 #endif // CONFIG_H

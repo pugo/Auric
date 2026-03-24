@@ -93,6 +93,7 @@ GLuint create_screen_program()
         uniform sampler2D u_texture;
         uniform int u_enable_scanlines;
         uniform int u_enable_vertical_lines;
+        uniform int u_enable_vignette;
         uniform float u_vignette_strength;
 
         float hash(vec2 p)
@@ -114,7 +115,7 @@ GLuint create_screen_program()
             vec4 color = c0 * 0.50 + (c1 + c2) * 0.20 + (c3 + c4) * 0.05;
 
             float scanline = 0.94 + 0.06 * sin(gl_FragCoord.y/2 * 3.14159265);
-            float mask = 0.96 + 0.04 * sin(gl_FragCoord.x * 0.5);
+            float mask = 0.97 + 0.03 * sin(gl_FragCoord.x * 0.5);
             vec2 centered = abs(v_uv * 2.0 - 1.0);
             float edge = max(centered.x * 0.85, centered.y);
             float vignette = 1.0 - u_vignette_strength * pow(edge, 2.2);
@@ -128,7 +129,10 @@ GLuint create_screen_program()
                 color.rgb *= mask;
             }
 
-            color.rgb *= vignette;
+            if (u_enable_vignette != 0) {
+                color.rgb *= vignette;
+            }
+
             color.rgb += noise;
             out_color = vec4(clamp(color.rgb, 0.0, 1.0), 1.0);
         }
@@ -185,6 +189,11 @@ Frontend::Frontend(Oric& oric) :
             oric_key_map[scancode_map[i]] = i;
         }
     }
+
+    enable_scanlines = oric.get_config().enable_scanlines() ? 1 : 0;
+    enable_vertical_lines = oric.get_config().enable_vertical_lines() ? 1 : 0;
+    enable_vignette = oric.get_config().enable_vignette() ? 1 : 0;
+    vignette_strength = oric.get_config().vignette_strength();
 }
 
 Frontend::~Frontend()
@@ -279,6 +288,7 @@ bool Frontend::init_graphics()
 
     gl_u_enable_scanlines = glGetUniformLocation(gl_program, "u_enable_scanlines");
     gl_u_enable_vertical_lines = glGetUniformLocation(gl_program, "u_enable_vertical_lines");
+    gl_u_enable_vignette = glGetUniformLocation(gl_program, "u_enable_vignette");
     gl_u_vignette_strength = glGetUniformLocation(gl_program, "u_vignette_strength");
 
     glGenVertexArrays(1, &gl_vao);
@@ -466,9 +476,10 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     };
 
     glUseProgram(gl_program);
-    glUniform1i(gl_u_enable_scanlines, 1);
-    glUniform1i(gl_u_enable_vertical_lines, 1);
-    glUniform1f(gl_u_vignette_strength, 0.2);
+    glUniform1i(gl_u_enable_scanlines, enable_scanlines);
+    glUniform1i(gl_u_enable_vertical_lines, enable_vertical_lines);
+    glUniform1i(gl_u_enable_vignette, enable_vignette);
+    glUniform1f(gl_u_vignette_strength, vignette_strength);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, oric_texture.texture);
     glUniform1i(gl_u_texture, 0);
