@@ -106,6 +106,28 @@ public:
      */
     void close_sound() const;
 
+    /**
+     * Set artifact lines settings.
+     * @param enable_scanlines whether to enable scanlines
+     * @param enable_vertical_lines whether to enable vertical lines
+     */
+    void set_enable_artifact_lines(bool enable_scanlines, bool enable_vertical_lines)
+    {
+        this->enable_scanlines = enable_scanlines;
+        this->enable_vertical_lines = enable_vertical_lines;
+    }
+
+    /**
+     * Set new vignette strength.
+     * @param enable_vignette whether to enable vignette
+     * @param strength new vignette strength
+     */
+    void set_vignette(bool enable_vignette, float strength)
+    {
+        this->enable_vignette = enable_vignette;
+        vignette_strength = strength;
+    }
+
 protected:
     /**
      * Close graphics output.

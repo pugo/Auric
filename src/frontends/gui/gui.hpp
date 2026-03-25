@@ -19,6 +19,7 @@
 #define FRONTENDS_GUI_GUI_H
 
 #include <SDL3/SDL.h>
+#include <imgui.h>
 
 #include "frontends/gui/status_bar.hpp"
 
@@ -35,6 +36,8 @@ public:
     void handle_event(SDL_Event& event, bool& wanted_key, bool& wanted_mouse);
     void render();
 
+    void set_video_params(bool enable_scanlines, bool enable_vertical_lines, bool enable_vignette, float vignette_strength);
+
     StatusBar& status_bar() { return _status_bar; }
 
     void toggle_gui() { show_gui = !show_gui; }
@@ -49,6 +52,14 @@ private:
 
     bool show_gui{false};
     bool initialized{false};
+    bool show_video_window{false};
+
+    bool enable_scanlines{false};
+    bool enable_vertical_lines{false};
+    bool enable_vignette{false};
+    float vignette_strength{0.2f};
+
+    ImVec2 video_window_pos;
 };
 
 

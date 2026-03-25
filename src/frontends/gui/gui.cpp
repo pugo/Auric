@@ -82,7 +82,7 @@ void Gui::render()
 
     if (show_gui) {
         ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-        ImGui::Begin("Main menu", nullptr, ImGuiWindowFlags_NoMove);
+        ImGui::Begin("Main menu", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 
         ImGui::Text("Media:");
         if (ImGui::Button("Insert tape")) {
@@ -122,6 +122,40 @@ void Gui::render()
             oric.do_break();
         }
 
+        ImGui::Text("Video:");
+        if (ImGui::Button("Video Settings")) {
+            ImVec2 pos  = ImGui::GetWindowPos();
+            ImVec2 size = ImGui::GetWindowSize();
+            video_window_pos = ImVec2(pos.x + size.x + 10.0f, pos.y);
+
+            show_video_window = true;
+        }
+
+        if (show_video_window) {
+            ImGui::SetNextWindowPos(video_window_pos, ImGuiCond_Once);
+
+            ImGui::Begin("Video Settings", &show_video_window, ImGuiWindowFlags_AlwaysAutoResize);
+
+            if (ImGui::Checkbox("Enable scanlines", &enable_scanlines)) {
+                oric.get_frontend().set_enable_artifact_lines(enable_scanlines, enable_vertical_lines);
+            }
+
+            if (ImGui::Checkbox("Enable vertical lines", &enable_vertical_lines)) {
+                oric.get_frontend().set_enable_artifact_lines(enable_scanlines, enable_vertical_lines);
+
+            }
+
+            if (ImGui::Checkbox("Enable vignette", &enable_vignette)) {
+                oric.get_frontend().set_vignette(enable_vignette, vignette_strength);
+            }
+
+            if (ImGui::SliderFloat("Vignette strength", &vignette_strength, 0.0f, 1.0f)) {
+                oric.get_frontend().set_vignette(enable_vignette, vignette_strength);
+            }
+
+            ImGui::End();
+        }
+
         ImGui::End();
     }
 
@@ -130,5 +164,12 @@ void Gui::render()
     // Render ImGui
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
 
+void Gui::set_video_params(bool enable_scanlines, bool enable_vertical_lines, bool enable_vignette, float vignette_strength)
+{
+    this->enable_scanlines = enable_scanlines;
+    this->enable_vertical_lines = enable_vertical_lines;
+    this->enable_vignette = enable_vignette;
+    this->vignette_strength = vignette_strength;
 }

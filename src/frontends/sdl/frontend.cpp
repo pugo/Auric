@@ -115,7 +115,7 @@ GLuint create_screen_program()
             vec4 color = c0 * 0.50 + (c1 + c2) * 0.20 + (c3 + c4) * 0.05;
 
             float scanline = 0.94 + 0.06 * sin(gl_FragCoord.y/2 * 3.14159265);
-            float mask = 0.97 + 0.03 * sin(gl_FragCoord.x * 0.5);
+            float mask = 0.97 + 0.03 * sin(gl_FragCoord.x * 0.3);
             vec2 centered = abs(v_uv * 2.0 - 1.0);
             float edge = max(centered.x * 0.85, centered.y);
             float vignette = 1.0 - u_vignette_strength * pow(edge, 2.2);
@@ -212,11 +212,6 @@ bool Frontend::init_graphics()
         return false;
     }
 
-    // Set texture filtering to linear
-    // if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear")) {
-    //     BOOST_LOG_TRIVIAL(warning) << "Linear texture filtering not enabled!";
-    // }
-
     auto zoom = oric.get_config().zoom();
     BOOST_LOG_TRIVIAL(debug) << "Setting zoom to: " << static_cast<int>(zoom);
 
@@ -312,6 +307,7 @@ bool Frontend::init_graphics()
     SDL_GL_SwapWindow(sdl_window);
 
     // Initialize Dear Imgui GUI.
+    gui.set_video_params(enable_scanlines > 0, enable_vertical_lines > 0, enable_vignette > 0, vignette_strength);
     gui.init(sdl_window, gl_context);
 
     return true;

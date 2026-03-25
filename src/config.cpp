@@ -177,7 +177,7 @@ bool Config::read_config_file(std::filesystem::path config_path)
         }
 
         if (yaml_config["video"]["vignette_strength"]) {
-            int vignette_arg = yaml_config["video"]["vignette_strength"].as<float>();
+            float vignette_arg = yaml_config["video"]["vignette_strength"].as<float>();
             vignette_arg = std::clamp<float>(vignette_arg, 0, 1);
             _vignette_strength = vignette_arg;
         }
