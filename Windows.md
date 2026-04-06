@@ -58,4 +58,4 @@ Working directory and command matter because the app uses relative paths (`auric
 4. **Runtime asset issue (not build-system failure)**
    - App initially failed at runtime because required ROM files were missing from `.\ROMS`.
    - After ROMs were added, the emulator launched and ran.
-   - Command ZAP worked in emulator.
+   - Command ZAP worked in emulator!
