@@ -148,7 +148,7 @@ void Oric::do_break()
     }
     else
     {
-        std::println();
+        std::println("");
         std::println("* Oric Monitor *\n");
         std::println("        Ctrl-c : to exit the emulator");
         std::println("    g <return> : to continue the emulation");

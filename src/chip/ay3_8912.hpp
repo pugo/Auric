@@ -62,7 +62,7 @@ public:
         std::println("         Disabled: {} ", disabled);
         std::println("   Noise disabled: {} ", noise_diabled);
         std::println("     Use envelope: {} ", use_envelope);
-        std::println();
+        std::println("");
     }
 
     uint16_t volume;
@@ -101,7 +101,7 @@ public:
         std::println("     Counter: {}", counter);
         std::println("  Output bit: {}", output_bit);
         std::println("         Rng: {}", rng);
-        std::println();
+        std::println("");
     }
 
     uint16_t output_bit;

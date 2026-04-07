@@ -23,6 +23,23 @@ Build output:
 
 - Executable: `build-vs2022\src\Release\auric.exe`
 
+## Reproducible commands from repo root (tested)
+
+These commands were verified on this branch with the current setup.
+
+```powershell
+set VCPKG_ROOT=C:\Users\dybvig\vcpkg
+cmake --preset windows-vs2022
+cmake --build --preset windows-vs2022-release -j 8
+.\build-vs2022\src\Release\auric.exe
+```
+
+If needed, run once before configure/build:
+
+```powershell
+C:\Users\dybvig\vcpkg\vcpkg.exe install
+```
+
 ## How the executable was run
 
 Working directory and command matter because the app uses relative paths (`auric.yaml`, `ROMS`, `images`, `fonts`).

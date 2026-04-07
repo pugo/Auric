@@ -254,7 +254,7 @@ uint16_t Monitor::disassemble(uint16_t address, size_t bytes)
 
     while (static_cast<uint32_t>(address) < end) {
         uint16_t next = disassemble(address);
-        std::println();
+        std::println("");
 
         if (next <= address) {
             break;

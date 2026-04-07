@@ -17,7 +17,6 @@
 
 #include <numeric>
 #include <thread>
-#include <unistd.h>
 
 #include <boost/log/trivial.hpp>
 
@@ -78,8 +77,7 @@ Machine::Machine(Oric& oric) :
     break_exec(false),
     sound_paused(true),
     sound_pause_counter(0),
-    current_key_row(0),
-    key_rows(0)
+    current_key_row(0)
 {
     for (auto& key_row : key_rows) {
         key_row = 0;

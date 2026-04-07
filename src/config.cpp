@@ -121,7 +121,7 @@ bool Config::read_config_file(std::filesystem::path config_path)
 {
     YAML::Node yaml_config;
     try {
-        yaml_config = YAML::LoadFile(config_path);
+        yaml_config = YAML::LoadFile(config_path.string());
     }
     catch (YAML::Exception& e) {
         std::println("Error parsing config file: {}", e.what());

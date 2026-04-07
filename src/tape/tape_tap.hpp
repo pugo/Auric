@@ -83,7 +83,7 @@ protected:
      */
     uint8_t next_bit();
 
-    std::string path;
+    std::filesystem::path path;
     MOS6522& via;
     size_t tape_size;
 

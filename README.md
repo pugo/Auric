@@ -43,6 +43,20 @@ All building instructions are located in the `doc` directory.
  * To build with vcpkg, see [doc/BUILD_VCPKG.md](doc/BUILD_VCPKG.md).
  * To build with host libraries, see [doc/BUILD_HOST.md](doc/BUILD_HOST.md).
 
+### CMake presets
+
+This repository includes CMake presets for common build setups.
+
+Example for Windows (Visual Studio 2022 + vcpkg):
+
+```
+set VCPKG_ROOT=C:\path\to\vcpkg
+cmake --preset windows-vs2022
+cmake --build --preset windows-vs2022-release -j 8
+```
+
+For detailed Windows notes, see [Windows.md](Windows.md).
+
 ## Running
 
 This section describes how to run the emulator.

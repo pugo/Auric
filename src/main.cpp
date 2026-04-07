@@ -23,7 +23,9 @@
 
 std::unique_ptr<Oric> oric;
 
+#ifndef _WIN32
 struct sigaction sigact;
+#endif
 
 /**
  * Handle signal
@@ -42,10 +44,14 @@ static void signal_handler(int signal)
  */
 void init_signals()
 {
+#ifdef _WIN32
+    std::signal(SIGINT, signal_handler);
+#else
     sigact.sa_handler = signal_handler;
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
     sigaction(SIGINT, &sigact, (struct sigaction *) nullptr);
+#endif
 }
 
 

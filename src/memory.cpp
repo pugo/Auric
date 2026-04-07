@@ -16,14 +16,12 @@
 // =========================================================================
 
 #include <boost/log/trivial.hpp>
-#include <fcntl.h>
 #include <format>
 #include <fstream>
 #include <iostream>
 #include <print>
 #include <stdexcept>
 #include <sstream>
-#include <unistd.h>
 
 #include "memory.hpp"
 #include "snapshot.hpp"
@@ -54,12 +52,11 @@ void Memory::load(const std::filesystem::path& path, uint32_t address)
         throw(std::runtime_error(std::format("trying to read outside memory area.")));
     }
 
-    auto fd = open(path.c_str(), O_RDONLY);
-    if (fd < 0) {
+    std::ifstream in{path, std::ios::binary};
+    if (!in.is_open()) {
         throw(std::runtime_error(std::format("could not open file: {}", path.string())));
     }
 
-    std::ifstream in{path, std::ios::binary};
     in.read(reinterpret_cast<char *>(mem + address), file_size);
 }
 
@@ -97,7 +94,7 @@ void Memory::show(uint32_t pos, uint32_t length) const
             chars << "  ";
         }
     }
-    std::println();
+    std::println("");
 }
 
 
