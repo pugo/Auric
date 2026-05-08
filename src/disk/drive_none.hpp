@@ -62,9 +62,14 @@ public:
     void print_stat() override;
 
     /**
-     * Execute one cycle.
+     * Execute a number of cycles.
      */
     void exec(uint8_t cycles) override;
+
+    /**
+     * Allow execution of drive-specific tasks once per frame.
+     */
+    void exec_once_per_frame() override;
 
     /**
      * Set interrupt request. Sets CPU interrupt flag if interrupts are enabled in status.

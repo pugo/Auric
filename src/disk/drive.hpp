@@ -65,9 +65,14 @@ public:
     virtual void print_stat() = 0;
 
     /**
-     * Execute one cycle.
+     * Execute a number of cycles.
      */
     virtual void exec(uint8_t cycles) = 0;
+
+    /**
+     * Allow execution of drive-specific tasks once per frame.
+     */
+    virtual void exec_once_per_frame() = 0;
 
     /**
      * Set interrupt request. Sets CPU interrupt flag if interrupts are enabled in status.

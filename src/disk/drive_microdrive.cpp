@@ -31,6 +31,11 @@ DriveMicrodrive::DriveMicrodrive(Machine& machine) :
     state.reset();
 }
 
+DriveMicrodrive::~DriveMicrodrive()
+{
+    disk_image->flush_if_dirty();
+}
+
 void DriveMicrodrive::State::reset()
 {
     status = 0;
@@ -76,6 +81,11 @@ void DriveMicrodrive::print_stat()
 void DriveMicrodrive::exec(uint8_t cycles)
 {
     wd1793.exec(cycles);
+}
+
+void DriveMicrodrive::exec_once_per_frame()
+{
+    disk_image->flush_if_dirty();
 }
 
 void DriveMicrodrive::interrupt_set()

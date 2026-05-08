@@ -131,7 +131,7 @@ To speed up the loading time it is possible to toggle warp mode with
 
 ### Loading from disk image
 
-Auric support loading from Microdisk images.
+Auric supports loading from Microdisk images.
 
 To specify which tape TAP file to use, use the `--disk` or `-d` command line
 argument:
@@ -139,6 +139,14 @@ argument:
 ```
 $ ./build/auric --disk disk/oricpetscii.dsk
 ```
+
+### Loading from disk image
+
+Auric supports saving to Microdisk images.
+
+If a Microdisk image is loaded, and data is written to the disk,
+then the changes will be saved to the image file automatically.
+There is currently no write protection mechanism.
 
 
 ## Exiting
@@ -203,7 +211,7 @@ The timeline is something like:
 * 2023: AY3-8912 sound
 * 2024: Cycle bug fixing, new monitor, blink mode, snapshots
 * 2025: Satus bar, new tape loading, zoom
-* 2026: Microdisk loading, renaming project, moved to SDL3
+* 2026: Microdisk loading, renaming project, moved to SDL3, Microdisc saving
 
 
 ## Contribution

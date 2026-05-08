@@ -1,0 +1,42 @@
+name: Linux Build and Test
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libboost-log-dev \
+          libboost-program-options-dev \
+          libboost-circular-buffer-dev \
+          libsdl3-dev \
+          cmake \
+          build-essential \
+          pkg-config
+
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Configure CMake
+      working-directory: build
+      run: cmake ..
+
+    - name: Build project
+      working-directory: build
+      run: make -j$(nproc)
+
+    - name: Run unit tests
+      working-directory: build
+      run: ./tests/gtests_run
+

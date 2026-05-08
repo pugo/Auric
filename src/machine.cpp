@@ -256,6 +256,8 @@ void Machine::run(Oric* oric)
                 break_exec = true;
             }
 
+            disk->exec_once_per_frame();
+
             hrc::time_point now_tp = hrc::now();
             if (now_tp > next_frame_tp) {
                 next_frame_tp = now_tp;

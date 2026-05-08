@@ -46,6 +46,9 @@ void DriveNone::print_stat()
 void DriveNone::exec(uint8_t cycles)
 {}
 
+void DriveNone::exec_once_per_frame()
+{}
+
 void DriveNone::interrupt_set()
 {}
 
