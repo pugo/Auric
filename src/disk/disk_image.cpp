@@ -153,9 +153,16 @@ DiskImage::DiskImage(const std::filesystem::path& path) :
     side_count_(0),
     tracks_count_(0),
     geometry_(0),
+    dirty(false),
     data(nullptr)
 {
 }
+
+
+DiskImage::~DiskImage()
+{
+}
+
 
 uint32_t DiskImage::read32(uint32_t offset) const
 {
@@ -228,6 +235,38 @@ bool DiskImage::init()
     }
 
     return true;
+}
+
+void DiskImage::mark_dirty()
+{
+    dirty = true;
+    last_write = std::chrono::steady_clock::now();
+}
+
+void DiskImage::flush_if_dirty()
+{
+    if (!dirty) {
+        return;
+    }
+
+    const auto now = std::chrono::steady_clock::now();
+    if (now - last_write < std::chrono::milliseconds(1000)) {
+        return;
+    }
+
+    last_write = now;
+
+    std::ofstream file (image_path, std::ios::out | std::ios::binary);
+    if (!file.is_open()) {
+        BOOST_LOG_TRIVIAL(error) << "DiskImage: failed to open file for writing";
+    }
+
+    file.write((char*)data, image_size);
+    file.close();
+
+    dirty = false;
+
+    BOOST_LOG_TRIVIAL(debug) << "DiskImage: disk image file '" << image_path << "' written";
 }
 
 
