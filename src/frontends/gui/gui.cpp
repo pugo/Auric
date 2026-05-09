@@ -127,6 +127,11 @@ void Gui::render()
             oric.get_machine().stop();
             oric.do_break();
         }
+        ImGui::SameLine();
+        if (ImGui::Button("Memory Map")) {
+            show_memory_map_window = !show_memory_map_window;
+            memory_map_window.set_visible(show_memory_map_window);
+        }
 
         ImGui::Text("Video:");
         if (ImGui::Button("Video Settings")) {
@@ -135,11 +140,6 @@ void Gui::render()
             video_window_pos = ImVec2(pos.x + size.x + 10.0f, pos.y);
 
             show_video_window = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Memory Map")) {
-            show_memory_map_window = !show_memory_map_window;
-            memory_map_window.set_visible(show_memory_map_window);
         }
 
         if (show_video_window) {
@@ -173,7 +173,9 @@ void Gui::render()
     _status_bar.render();
 
     // Render memory map window if it's visible
-    memory_map_window.render();
+    if (show_memory_map_window) {
+        memory_map_window.render();
+    }
 
     // Render ImGui
     ImGui::Render();
