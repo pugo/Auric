@@ -4,6 +4,7 @@ add_subdirectory(imgui/backends)
 add_library(frontends_gui
         gui.cpp
         status_bar.cpp
+        memory_map_window.cpp
 )
 
 target_include_directories(frontends_gui

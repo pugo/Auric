@@ -24,7 +24,8 @@
 #include "oric.hpp"
 
 Gui::Gui(Oric& oric) :
-    oric(oric), sdl_window(nullptr), gl_context(nullptr), _status_bar(0, 0)
+    oric(oric), sdl_window(nullptr), gl_context(nullptr), _status_bar(0, 0),
+    memory_map_window(oric)
 {
 }
 
@@ -49,6 +50,10 @@ void Gui::init(SDL_Window* sdl_window, SDL_GLContext gl_context)
     // Setup Platform/Renderer backends
     ImGui_ImplSDL3_InitForOpenGL(sdl_window, gl_context);
     ImGui_ImplOpenGL3_Init("#version 150");
+
+    // Initialize memory map window
+    memory_map_window.init();
+
     initialized = true;
 }
 
@@ -58,6 +63,7 @@ void Gui::close()
         return;
     }
 
+    memory_map_window.close();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
@@ -130,6 +136,11 @@ void Gui::render()
 
             show_video_window = true;
         }
+        ImGui::SameLine();
+        if (ImGui::Button("Memory Map")) {
+            show_memory_map_window = !show_memory_map_window;
+            memory_map_window.set_visible(show_memory_map_window);
+        }
 
         if (show_video_window) {
             ImGui::SetNextWindowPos(video_window_pos, ImGuiCond_Once);
@@ -160,6 +171,9 @@ void Gui::render()
     }
 
     _status_bar.render();
+
+    // Render memory map window if it's visible
+    memory_map_window.render();
 
     // Render ImGui
     ImGui::Render();

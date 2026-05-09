@@ -22,6 +22,7 @@
 #include <imgui.h>
 
 #include "frontends/gui/status_bar.hpp"
+#include "frontends/gui/memory_map_window.hpp"
 
 class Oric;
 
@@ -42,6 +43,8 @@ public:
 
     void toggle_gui() { show_gui = !show_gui; }
 
+    MemoryMapWindow& get_memory_map_window() { return memory_map_window; }
+
 private:
     Oric& oric;
 
@@ -49,10 +52,12 @@ private:
     SDL_GLContext gl_context;
 
     StatusBar _status_bar;
+    MemoryMapWindow memory_map_window;
 
     bool show_gui{false};
     bool initialized{false};
     bool show_video_window{false};
+    bool show_memory_map_window{false};
 
     bool enable_scanlines{false};
     bool enable_vertical_lines{false};
