@@ -21,8 +21,9 @@
 #include <cstdint>
 #include <vector>
 #include <cstddef>
-#include <glad/glad.h>
 #include <imgui.h>
+
+#include "frontends/sdl/gl_loader.hpp"
 
 class Oric;
 
