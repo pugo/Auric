@@ -367,6 +367,7 @@ void Machine::insert_tape(std::filesystem::path path)
         BOOST_LOG_TRIVIAL(error) << "Tape file not found";
         frontend->get_status_bar().show_text_for("Tape file not found", 2s);
         tape = std::make_unique<TapeBlank>();
+        return;
     }
 
     tape = std::make_unique<TapeTap>(*mos_6522, path);
@@ -377,6 +378,13 @@ void Machine::insert_tape(std::filesystem::path path)
     frontend->get_status_bar().show_text_for("Tape inserted", 2s);
 }
 
+void Machine::eject_tape()
+{
+    BOOST_LOG_TRIVIAL(info) << "Ejecting tape";
+    tape = std::make_unique<TapeBlank>();
+    frontend->get_status_bar().show_text_for("Tape ejected", 2s);
+}
+
 void Machine::insert_disk(std::filesystem::path path)
 {
     BOOST_LOG_TRIVIAL(info) << "Loading disk from: " << path.string();
@@ -384,17 +392,26 @@ void Machine::insert_disk(std::filesystem::path path)
     if (! std::filesystem::exists(path)) {
         BOOST_LOG_TRIVIAL(error) << "Disk file not found";
         frontend->get_status_bar().show_text_for("Disk file not found", 2s);
+        return;
     }
 
     disk = std::make_unique<DriveMicrodrive>(*this);
     if (!disk->insert_disk(path)) {
         BOOST_LOG_TRIVIAL(info) << "Failed to load disk image";
+        frontend->get_status_bar().show_text_for("Failed to load disk image", 2s);
         return;
     }
 
     BOOST_LOG_TRIVIAL(info) << "Starting disk drive";
 
     frontend->get_status_bar().show_text_for("Disk inserted", 2s);
+}
+
+void Machine::eject_disk()
+{
+    BOOST_LOG_TRIVIAL(info) << "Ejecting disk";
+    disk = std::make_unique<DriveNone>();
+    frontend->get_status_bar().show_text_for("Disk ejected", 2s);
 }
 
 void Machine::PrintStat()

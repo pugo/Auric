@@ -90,7 +90,7 @@ void Gui::render()
         ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
         ImGui::Begin("Main menu", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 
-        ImGui::Text("Media:");
+        ImGui::Text("Tape:");
         if (ImGui::Button("Insert tape")) {
             auto result = oric.get_frontend().select_file("Choose tape file");
             if (result.has_value()) {
@@ -98,11 +98,20 @@ void Gui::render()
             }
         }
         ImGui::SameLine();
+        if (ImGui::Button("Eject tape")) {
+            oric.get_machine().eject_tape();
+        }
+
+        ImGui::Text("Disk:");
         if (ImGui::Button("Insert disk")) {
             auto result = oric.get_frontend().select_file("Choose disk file");
             if (result.has_value()) {
                 oric.get_machine().insert_disk(result.value());
             }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Eject disk")) {
+            oric.get_machine().eject_disk();
         }
 
         ImGui::Text("Snapshots:");

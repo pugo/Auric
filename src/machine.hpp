@@ -180,8 +180,10 @@ public:
     bool toggle_warp_mode();
 
     void insert_tape(std::filesystem::path path);
+    void eject_tape();
 
     void insert_disk(std::filesystem::path path);
+    void eject_disk();
 
     /**
      * Set whether to disassemble executed instructions.

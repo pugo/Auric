@@ -62,7 +62,7 @@ GLuint create_screen_program()
             vec4 color = c0 * 0.50 + (c1 + c2) * 0.20 + (c3 + c4) * 0.05;
 
             float scanline = 0.96 + 0.04 * sin(v_uv.y * u_texture_height * 3.14159265);
-            float mask = 0.97 + 0.03 * sin(gl_FragCoord.x * 0.3);
+            float mask = 0.99 + 0.01 * sin(gl_FragCoord.x * 0.3);
             vec2 centered = abs(v_uv * 2.0 - 1.0);
             float edge = max(centered.x * 0.85, centered.y);
             float vignette = 1.0 - u_vignette_strength * pow(edge, 2.2);
