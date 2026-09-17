@@ -161,7 +161,7 @@ jobs:
           package_name="auric-${version}-${{ matrix.package_suffix }}"
           package_dir="dist/${package_name}"
           cmake --install build --config Release --prefix "$package_dir" --strip
-          ldd "$package_dir/bin/auric"
+          ldd "$package_dir/auric"
           tar -czf "dist/${package_name}.tar.gz" -C dist "$package_name"
           tar -tzf "dist/${package_name}.tar.gz"
 
@@ -174,8 +174,8 @@ jobs:
           package_name="auric-${version}-${{ matrix.package_suffix }}"
           package_dir="dist/${package_name}"
           cmake --install build --config Release --prefix "$package_dir" --strip
-          file "$package_dir/bin/auric"
-          otool -L "$package_dir/bin/auric"
+          file "$package_dir/auric"
+          otool -L "$package_dir/auric"
           ditto -c -k --sequesterRsrc --keepParent "$package_dir" "dist/${package_name}.zip"
           unzip -l "dist/${package_name}.zip"
 
@@ -190,10 +190,10 @@ jobs:
 
           $vcpkgBin = Join-Path "build/vcpkg_installed/${{ matrix.triplet }}" "bin"
           if (Test-Path $vcpkgBin) {
-            Copy-Item (Join-Path $vcpkgBin "*.dll") (Join-Path $packageDir "bin") -ErrorAction SilentlyContinue
+            Copy-Item (Join-Path $vcpkgBin "*.dll") $packageDir -ErrorAction SilentlyContinue
           }
 
-          if (-not (Test-Path "$packageDir/bin/auric.exe")) {
+          if (-not (Test-Path "$packageDir/auric.exe")) {
             throw "The staged Windows executable was not found"
           }
           Get-ChildItem -Recurse $packageDir
@@ -201,7 +201,7 @@ jobs:
           $checkDir = Join-Path "dist" "archive-check"
           Expand-Archive -Path "dist/$packageName.zip" -DestinationPath $checkDir -Force
           Get-ChildItem -Recurse $checkDir
-          if (-not (Test-Path (Join-Path $checkDir "$packageName/bin/auric.exe"))) {
+          if (-not (Test-Path (Join-Path $checkDir "$packageName/auric.exe"))) {
             throw "The Windows archive does not contain the expected executable"
           }
 

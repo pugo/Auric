@@ -82,7 +82,7 @@ target_link_libraries(auric_lib
 add_executable(auric main.cpp)
 target_link_libraries(auric PRIVATE auric_lib)
 
-install(TARGETS auric RUNTIME DESTINATION bin)
+install(TARGETS auric RUNTIME DESTINATION .)
 install(FILES
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/LICENSE
