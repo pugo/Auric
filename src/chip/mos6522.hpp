@@ -18,6 +18,7 @@
 #ifndef CHIP_MOS6522_H
 #define CHIP_MOS6522_H
 
+#include <cstdint>
 #include <map>
 #include <string>
 

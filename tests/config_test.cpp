@@ -27,7 +27,12 @@ bool parse_args(Config& config, std::array<std::string, N>& args)
         argv[i] = args[i].data();
     }
 
-    return config.parse(static_cast<int>(argv.size()), argv.data());
+    if (! config.parse_command_line(static_cast<int>(argv.size()), argv.data())) {
+        return false;
+    }
+
+    config.apply_command_line();
+    return true;
 }
 
 }
@@ -48,7 +53,7 @@ TEST(ConfigTest, TapeEnablesAutostartByDefault)
 TEST(ConfigTest, TapeNoAutostartDisablesStartupAutostart)
 {
     Config config;
-    std::array args{"auric"s, "--tape"s, "game.tap"s, "--tape-no-autostart"s};
+    std::array args{"auric"s, "--tape"s, "game.tap"s, "--tape-autostart-off"s};
 
     ASSERT_TRUE(parse_args(config, args));
 

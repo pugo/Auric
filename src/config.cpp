@@ -35,15 +35,22 @@ Config::Config() :
     _config_path{"auric.yaml"},
     _start_in_monitor{false},
     _use_oric1_rom{false},
+    _window_width{1024},
+    _window_height{768},
     _zoom{3},
     _verbose{false},
     _roms_path{"./ROMS"},
     _rom_names{{RomType::Oric1, "basic10.rom"},
-               {RomType::OricAtmos, "basic11b.roms"},
+               {RomType::OricAtmos, "basic11b.rom"},
                {RomType::Microdisk, "microdis.rom"}},
     _fonts_path{"./fonts"},
     _images_path{"./images"},
-    _tape_turbo_enabled{true}
+    _enable_scanlines{true},
+    _enable_vertical_lines{true},
+    _enable_vignette{true},
+    _vignette_strength{0.2f},
+    _tape_turbo_enabled{true},
+    _tape_autostart_enabled{true}
 {
 }
 
@@ -122,13 +129,7 @@ void Config::apply_command_line()
     if (auto tape = parsed_arguments.present<std::string>("--tape")) {
         _tape_path = *tape;
     }
-    else {
-        _tape_autostart_enabled = false;
-    }
 
-    if (auto tape = parsed_arguments.present<std::string>("--tape")) {
-        _tape_path = *tape;
-    }
     if (auto disk1 = parsed_arguments.present<std::string>("--disk1")) {
         _disk_paths[0] = *disk1;
     }
@@ -140,6 +141,16 @@ void Config::apply_command_line()
     }
     if (auto disk4 = parsed_arguments.present<std::string>("--disk4")) {
         _disk_paths[3] = *disk4;
+    }
+
+    const bool has_disk = ! _disk_paths[0].empty() ||
+                          ! _disk_paths[1].empty() ||
+                          ! _disk_paths[2].empty() ||
+                          ! _disk_paths[3].empty();
+
+    if (! parsed_arguments.present<std::string>("--tape") ||
+        _start_in_monitor || has_disk) {
+        _tape_autostart_enabled = false;
     }
 
     auto logger = spdlog::get("auric");
