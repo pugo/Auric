@@ -105,7 +105,8 @@ MOS6502::MOS6502(Machine& a_Machine) :
     instruction_cycles(0),
     current_instruction(0),
     current_cycle(0),
-    has_breakpoints(false)
+    has_breakpoints(false),
+    breakpoint_hit(std::nullopt)
 {
 }
 
@@ -134,6 +135,7 @@ void MOS6502::reset()
     instruction_cycles = 0;
     current_instruction = 0;
     current_cycle = 0;
+    breakpoint_hit.reset();
 }
 
 void MOS6502::save_to_snapshot(Snapshot& snapshot) const
@@ -188,10 +190,24 @@ void MOS6502::load_from_snapshot(Snapshot& snapshot)
     current_cycle = snapshot.mos6502.current_cycle;
 }
 
-void MOS6502::set_breakpoint(uint16_t address)
+bool MOS6502::set_breakpoint(uint16_t address)
 {
-    breakpoints.insert(address);
-    has_breakpoints = true;
+    const auto [_, inserted] = breakpoints.insert(address);
+    has_breakpoints = !breakpoints.empty();
+    return inserted;
+}
+
+bool MOS6502::clear_breakpoint(uint16_t address)
+{
+    const bool removed = breakpoints.erase(address) != 0;
+    has_breakpoints = !breakpoints.empty();
+    return removed;
+}
+
+void MOS6502::clear_breakpoints()
+{
+    breakpoints.clear();
+    has_breakpoints = false;
 }
 
 std::string MOS6502::get_register_summary()
@@ -436,7 +452,7 @@ uint8_t MOS6502::time_instruction()
 }
 
 
-bool MOS6502::exec(bool break_on_brk, bool& do_break)
+bool MOS6502::exec(bool break_on_brk, bool& do_break, bool ignore_breakpoint)
 {
     current_cycle = 0;
 
@@ -461,8 +477,8 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break)
         }
     }
 
-    if (has_breakpoints && breakpoints.contains(PC)) {
-        std::println("Found breakpoint at ${:04X}", PC);
+    if (!ignore_breakpoint && has_breakpoints && breakpoints.contains(PC)) {
+        breakpoint_hit = PC;
         do_break = true;
         return false;
     }

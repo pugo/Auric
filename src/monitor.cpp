@@ -142,7 +142,7 @@ std::vector<Opcode> opcodes_list = {
 
         {LDX_IMM,   "LDX", Addressing::immediate},
         {LDX_ZP,    "LDX", Addressing::zero_page},
-        {LDA_ZP_X,  "LDX", Addressing::zero_page_indexed_y},
+        {LDX_ZP_Y,  "LDX", Addressing::zero_page_indexed_y},
         {LDX_ABS,   "LDX", Addressing::absolute},
         {LDX_ABS_Y, "LDX", Addressing::absolute_indexed_y},
 
@@ -295,99 +295,85 @@ Monitor::Disassembly Monitor::disassemble_to_string(uint16_t address)
 
 uint16_t Monitor::disassemble(uint16_t address, std::ostream& output)
 {
-    output << std::format("${:04X}\t", address);
+    const uint16_t start_address = address;
+    const uint8_t op = memory_read_byte_handler(machine, address++);
+    std::vector<uint8_t> bytes{op};
+    std::ostringstream instruction;
 
-    uint8_t op = memory_read_byte_handler(machine, address++);
-    output << std::format("${:02X}\t", op);
+    const auto read_byte = [&]() {
+        const uint8_t value = memory_read_byte_handler(machine, address++);
+        bytes.push_back(value);
+        return value;
+    };
 
-    if (auto it = opcodes.find(op); it != opcodes.end())
-    {
-        output << std::format("{} ", it->second.name);
+    const auto read_word = [&]() {
+        const uint16_t low = read_byte();
+        const uint16_t high = read_byte();
+        return static_cast<uint16_t>(low | (high << 8));
+    };
 
-        switch(it->second.addressing)
-        {
+    if (auto it = opcodes.find(op); it != opcodes.end()) {
+        instruction << std::format("{} ", it->second.name);
+
+        switch (it->second.addressing) {
             case Addressing::immediate:
-            {
-                uint8_t value = memory_read_byte_handler(machine, address++);
-                output << std::format("#${:02X}\t", value);
+                instruction << std::format("#${:02X}", read_byte());
                 break;
-            }
             case Addressing::zero_page:
-            {
-                uint8_t value = memory_read_byte_handler(machine, address++);
-                output << std::format("${:02X}\t", value);
+                instruction << std::format("${:02X}", read_byte());
                 break;
-            }
             case Addressing::zero_page_indexed_x:
-            {
-                uint8_t value = memory_read_byte_handler(machine, address++);
-                output << std::format("${:02X},X\t", value);
+                instruction << std::format("${:02X},X", read_byte());
                 break;
-            }
             case Addressing::zero_page_indexed_y:
-            {
-                uint8_t value = memory_read_byte_handler(machine, address++);
-                output << std::format("${:02X},Y\t", value);
+                instruction << std::format("${:02X},Y", read_byte());
                 break;
-            }
             case Addressing::implied:
-            {
-                output << "\t\t";
                 break;
-            }
             case Addressing::indirect_absolute:
-            {
-                uint16_t value = memory_read_byte_handler(machine, address++);
-                value += memory_read_byte_handler(machine, address++) << 8;
-                output << std::format("(${:04X})\t", value);
+                instruction << std::format("(${:04X})", read_word());
                 break;
-            }
             case Addressing::absolute:
-            {
-                uint16_t value = memory_read_byte_handler(machine, address++);
-                value += memory_read_byte_handler(machine, address++) << 8;
-                output << std::format("${:04X}\t", value);
+                instruction << std::format("${:04X}", read_word());
                 break;
-            }
             case Addressing::absolute_indexed_x:
-            {
-                uint16_t value = memory_read_byte_handler(machine, address++);
-                value += memory_read_byte_handler(machine, address++) << 8;
-                output << std::format("${:04X},X\t", value);
+                instruction << std::format("${:04X},X", read_word());
                 break;
-            }
             case Addressing::absolute_indexed_y:
-            {
-                uint16_t value = memory_read_byte_handler(machine, address++);
-                value += memory_read_byte_handler(machine, address++) << 8;
-                output << std::format("${:04X},Y\t", value);
+                instruction << std::format("${:04X},Y", read_word());
                 break;
-            }
             case Addressing::indexed_indirect_x:
-            {
-                uint8_t value = memory_read_byte_handler(machine, address++);
-                output << std::format("(${:02X},X)\t", value);
+                instruction << std::format("(${:02X},X)", read_byte());
                 break;
-            }
             case Addressing::indirect_indexed_y:
-            {
-                uint8_t value = memory_read_byte_handler(machine, address++);
-                output << std::format("(${:02X},Y)\t", value);
+                instruction << std::format("(${:02X}),Y", read_byte());
                 break;
-            }
             case Addressing::relative:
             {
-                uint8_t rel = memory_read_byte_handler(machine, address++);
-                uint16_t addr = rel & 0x80 ? (address - ((rel ^ 0xff)+1)) : (address + rel);
-                output << std::format("${:04X}\t", addr);
+                const uint8_t rel = read_byte();
+                const uint16_t target = rel & 0x80
+                    ? static_cast<uint16_t>(address - ((rel ^ 0xff) + 1))
+                    : static_cast<uint16_t>(address + rel);
+                instruction << std::format("${:04X}", target);
                 break;
             }
             case Addressing::accumulator:
-                output << "A\t\t";
+                instruction << "A";
                 break;
         }
-
     }
+    else {
+        instruction << "???";
+    }
+
+    output << std::format("${:04X}\t", start_address);
+    for (const uint8_t byte : bytes) {
+        output << std::format("{:02X} ", byte);
+    }
+    for (size_t i = bytes.size(); i < 3; ++i) {
+        output << "   ";
+    }
+    output << std::format("\t{}", instruction.str());
 
     return address;
 }

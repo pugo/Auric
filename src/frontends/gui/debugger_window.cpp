@@ -44,10 +44,57 @@ void DebuggerWindow::append_output(const std::string& text)
 
 void DebuggerWindow::submit_command()
 {
+    if (!input.empty() && (command_history.empty() || command_history.back() != input)) {
+        constexpr size_t max_history_size = 64;
+        command_history.push_back(input);
+        if (command_history.size() > max_history_size) {
+            command_history.erase(command_history.begin());
+        }
+    }
+    history_draft.clear();
+    history_position = -1;
+
     append_output(">> " + input + "\n");
     auto result = oric.submit_debugger_command(input);
     append_output(result.output);
     input.clear();
+}
+
+int DebuggerWindow::input_callback(ImGuiInputTextCallbackData* data)
+{
+    if (data->EventFlag == ImGuiInputTextFlags_CallbackHistory) {
+        static_cast<DebuggerWindow*>(data->UserData)->navigate_history(data);
+    }
+    return 0;
+}
+
+void DebuggerWindow::navigate_history(ImGuiInputTextCallbackData* data)
+{
+    if (command_history.empty()) {
+        return;
+    }
+
+    if (history_position == -1) {
+        history_draft.assign(data->Buf, data->BufTextLen);
+        history_position = static_cast<int>(command_history.size());
+    }
+
+    if (data->EventKey == ImGuiKey_UpArrow) {
+        if (history_position > 0) {
+            --history_position;
+        }
+    }
+    else if (data->EventKey == ImGuiKey_DownArrow) {
+        if (history_position < static_cast<int>(command_history.size())) {
+            ++history_position;
+        }
+    }
+
+    const std::string& replacement = history_position == static_cast<int>(command_history.size())
+        ? history_draft
+        : command_history[history_position];
+    data->DeleteChars(0, data->BufTextLen);
+    data->InsertChars(0, replacement.c_str());
 }
 
 void DebuggerWindow::render(const ImVec2& window_pos, const ImVec2& window_size)
@@ -77,7 +124,9 @@ void DebuggerWindow::render(const ImVec2& window_pos, const ImVec2& window_size)
             ImGui::SetKeyboardFocusHere();
             focus_input = false;
         }
-        if (ImGui::InputText("##DebuggerInput", &input, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        constexpr ImGuiInputTextFlags input_flags = ImGuiInputTextFlags_EnterReturnsTrue |
+            ImGuiInputTextFlags_CallbackHistory;
+        if (ImGui::InputText("##DebuggerInput", &input, input_flags, input_callback, this)) {
             submit_command();
             ImGui::SetKeyboardFocusHere(-1);
         }

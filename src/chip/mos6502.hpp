@@ -31,6 +31,7 @@
 #include "mos6502_opcodes.hpp"
 #include "snapshot.hpp"
 
+#include <optional>
 #include <set>
 
 
@@ -109,7 +110,7 @@ public:
      * @param do_break reference to varianble set to true if break is triggered
      * @return true if instruction was executed (not all cycles execute full instruction)
      */
-    bool exec(bool break_on_brk, bool& do_break);
+    bool exec(bool break_on_brk, bool& do_break, bool ignore_breakpoint = false);
 
     /**
      * Save CPU state to snapshot.
@@ -127,7 +128,36 @@ public:
      * Set breakpoint on specified address.
      * @param address address to break on
      */
-    void set_breakpoint(uint16_t address);
+    bool set_breakpoint(uint16_t address);
+
+    /**
+     * Clear a breakpoint on the specified address.
+     * @param address address to clear
+     * @return true if a breakpoint was cleared
+     */
+    bool clear_breakpoint(uint16_t address);
+
+    /**
+     * Clear all breakpoints.
+     */
+    void clear_breakpoints();
+
+    /**
+     * Get all configured breakpoints.
+     * @return configured breakpoints
+     */
+    const std::set<uint16_t>& get_breakpoints() const { return breakpoints; }
+
+    /**
+     * Consume the most recent breakpoint hit, if any.
+     * @return the hit address
+     */
+    std::optional<uint16_t> take_breakpoint_hit()
+    {
+        const auto result = breakpoint_hit;
+        breakpoint_hit.reset();
+        return result;
+    }
 
     /**
      * Get string presenting the current register states.
@@ -215,6 +245,7 @@ protected:
 
     std::set<uint16_t> breakpoints;
     bool has_breakpoints;
+    std::optional<uint16_t> breakpoint_hit;
 };
 
 #endif // MOS6502_H

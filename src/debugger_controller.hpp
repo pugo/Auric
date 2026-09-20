@@ -11,6 +11,7 @@
 #define DEBUGGER_CONTROLLER_H
 
 #include <cstdint>
+#include <optional>
 #include <string>
 
 class Machine;
@@ -38,13 +39,14 @@ public:
     Result execute(std::string command_line);
 
 private:
-    uint16_t string_to_word(const std::string& addr) const;
+    std::optional<uint16_t> string_to_word(const std::string& addr) const;
+    std::optional<size_t> string_to_count(const std::string& count) const;
     std::string help_text() const;
     std::string step(size_t count);
 
     Machine& machine;
     std::string last_command;
-    uint16_t last_address{0};
+    std::optional<uint16_t> last_address;
 };
 
 #endif // DEBUGGER_CONTROLLER_H

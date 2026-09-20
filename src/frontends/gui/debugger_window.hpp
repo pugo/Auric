@@ -11,6 +11,7 @@
 #define FRONTENDS_GUI_DEBUGGER_WINDOW_H
 
 #include <string>
+#include <vector>
 #include <imgui.h>
 
 class Oric;
@@ -30,11 +31,16 @@ public:
     void append_output(const std::string& output);
 
 private:
+    static int input_callback(ImGuiInputTextCallbackData* data);
     void submit_command();
+    void navigate_history(ImGuiInputTextCallbackData* data);
 
     Oric& oric;
     std::string output;
     std::string input;
+    std::vector<std::string> command_history;
+    std::string history_draft;
+    int history_position{-1};
     bool window_open{false};
     bool scroll_to_bottom{false};
     bool focus_input{false};

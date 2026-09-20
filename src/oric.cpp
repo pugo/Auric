@@ -168,6 +168,12 @@ void Oric::do_break()
 
 void Oric::break_execution()
 {
+    if (frontend && machine) {
+        if (const auto breakpoint = machine->cpu->take_breakpoint_hit()) {
+            frontend->append_debugger_output(std::format("Breakpoint hit at ${:04X}\n", *breakpoint));
+        }
+    }
+
     if (debugger_controller) {
         debugger_controller->reset();
     }
