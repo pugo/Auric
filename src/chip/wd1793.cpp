@@ -575,12 +575,95 @@ bool WD1793::set_sector(uint8_t sector)
 
 void WD1793::save_to_snapshot(Snapshot& snapshot)
 {
-    snapshot.wd1793 = state;
+    auto operation = OperationType::Idle;
+    bool multiple_sectors = false;
+
+    if (state.current_operation == &operation_read_sector) {
+        operation = OperationType::ReadSector;
+        multiple_sectors = operation_read_sector.multiple_sectors;
+    }
+    else if (state.current_operation == &operation_write_sector) {
+        operation = OperationType::WriteSector;
+        multiple_sectors = operation_write_sector.multiple_sectors;
+    }
+    else if (state.current_operation == &operation_read_address) {
+        operation = OperationType::ReadAddress;
+    }
+    else if (state.current_operation == &operation_read_track) {
+        operation = OperationType::ReadTrack;
+    }
+    else if (state.current_operation == &operation_write_track) {
+        operation = OperationType::WriteTrack;
+    }
+
+    snapshot.wd1793 = {
+        state.data, state.side, state.track, state.sector, state.command,
+        state.status, state.current_track_number, state.current_sector_number,
+        state.sector_type, state.interrupt_counter, state.status_at_interrupt,
+        state.update_status_at_interrupt, state.data_request_counter,
+        state.offset, state.address_data, operation, multiple_sectors
+    };
 }
 
 void WD1793::load_from_snapshot(Snapshot& snapshot)
 {
-    state = snapshot.wd1793;
-    set_track(state.current_track_number);
-    set_sector(state.current_sector_number);
+    const auto saved = snapshot.wd1793;
+    state.data = saved.data;
+    state.side = saved.side;
+    state.track = saved.track;
+    state.sector = saved.sector;
+    state.command = saved.command;
+    state.status = saved.status;
+    state.current_track_number = saved.current_track_number;
+    state.current_sector_number = saved.current_sector_number;
+    state.sector_type = saved.sector_type;
+    state.interrupt_counter = saved.interrupt_counter;
+    state.status_at_interrupt = saved.status_at_interrupt;
+    state.update_status_at_interrupt = saved.update_status_at_interrupt;
+    state.data_request_counter = saved.data_request_counter;
+    state.offset = saved.offset;
+    state.address_data = saved.address_data;
+
+    // These helpers establish pointers into the current live disk image. They
+    // also alter a few timing fields, so all saved scalar timing state is
+    // restored again below.
+    set_track(saved.current_track_number);
+    set_sector(saved.current_sector_number);
+
+    state.track = saved.track;
+    state.sector = saved.sector;
+    state.command = saved.command;
+    state.status = saved.status;
+    state.current_track_number = saved.current_track_number;
+    state.current_sector_number = saved.current_sector_number;
+    state.sector_type = saved.sector_type;
+    state.interrupt_counter = saved.interrupt_counter;
+    state.status_at_interrupt = saved.status_at_interrupt;
+    state.update_status_at_interrupt = saved.update_status_at_interrupt;
+    state.data_request_counter = saved.data_request_counter;
+    state.offset = saved.offset;
+    state.address_data = saved.address_data;
+
+    switch (saved.operation) {
+        case OperationType::ReadSector:
+            operation_read_sector.multiple_sectors = saved.multiple_sectors;
+            state.current_operation = &operation_read_sector;
+            break;
+        case OperationType::WriteSector:
+            operation_write_sector.multiple_sectors = saved.multiple_sectors;
+            state.current_operation = &operation_write_sector;
+            break;
+        case OperationType::ReadAddress:
+            state.current_operation = &operation_read_address;
+            break;
+        case OperationType::ReadTrack:
+            state.current_operation = &operation_read_track;
+            break;
+        case OperationType::WriteTrack:
+            state.current_operation = &operation_write_track;
+            break;
+        case OperationType::Idle:
+            state.current_operation = &operation_idle;
+            break;
+    }
 }

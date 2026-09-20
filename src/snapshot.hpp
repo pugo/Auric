@@ -19,12 +19,16 @@
 #define SNAPSHOT_H
 
 #include <memory>
+#include <array>
+#include <optional>
 #include <vector>
 
 #include "chip/mos6522.hpp"
 #include "chip/ay3_8912.hpp"
 #include "chip/wd1793.hpp"
 #include "disk/drive_microdrive.hpp"
+#include "chip/ula.hpp"
+#include "tape/tape.hpp"
 
 /**
  * State for MOS6502 (CPU).
@@ -71,8 +75,19 @@ public:
     MOS6502_state mos6502;
     MOS6522::State mos6522;
     AY3_8912::SoundState ay3_8919;
-    WD1793::State wd1793;
+    WD1793::SnapshotState wd1793;
     DriveMicrodrive::State drive_microdrive;
+    std::array<std::optional<DiskImage::SnapshotState>, 4> disk_images;
+    bool microdrive_present;
+    TapeSnapshotState tape;
+
+    bool oric_rom_enabled;
+    bool disk_rom_enabled;
+    int32_t cycle_count;
+    uint8_t current_key_row;
+    std::array<uint8_t, 8> key_rows;
+
+    ULA::State ula;
 
     std::vector<uint8_t> memory;
 };

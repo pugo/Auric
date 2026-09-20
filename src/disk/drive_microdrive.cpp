@@ -245,11 +245,37 @@ void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
 void DriveMicrodrive::save_to_snapshot(Snapshot& snapshot)
 {
     snapshot.drive_microdrive = state;
+    for (size_t i = 0; i < disk_images.size(); ++i) {
+        if (disk_images[i]) {
+            snapshot.disk_images[i] = disk_images[i]->save_to_snapshot();
+        }
+        else {
+            snapshot.disk_images[i].reset();
+        }
+    }
     wd1793.save_to_snapshot(snapshot);
 }
 
 void DriveMicrodrive::load_from_snapshot(Snapshot& snapshot)
 {
     state = snapshot.drive_microdrive;
+
+    for (size_t i = 0; i < disk_images.size(); ++i) {
+        const auto& saved = snapshot.disk_images[i];
+        if (!saved) {
+            disk_images[i].reset();
+            continue;
+        }
+
+        if (!disk_images[i] || disk_images[i]->save_to_snapshot().path != saved->path) {
+            disk_images[i] = std::make_unique<DiskImage>(saved->path);
+            if (!disk_images[i]->init()) {
+                disk_images[i].reset();
+                continue;
+            }
+        }
+        disk_images[i]->load_from_snapshot(*saved);
+    }
+
     wd1793.load_from_snapshot(snapshot);
 }

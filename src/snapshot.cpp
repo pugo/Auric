@@ -25,12 +25,18 @@ Snapshot::Snapshot() :
     ay3_8919(),
     memory(),
     wd1793(),
-    drive_microdrive()
+    drive_microdrive(),
+    microdrive_present(false),
+    tape(),
+    oric_rom_enabled(true),
+    disk_rom_enabled(false),
+    cycle_count(0),
+    current_key_row(0),
+    key_rows{},
+    ula{}
 {
 }
 
 Snapshot::~Snapshot()
 {
 }
-
-

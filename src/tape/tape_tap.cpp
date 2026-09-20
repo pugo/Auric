@@ -26,6 +26,7 @@
 #include <string>
 
 #include "tape_tap.hpp"
+#include "snapshot.hpp"
 
 
 TapeTap::TapeTap(MOS6522& via, const std::filesystem::path& path) :
@@ -64,6 +65,44 @@ void TapeTap::reset()
     tape_pos = 0;
     bit_index = 0;
     stopped_mid_byte = false;
+}
+
+
+void TapeTap::save_to_snapshot(Snapshot& snapshot) const
+{
+    snapshot.tape.kind = TapeSnapshotKind::TapNormal;
+    snapshot.tape.path = path.string();
+    snapshot.tape.data = memory_vector;
+    snapshot.tape.motor_running = motor_running;
+    snapshot.tape.tape_state = static_cast<uint8_t>(tape_state);
+    snapshot.tape.sync_end = sync_end;
+    snapshot.tape.body_start = body_start;
+    snapshot.tape.body_remaining = body_remaining;
+    snapshot.tape.leader_count = leader_count;
+    snapshot.tape.tape_pos = tape_pos;
+    snapshot.tape.bit_index = bit_index;
+    snapshot.tape.stopped_mid_byte = stopped_mid_byte;
+}
+
+
+void TapeTap::load_from_snapshot(const Snapshot& snapshot)
+{
+    close_tap_write_file();
+
+    const auto& saved = snapshot.tape;
+    path = saved.path;
+    memory_vector = saved.data;
+    data = memory_vector.data();
+    tape_size = memory_vector.size();
+    motor_running = saved.motor_running;
+    tape_state = static_cast<TapeState>(saved.tape_state);
+    sync_end = saved.sync_end;
+    body_start = saved.body_start;
+    body_remaining = saved.body_remaining;
+    leader_count = saved.leader_count;
+    tape_pos = saved.tape_pos;
+    bit_index = saved.bit_index;
+    stopped_mid_byte = saved.stopped_mid_byte;
 }
 
 

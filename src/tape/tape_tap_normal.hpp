@@ -36,6 +36,9 @@ public:
      */
     void reset() override;
 
+    void save_to_snapshot(Snapshot& snapshot) const override;
+    void load_from_snapshot(const Snapshot& snapshot) override;
+
     /**
      * Execute one cycle.
      */

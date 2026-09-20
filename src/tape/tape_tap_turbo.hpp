@@ -40,6 +40,9 @@ public:
      */
     void reset() override;
 
+    void save_to_snapshot(Snapshot& snapshot) const override;
+    void load_from_snapshot(const Snapshot& snapshot) override;
+
     /**
      * Set motor state.
      * @param motor_on true if motor is on

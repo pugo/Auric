@@ -19,7 +19,9 @@
 #define DISK_IMAGE_H
 
 #include <filesystem>
+#include <cstdint>
 #include <span>
+#include <vector>
 
 
 /**
@@ -117,6 +119,13 @@ protected:
 class DiskImage
 {
 public:
+    struct SnapshotState
+    {
+        std::filesystem::path path;
+        std::vector<uint8_t> data;
+        bool dirty;
+    };
+
     /**
      * @param path Path to disk image file.
      */
@@ -167,6 +176,9 @@ public:
      */
     uint8_t tracks_count() const { return tracks_count_; }
 
+    SnapshotState save_to_snapshot() const;
+    void load_from_snapshot(const SnapshotState& snapshot);
+
 protected:
     uint32_t read32(uint32_t offset) const;
 
@@ -185,6 +197,8 @@ protected:
     uint8_t* data;
 
     std::vector<DiskSide> disk_sides;
+
+    bool rebuild_disk_sides();
 };
 
 

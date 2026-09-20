@@ -169,6 +169,9 @@ public:
      */
     void load_from_snapshot(Snapshot& snapshot);
 
+    /** Recalculate the externally visible IRQ line after state restoration. */
+    void resynchronize_irq() { irq_check(); }
+
     /**
      * Read register value.
      * @param offset register to read

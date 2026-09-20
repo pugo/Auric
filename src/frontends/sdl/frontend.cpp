@@ -208,6 +208,14 @@ void Frontend::pause_sound(bool pause_on)
 }
 
 
+void Frontend::clear_audio()
+{
+    if (sound_audio_stream) {
+        SDL_ClearAudioStream(sound_audio_stream);
+    }
+}
+
+
 bool Frontend::handle_frame()
 {
     SDL_Event event;

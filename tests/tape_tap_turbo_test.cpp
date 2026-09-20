@@ -26,6 +26,7 @@
 #include "../src/config.hpp"
 #include "../src/oric.hpp"
 #include "../src/rom_patcher.hpp"
+#include "../src/snapshot.hpp"
 #include "../src/tape/tape_tap_turbo.hpp"
 
 namespace {
@@ -82,6 +83,49 @@ protected:
         {
             return tape_pos;
         }
+
+        void set_snapshot_values()
+        {
+            motor_running = true;
+            tape_state = TapeState::Body;
+            tape_pos = 7;
+            bit_index = 4;
+            stopped_mid_byte = true;
+            current_byte = 0x31;
+            current_bit = 1;
+            parity = 1;
+            tape_cycle_counter = 123;
+            gap_bits_remaining = 9;
+            line_out = 1;
+            turbo_loading = true;
+            turbo_saving = true;
+        }
+
+        void clear_snapshot_values()
+        {
+            motor_running = false;
+            tape_state = TapeState::Idle;
+            tape_pos = 0;
+            bit_index = 0;
+            stopped_mid_byte = false;
+            current_byte = 0;
+            current_bit = 0;
+            parity = 0;
+            tape_cycle_counter = 0;
+            gap_bits_remaining = 0;
+            line_out = 0;
+            turbo_loading = false;
+            turbo_saving = false;
+        }
+
+        bool snapshot_values_match() const
+        {
+            return motor_running && tape_state == TapeState::Body && tape_pos == 7
+                && bit_index == 4 && stopped_mid_byte && current_byte == 0x31
+                && current_bit == 1 && parity == 1 && tape_cycle_counter == 123
+                && gap_bits_remaining == 9 && line_out == 1
+                && turbo_loading && turbo_saving;
+        }
     };
 
     void SetUp() override
@@ -122,6 +166,25 @@ TEST_F(TapeTapTurboTest, InitCreatesMissingTapFile)
     EXPECT_TRUE(tape.init());
     EXPECT_TRUE(std::filesystem::exists(path));
     EXPECT_EQ(std::filesystem::file_size(path), 0);
+}
+
+
+TEST_F(TapeTapTurboTest, SnapshotRestoresPlaybackAndTurboState)
+{
+    path = test_tape_path("snapshot_state");
+    std::ofstream(path, std::ios::binary).put(0x16);
+
+    auto tape = make_tape();
+    ASSERT_TRUE(tape.init());
+    tape.set_snapshot_values();
+
+    Snapshot snapshot;
+    tape.save_to_snapshot(snapshot);
+    tape.clear_snapshot_values();
+    tape.load_from_snapshot(snapshot);
+
+    EXPECT_EQ(snapshot.tape.kind, TapeSnapshotKind::TapTurbo);
+    EXPECT_TRUE(tape.snapshot_values_match());
 }
 
 

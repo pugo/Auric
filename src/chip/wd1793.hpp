@@ -108,6 +108,15 @@ public:
 class WD1793
 {
 public:
+    enum class OperationType : uint8_t {
+        Idle,
+        ReadSector,
+        WriteSector,
+        ReadAddress,
+        ReadTrack,
+        WriteTrack
+    };
+
     enum Status : uint8_t {
         StatusBusy = 0x01,                 // bit 0: Type I, II and III
         StatusIndex = 0x02,                // bit 1: Type I
@@ -164,6 +173,28 @@ public:
         }
 
         void print() const;
+    };
+
+    /** Pointer-free WD1793 state used by snapshots. */
+    struct SnapshotState
+    {
+        unsigned char data;
+        uint8_t side;
+        uint8_t track;
+        uint8_t sector;
+        uint8_t command;
+        uint8_t status;
+        uint8_t current_track_number;
+        uint8_t current_sector_number;
+        uint8_t sector_type;
+        int16_t interrupt_counter;
+        uint8_t status_at_interrupt;
+        bool update_status_at_interrupt;
+        int16_t data_request_counter;
+        uint16_t offset;
+        std::array<uint8_t, 6> address_data;
+        OperationType operation;
+        bool multiple_sectors;
     };
 
     explicit WD1793(Machine& a_Machine, Drive* drive);

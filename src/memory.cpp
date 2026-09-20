@@ -69,7 +69,12 @@ void Memory::save_to_snapshot(Snapshot& snapshot)
 
 void Memory::load_from_snapshot(Snapshot& snapshot)
 {
-    memory = snapshot.memory;
+    if (snapshot.memory.size() != memory.size()) {
+        throw std::runtime_error("snapshot memory size does not match machine memory");
+    }
+
+    std::copy(snapshot.memory.begin(), snapshot.memory.end(), memory.begin());
+    mem = memory.data();
 }
 
 

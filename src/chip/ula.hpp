@@ -20,10 +20,23 @@
 
 #include "frontends/sdl/frontend.hpp"
 
+class Snapshot;
+
 
 class ULA
 {
 public:
+    struct State
+    {
+        uint8_t video_attrib;
+        uint8_t text_attrib;
+        uint16_t raster_current;
+        uint8_t warpmode_counter;
+        uint8_t blink;
+        uint32_t frame_count;
+        std::vector<uint8_t> pixels;
+    };
+
     /**
      * Oric color palette from color index.
      */
@@ -50,6 +63,9 @@ public:
      */
     bool paint_raster();
     void render_screen();
+
+    void save_to_snapshot(Snapshot& snapshot) const;
+    void load_from_snapshot(const Snapshot& snapshot);
 
 private:
     /**

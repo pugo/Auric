@@ -62,6 +62,9 @@ public:
      */
     virtual void pause_sound(bool pause_on);
 
+    /** Discard samples generated before a restored emulator state. */
+    virtual void clear_audio();
+
     /**
      * Lock audio playback.
      */

@@ -19,9 +19,45 @@
 #define TAPE_H
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 class Memory;
 class MOS6502;
+class Snapshot;
+
+enum class TapeSnapshotKind : uint8_t {
+    Blank,
+    TapNormal,
+    TapTurbo
+};
+
+struct TapeSnapshotState
+{
+    TapeSnapshotKind kind = TapeSnapshotKind::Blank;
+    std::string path;
+    std::vector<uint8_t> data;
+
+    bool motor_running = false;
+    uint8_t tape_state = 0;
+    uint32_t sync_end = 0;
+    uint32_t body_start = 0;
+    uint32_t body_remaining = 0;
+    uint16_t leader_count = 0;
+    uint32_t tape_pos = 0;
+    uint8_t bit_index = 0;
+    bool stopped_mid_byte = false;
+
+    uint8_t current_byte = 0;
+    uint8_t current_bit = 0;
+    uint8_t parity = 0;
+    int16_t tape_cycle_counter = 0;
+    uint8_t gap_bits_remaining = 0;
+    uint8_t line_out = 0;
+
+    bool turbo_loading = false;
+    bool turbo_saving = false;
+};
 
 
 class Tape
@@ -68,6 +104,9 @@ public:
      * @return true if the tape handled this CPU step.
      */
     virtual bool intercept(MOS6502& cpu, Memory& ram, bool oric_rom_enabled) = 0;
+
+    virtual void save_to_snapshot(Snapshot& snapshot) const;
+    virtual void load_from_snapshot(const Snapshot& snapshot);
 
     /**
      * Check if motor is running.

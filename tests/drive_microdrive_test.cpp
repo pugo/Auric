@@ -27,6 +27,7 @@
 #include "../src/config.hpp"
 #include "../src/disk/drive_microdrive.hpp"
 #include "../src/oric.hpp"
+#include "../src/snapshot.hpp"
 
 namespace {
 
@@ -128,6 +129,27 @@ TEST_F(DriveMicrodriveTest, KeepsSeparateImagesPerDrive)
 
     drive.write_byte(0x4, 0x00);
     EXPECT_EQ(drive.get_disk_image(), drive0_image);
+}
+
+
+TEST_F(DriveMicrodriveTest, SnapshotRestoresDiskMediaBytes)
+{
+    DriveMicrodrive drive(oric->get_machine());
+    ASSERT_TRUE(drive.insert_disk(make_disk(0x11), 0));
+
+    Snapshot snapshot;
+    drive.save_to_snapshot(snapshot);
+
+    auto* sector = drive.get_disk_image()->get_track(0, 0)->get_sector(1);
+    ASSERT_NE(sector, nullptr);
+    ASSERT_FALSE(sector->data.empty());
+    sector->data[0] = 0x99;
+
+    drive.load_from_snapshot(snapshot);
+
+    auto* restored_sector = drive.get_disk_image()->get_track(0, 0)->get_sector(1);
+    ASSERT_NE(restored_sector, nullptr);
+    EXPECT_EQ(restored_sector->data[0], 0x11);
 }
 
 TEST_F(DriveMicrodriveTest, MachineDiskInsertKeepsExistingMicrodriveState)

@@ -411,9 +411,18 @@ void Machine::save_snapshot()
     cpu->save_to_snapshot(*snapshot);
     mos_6522->save_to_snapshot(*snapshot);
     memory.save_to_snapshot(*snapshot);
+    frontend->lock_audio();
     ay3->save_to_snapshot(*snapshot);
+    frontend->unlock_audio();
+    snapshot->microdrive_present = dynamic_cast<DriveMicrodrive*>(disk.get()) != nullptr;
     disk->save_to_snapshot(*snapshot);
-
+    tape->save_to_snapshot(*snapshot);
+    snapshot->oric_rom_enabled = oric_rom_enabled;
+    snapshot->disk_rom_enabled = disk_rom_enabled;
+    snapshot->cycle_count = cycle_count;
+    snapshot->current_key_row = current_key_row;
+    std::copy(std::begin(key_rows), std::end(key_rows), snapshot->key_rows.begin());
+    ula.save_to_snapshot(*snapshot);
     frontend->get_status_bar().show_text_for("Saved snapshot", std::chrono::seconds(2));
 }
 
@@ -424,11 +433,81 @@ void Machine::load_snapshot()
         return;
     }
 
+    const bool current_microdrive = dynamic_cast<DriveMicrodrive*>(disk.get()) != nullptr;
+    if (current_microdrive != snapshot->microdrive_present) {
+        if (snapshot->microdrive_present) {
+            disk = std::make_unique<DriveMicrodrive>(*this);
+            disk->init();
+        }
+        else {
+            disk = std::make_unique<DriveNone>();
+            disk->init();
+        }
+    }
+
     cpu->load_from_snapshot(*snapshot);
     mos_6522->load_from_snapshot(*snapshot);
     memory.load_from_snapshot(*snapshot);
+    frontend->lock_audio();
     ay3->load_from_snapshot(*snapshot);
+    frontend->clear_audio();
+    frontend->unlock_audio();
     disk->load_from_snapshot(*snapshot);
+
+    const auto saved_tape_kind = snapshot->tape.kind;
+    const bool is_blank = dynamic_cast<TapeBlank*>(tape.get()) != nullptr;
+    const bool is_turbo = dynamic_cast<TapeTapTurbo*>(tape.get()) != nullptr;
+    const bool is_normal = dynamic_cast<TapeTapNormal*>(tape.get()) != nullptr && !is_turbo;
+    const bool tape_type_matches =
+        (saved_tape_kind == TapeSnapshotKind::Blank && is_blank) ||
+        (saved_tape_kind == TapeSnapshotKind::TapNormal && is_normal) ||
+        (saved_tape_kind == TapeSnapshotKind::TapTurbo && is_turbo);
+
+    if (!tape_type_matches) {
+        if (saved_tape_kind == TapeSnapshotKind::Blank) {
+            tape = std::make_unique<TapeBlank>();
+        }
+        else if (saved_tape_kind == TapeSnapshotKind::TapTurbo && rom_patch) {
+            tape = std::make_unique<TapeTapTurbo>(
+                *mos_6522, snapshot->tape.path, *rom_patch);
+            if (!tape->init()) {
+                frontend->get_status_bar().show_text_for("Unable to restore tape snapshot", 2s);
+                return;
+            }
+        }
+        else if (saved_tape_kind == TapeSnapshotKind::TapNormal) {
+            tape = std::make_unique<TapeTapNormal>(*mos_6522, snapshot->tape.path);
+            if (!tape->init()) {
+                frontend->get_status_bar().show_text_for("Unable to restore tape snapshot", 2s);
+                return;
+            }
+        }
+        else {
+            frontend->get_status_bar().show_text_for("Unable to restore tape snapshot", 2s);
+            return;
+        }
+    }
+
+    tape->load_from_snapshot(*snapshot);
+    tape_autostarter.reset();
+    oric_rom_enabled = snapshot->oric_rom_enabled;
+    disk_rom_enabled = snapshot->disk_rom_enabled;
+    cycle_count = snapshot->cycle_count;
+    current_key_row = snapshot->current_key_row;
+    std::copy(snapshot->key_rows.begin(), snapshot->key_rows.end(), std::begin(key_rows));
+    ula.load_from_snapshot(*snapshot);
+
+    // State copies do not invoke chip wiring callbacks. Reconnect the
+    // externally visible lines once, after all device state is restored.
+    const auto& via_state = mos_6522->get_state();
+    ay3->set_bc1(via_state.ca2);
+    ay3->set_bdir(via_state.cb2);
+    via_orb_changed(via_state.orb);
+    update_key_output();
+    mos_6522->resynchronize_irq();
+    frame_timer_initialized = false;
+    // The next frame will render the restored pixels. Do not render here:
+    // snapshot loading can be initiated while the GUI is already rendering.
 
     frontend->get_status_bar().show_text_for("Loaded snapshot", std::chrono::seconds(2));
 }

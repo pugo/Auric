@@ -19,6 +19,7 @@
 
 #include <machine.hpp>
 #include "ula.hpp"
+#include "snapshot.hpp"
 
 constexpr uint16_t raster_max = 312;
 
@@ -182,3 +183,21 @@ void ULA::render_screen()
     machine.frontend->render_graphics(pixels);
 }
 
+
+void ULA::save_to_snapshot(Snapshot& snapshot) const
+{
+    snapshot.ula = {video_attrib, text_attrib, raster_current,
+                    warpmode_counter, blink, frame_count, pixels};
+}
+
+
+void ULA::load_from_snapshot(const Snapshot& snapshot)
+{
+    video_attrib = snapshot.ula.video_attrib;
+    text_attrib = snapshot.ula.text_attrib;
+    raster_current = snapshot.ula.raster_current;
+    warpmode_counter = snapshot.ula.warpmode_counter;
+    blink = snapshot.ula.blink;
+    frame_count = snapshot.ula.frame_count;
+    pixels = snapshot.ula.pixels;
+}

@@ -20,6 +20,7 @@
 #include <cstdlib>
 
 #include "tape_tap_normal.hpp"
+#include "snapshot.hpp"
 
 
 TapeTapNormal::TapeTapNormal(MOS6522& via, const std::filesystem::path& path) :
@@ -43,6 +44,30 @@ void TapeTapNormal::reset()
     line_out = 0;
 
     ::TapeTap::reset();
+}
+
+
+void TapeTapNormal::save_to_snapshot(Snapshot& snapshot) const
+{
+    TapeTap::save_to_snapshot(snapshot);
+    snapshot.tape.current_byte = current_byte;
+    snapshot.tape.current_bit = current_bit;
+    snapshot.tape.parity = parity;
+    snapshot.tape.tape_cycle_counter = tape_cycle_counter;
+    snapshot.tape.gap_bits_remaining = gap_bits_remaining;
+    snapshot.tape.line_out = line_out;
+}
+
+
+void TapeTapNormal::load_from_snapshot(const Snapshot& snapshot)
+{
+    TapeTap::load_from_snapshot(snapshot);
+    current_byte = snapshot.tape.current_byte;
+    current_bit = snapshot.tape.current_bit;
+    parity = snapshot.tape.parity;
+    tape_cycle_counter = snapshot.tape.tape_cycle_counter;
+    gap_bits_remaining = snapshot.tape.gap_bits_remaining;
+    line_out = snapshot.tape.line_out;
 }
 
 
@@ -220,5 +245,4 @@ uint8_t TapeTapNormal::next_bit()
     bit_index = 0;
     return 1; // last stop bit, next call starts new frame
 }
-
 

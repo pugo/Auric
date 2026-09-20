@@ -219,6 +219,18 @@ bool DiskImage::init()
     spdlog::debug("Total size: {}", image_size);
     spdlog::debug("data start: {}", static_cast<void*>(data));
 
+    if (!rebuild_disk_sides()) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool DiskImage::rebuild_disk_sides()
+{
+    disk_sides.clear();
+
     for (uint8_t i = 0; i < side_count_; ++i) {
         disk_sides.emplace_back(DiskSide(i));
     }
@@ -228,19 +240,51 @@ bool DiskImage::init()
     for (uint8_t side = 0; side < side_count_; ++side) {
         spdlog::debug("======= DiskImage: sides: {} =======", static_cast<int>(side));
 
-        for (uint8_t track = 0; track < tracks_count_; ++track) {
-            auto track_data = std::span<uint8_t>(data + header_size + (side * size_per_side) + (track * track_size), track_size);
-            if (track_data.data() - data > image_size) {
+        for (uint16_t track = 0; track < tracks_count_; ++track) {
+            const size_t offset = header_size + (side * size_per_side) + (track * track_size);
+            if (offset + track_size > image_size) {
                 spdlog::error("DiskImage: track data out of bounds");
                 return false;
             }
 
+            auto track_data = std::span<uint8_t>(data + offset, track_size);
             spdlog::debug("======= DiskImage: track: {} =======", static_cast<int>(track));
             disk_sides[side].add_track(DiskTrack(track_data));
         }
     }
 
     return true;
+}
+
+
+DiskImage::SnapshotState DiskImage::save_to_snapshot() const
+{
+    return {image_path, memory_vector, dirty};
+}
+
+
+void DiskImage::load_from_snapshot(const SnapshotState& snapshot)
+{
+    image_path = snapshot.path;
+    memory_vector = snapshot.data;
+    image_size = memory_vector.size();
+    data = memory_vector.data();
+    dirty = snapshot.dirty;
+
+    if (memory_vector.size() < header_size + 20) {
+        side_count_ = 0;
+        tracks_count_ = 0;
+        geometry_ = 0;
+        disk_sides.clear();
+        return;
+    }
+
+    if (std::equal(memory_vector.begin(), memory_vector.begin() + 8, "MFM_DISK")) {
+        side_count_ = static_cast<uint8_t>(read32(8));
+        tracks_count_ = static_cast<uint16_t>(read32(12));
+        geometry_ = static_cast<uint8_t>(read32(16));
+        rebuild_disk_sides();
+    }
 }
 
 void DiskImage::mark_dirty()

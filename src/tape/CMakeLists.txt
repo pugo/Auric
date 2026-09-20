@@ -1,5 +1,6 @@
 
 add_library(tape
+        tape.cpp
         tape_autostarter.cpp
         tape_blank.cpp
         tape_tap.cpp

@@ -21,6 +21,7 @@
 #include "chip/mos6502.hpp"
 #include "memory.hpp"
 #include "tape_tap_turbo.hpp"
+#include "snapshot.hpp"
 
 
 TapeTapTurbo::TapeTapTurbo(MOS6522& via, const std::filesystem::path& path, const RomPatch& patch) :
@@ -39,6 +40,23 @@ void TapeTapTurbo::reset()
     turbo_saving = false;
 
     TapeTapNormal::reset();
+}
+
+
+void TapeTapTurbo::save_to_snapshot(Snapshot& snapshot) const
+{
+    TapeTapNormal::save_to_snapshot(snapshot);
+    snapshot.tape.kind = TapeSnapshotKind::TapTurbo;
+    snapshot.tape.turbo_loading = turbo_loading;
+    snapshot.tape.turbo_saving = turbo_saving;
+}
+
+
+void TapeTapTurbo::load_from_snapshot(const Snapshot& snapshot)
+{
+    TapeTapNormal::load_from_snapshot(snapshot);
+    turbo_loading = snapshot.tape.turbo_loading;
+    turbo_saving = snapshot.tape.turbo_saving;
 }
 
 
