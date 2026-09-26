@@ -122,28 +122,35 @@ void MemoryMapWindow::update_texture()
 
 void MemoryMapWindow::render(const ImVec2& window_pos, const ImVec2& window_size)
 {
-    ImGuiIO& io = ImGui::GetIO();
-    time_accumulator += io.DeltaTime;
-
-    if (time_accumulator >= update_interval) {
-        update_texture();
-        time_accumulator -= update_interval;
-    }
-
     if (window_open) {
         ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always);
         ImGui::SetNextWindowSize(window_size, ImGuiCond_Always);
 
         if (ImGui::Begin("Memory Map", &window_open)) {
-            ImGui::Text("Memory Map (64KB as 256x256 grid)");
-            ImGui::Separator();
+            render_contents();
+        }
+        ImGui::End();
+    }
+}
 
-            if (ImGui::SliderFloat("Update Frequency (Hz)", &update_frequency, 1.0f, 60.0f)) {
-                update_interval = 1.0f / update_frequency;
-            }
+void MemoryMapWindow::render_contents()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    time_accumulator += io.DeltaTime;
+    if (time_accumulator >= update_interval) {
+        update_texture();
+        time_accumulator -= update_interval;
+    }
 
-            ImGui::Separator();
-            if (gl_texture != 0) {
+    ImGui::Text("Memory Map (64KB as 256x256 grid)");
+    ImGui::Separator();
+
+    if (ImGui::SliderFloat("Update Frequency (Hz)", &update_frequency, 1.0f, 60.0f)) {
+        update_interval = 1.0f / update_frequency;
+    }
+
+    ImGui::Separator();
+    if (gl_texture != 0) {
                 const ImVec2 available = ImGui::GetContentRegionAvail();
                 const float image_size = std::max(64.0f, std::min(available.x, available.y));
                 ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(gl_texture)), ImVec2(image_size, image_size),
@@ -169,8 +176,5 @@ void MemoryMapWindow::render(const ImVec2& window_pos, const ImVec2& window_size
                         ImGui::EndTooltip();
                     }
                 }
-            }
-        }
-        ImGui::End();
     }
 }

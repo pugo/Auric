@@ -106,6 +106,7 @@ MOS6502::MOS6502(Machine& a_Machine) :
     current_instruction(0),
     current_cycle(0),
     has_breakpoints(false),
+    skip_breakpoint(false),
     breakpoint_hit(std::nullopt)
 {
 }
@@ -135,6 +136,7 @@ void MOS6502::reset()
     instruction_cycles = 0;
     current_instruction = 0;
     current_cycle = 0;
+    skip_breakpoint = false;
     breakpoint_hit.reset();
 }
 
@@ -193,13 +195,44 @@ void MOS6502::load_from_snapshot(Snapshot& snapshot)
 bool MOS6502::set_breakpoint(uint16_t address)
 {
     const auto [_, inserted] = breakpoints.insert(address);
+    disabled_breakpoints.erase(address);
     has_breakpoints = !breakpoints.empty();
     return inserted;
+}
+
+bool MOS6502::set_breakpoint_enabled(uint16_t address, bool enabled)
+{
+    if (!breakpoints.contains(address)) {
+        return false;
+    }
+
+    if (enabled) {
+        disabled_breakpoints.erase(address);
+    }
+    else {
+        disabled_breakpoints.insert(address);
+    }
+    return true;
+}
+
+bool MOS6502::breakpoint_enabled(uint16_t address) const
+{
+    return breakpoints.contains(address) && !disabled_breakpoints.contains(address);
+}
+
+bool MOS6502::set_temporary_breakpoint(uint16_t address)
+{
+    temporary_breakpoints.insert(address);
+    breakpoints.insert(address);
+    has_breakpoints = true;
+    return true;
 }
 
 bool MOS6502::clear_breakpoint(uint16_t address)
 {
     const bool removed = breakpoints.erase(address) != 0;
+    disabled_breakpoints.erase(address);
+    temporary_breakpoints.erase(address);
     has_breakpoints = !breakpoints.empty();
     return removed;
 }
@@ -207,6 +240,8 @@ bool MOS6502::clear_breakpoint(uint16_t address)
 void MOS6502::clear_breakpoints()
 {
     breakpoints.clear();
+    disabled_breakpoints.clear();
+    temporary_breakpoints.clear();
     has_breakpoints = false;
 }
 
@@ -477,8 +512,14 @@ bool MOS6502::exec(bool break_on_brk, bool& do_break, bool ignore_breakpoint)
         }
     }
 
-    if (!ignore_breakpoint && has_breakpoints && breakpoints.contains(PC)) {
+    const bool skipped_breakpoint = skip_breakpoint;
+    skip_breakpoint = false;
+    if (!ignore_breakpoint && !skipped_breakpoint && has_breakpoints && breakpoint_enabled(PC)) {
         breakpoint_hit = PC;
+        if (temporary_breakpoints.erase(PC) != 0) {
+            breakpoints.erase(PC);
+            has_breakpoints = !breakpoints.empty();
+        }
         do_break = true;
         return false;
     }

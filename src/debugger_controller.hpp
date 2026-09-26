@@ -38,6 +38,10 @@ public:
     void reset();
     Result execute(std::string command_line);
 
+    Result step_over();
+    Result step_out();
+    Result run_to_cursor(uint16_t address);
+
 private:
     std::optional<uint16_t> string_to_word(const std::string& addr) const;
     std::optional<size_t> string_to_count(const std::string& count) const;

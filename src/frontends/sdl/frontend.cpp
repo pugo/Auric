@@ -242,19 +242,21 @@ bool Frontend::handle_frame()
                     bool special_pressed{false};
 
                     if (event.type == SDL_EVENT_KEY_DOWN) {
-                        if (event.key.mod & SDL_KMOD_CTRL) {
+                        if (event.key.mod & (SDL_KMOD_CTRL | SDL_KMOD_SHIFT)) {
                             if (scancode == SDL_SCANCODE_W) {
                                 oric.get_machine().toggle_warp_mode();
                                 special_pressed = true;
                             }
-
                             else if (scancode == SDL_SCANCODE_R) {
                                 oric.get_machine().cpu->NMI();
                                 special_pressed = true;
                             }
-
                             else if (scancode == SDL_SCANCODE_B) {
                                 oric.break_execution();
+                                special_pressed = true;
+                            }
+                            else if (scancode == SDL_SCANCODE_M) {
+                                show_debugger();
                                 special_pressed = true;
                             }
                         }

@@ -130,6 +130,18 @@ public:
      */
     bool set_breakpoint(uint16_t address);
 
+    /** Enable or disable a configured breakpoint without removing it. */
+    bool set_breakpoint_enabled(uint16_t address, bool enabled);
+
+    /** Return whether a configured breakpoint is enabled. */
+    bool breakpoint_enabled(uint16_t address) const;
+
+    /** Set a breakpoint that is removed after it is hit. */
+    bool set_temporary_breakpoint(uint16_t address);
+
+    /** Ignore a breakpoint at the current PC once when continuing. */
+    void skip_breakpoint_once() { skip_breakpoint = true; }
+
     /**
      * Clear a breakpoint on the specified address.
      * @param address address to clear
@@ -244,7 +256,10 @@ protected:
     uint8_t current_cycle;
 
     std::set<uint16_t> breakpoints;
+    std::set<uint16_t> disabled_breakpoints;
+    std::set<uint16_t> temporary_breakpoints;
     bool has_breakpoints;
+    bool skip_breakpoint{false};
     std::optional<uint16_t> breakpoint_hit;
 };
 

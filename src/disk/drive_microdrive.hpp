@@ -95,6 +95,7 @@ public:
      * @return reference to WD1793 state
      */
     WD1793::State& get_wd1793_state() { return wd1793.get_state(); }
+    const WD1793::State& get_wd1793_state() const { return wd1793.get_state(); }
 
     /**
      * Print drive status to console.

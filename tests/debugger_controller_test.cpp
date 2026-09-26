@@ -73,6 +73,18 @@ TEST_F(DebuggerControllerTest, BreakpointsCanBeListedAndCleared)
     EXPECT_NE(controller->execute("bl").output.find("No breakpoints set"), std::string::npos);
 }
 
+TEST_F(DebuggerControllerTest, BreakpointsCanBeDisabledWithoutBeingRemoved)
+{
+    controller->execute("bs 1000");
+    controller->execute("bd 1000");
+
+    EXPECT_FALSE(machine->cpu->breakpoint_enabled(0x1000));
+    EXPECT_NE(controller->execute("bl").output.find("[ ] $1000"), std::string::npos);
+
+    controller->execute("be 1000");
+    EXPECT_TRUE(machine->cpu->breakpoint_enabled(0x1000));
+}
+
 TEST_F(DebuggerControllerTest, InvalidNumericArgumentsStayInDebugger)
 {
     EXPECT_NE(controller->execute("pc nope").output.find("invalid address"), std::string::npos);
@@ -106,6 +118,51 @@ TEST_F(DebuggerControllerTest, StepExecutesThroughBreakpointWithoutHanging)
     EXPECT_EQ(machine->cpu->get_pc(), 0x1001);
     EXPECT_NE(result.output.find("$1001"), std::string::npos);
     EXPECT_NE(controller->execute("bl").output.find("$1000"), std::string::npos);
+}
+
+TEST_F(DebuggerControllerTest, StepOverUsesTemporaryBreakpointForJsr)
+{
+    machine->memory.mem[0x1000] = 0x20; // JSR
+    machine->memory.mem[0x1001] = 0x00;
+    machine->memory.mem[0x1002] = 0x20;
+    machine->memory.mem[0x2000] = 0x60; // RTS
+    machine->cpu->set_pc(0x1000);
+
+    auto result = controller->execute("so");
+    EXPECT_EQ(result.action, DebuggerController::Action::Continue);
+
+    bool do_break = false;
+    machine->cpu->time_instruction();
+    while (!machine->cpu->exec(false, do_break)) {}
+    EXPECT_EQ(machine->cpu->get_pc(), 0x2000);
+
+    machine->cpu->time_instruction();
+    while (!machine->cpu->exec(false, do_break)) {}
+    EXPECT_EQ(machine->cpu->get_pc(), 0x1003);
+
+    do_break = false;
+    machine->cpu->time_instruction();
+    while (!machine->cpu->exec(false, do_break)) {}
+    EXPECT_TRUE(do_break);
+    EXPECT_TRUE(machine->cpu->get_breakpoints().empty());
+}
+
+TEST_F(DebuggerControllerTest, WatchpointsStopOnConfiguredBusAccess)
+{
+    const auto index = machine->add_watchpoint(0x1234, 0x1234, false, true);
+    ASSERT_EQ(index, 0u);
+
+    Machine::write_byte(*machine, 0x1234, 0x5A);
+    const auto hit = machine->take_watchpoint_hit();
+    ASSERT_TRUE(hit.has_value());
+    EXPECT_TRUE(hit->write);
+    EXPECT_EQ(hit->address, 0x1234);
+    EXPECT_EQ(hit->value, 0x5A);
+
+    machine->clear_stop();
+    machine->set_watchpoint_enabled(index, false);
+    Machine::write_byte(*machine, 0x1234, 0xA5);
+    EXPECT_FALSE(machine->take_watchpoint_hit().has_value());
 }
 
 TEST_F(DebuggerControllerTest, DisassemblyShowsInstructionBytesAndCorrectLdxOpcode)

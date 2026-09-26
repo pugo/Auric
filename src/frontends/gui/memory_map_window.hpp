@@ -53,6 +53,7 @@ public:
      * Should be called once per frame from Gui::render().
      */
     void render(const ImVec2& window_pos, const ImVec2& window_size);
+    void render_contents();
 
     /**
      * Set the update frequency in Hz (default 10 Hz).

@@ -245,6 +245,7 @@ public:
      * @return reference to current WD1793 state
      */
     WD1793::State& get_state() { return state; }
+    const WD1793::State& get_state() const { return state; }
 
     /**
      * Save WD1793 state to snapshot.

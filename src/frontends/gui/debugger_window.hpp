@@ -12,14 +12,16 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 #include <imgui.h>
 
 class Oric;
+class MemoryMapWindow;
 
 class DebuggerWindow
 {
 public:
-    explicit DebuggerWindow(Oric& oric);
+    DebuggerWindow(Oric& oric, MemoryMapWindow& memory_map_window);
 
     void render(const ImVec2& window_pos, const ImVec2& window_size);
 
@@ -34,8 +36,19 @@ private:
     static int input_callback(ImGuiInputTextCallbackData* data);
     void submit_command();
     void navigate_history(ImGuiInputTextCallbackData* data);
+    void render_disassembly(float height);
+    void render_cpu();
+    void render_breakpoints(float height);
+    void render_watchpoints();
+    void render_memory();
+    void render_console();
+    void render_trace();
+    void render_hardware();
+    void render_toolbar();
+    void execute_gui_command(const std::string& command);
 
     Oric& oric;
+    MemoryMapWindow& memory_map_window;
     std::string output;
     std::string input;
     std::vector<std::string> command_history;
@@ -44,6 +57,19 @@ private:
     bool window_open{false};
     bool scroll_to_bottom{false};
     bool focus_input{false};
+    bool show_disassembly{true};
+    bool show_cpu{true};
+    bool show_breakpoints{true};
+    bool show_watchpoints{true};
+    bool show_memory{true};
+    bool show_console{true};
+    bool show_trace{false};
+    uint16_t memory_address{0};
+    uint16_t watch_start{0};
+    uint16_t watch_end{0};
+    bool watch_read{false};
+    bool watch_write{true};
+    char cursor_address[7]{"0000"};
 };
 
 #endif // FRONTENDS_GUI_DEBUGGER_WINDOW_H

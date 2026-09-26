@@ -66,8 +66,6 @@ private:
     bool show_gui{false};
     bool initialized{false};
     bool show_video_window{false};
-    bool show_memory_map_window{false};
-
     bool enable_scanlines{false};
     bool enable_vertical_lines{false};
     bool enable_vignette{false};

@@ -113,6 +113,7 @@ public:
      * @return true if motor is running.
      */
     bool is_motor_running() { return motor_running; };
+    virtual std::string debug_status() const;
 
 protected:
     bool motor_running;

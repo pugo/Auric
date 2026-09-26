@@ -117,6 +117,8 @@ std::string DebuggerController::help_text() const
         "bl              : list breakpoints\n"
         "bc <address>    : clear breakpoint\n"
         "bc *            : clear all breakpoints\n"
+        "be <address>    : enable breakpoint\n"
+        "bd <address>    : disable breakpoint\n"
         "d               : disassemble from last address or PC\n"
         "d <address> <n> : disassemble n hexadecimal bytes\n"
         "                  (example: d c000 10, or d $c000 $10)\n"
@@ -130,8 +132,42 @@ std::string DebuggerController::help_text() const
         "quiet           : prevent debug output at run time\n"
         "q, quit         : quit\n"
         "s [n]           : step one or n decimal instructions\n"
+        "so              : step over subroutine call\n"
+        "su              : step out of current subroutine\n"
+        "rtc <address>   : run to cursor address\n"
         "sr, softreset   : soft reset oric\n"
         "v               : print VIA (6522) info\n";
+}
+
+DebuggerController::Result DebuggerController::step_over()
+{
+    const uint16_t pc = machine.cpu->get_pc();
+    if (machine.peek_byte(pc) != JSR) {
+        return {Action::Stay, step(1)};
+    }
+
+    machine.cpu->set_temporary_breakpoint(static_cast<uint16_t>(pc + 3));
+    return {Action::Continue, std::format("Running over subroutine at ${:04X}\n", pc)};
+}
+
+DebuggerController::Result DebuggerController::step_out()
+{
+    const uint8_t sp = machine.cpu->get_sp();
+    if (sp >= 0xFF) {
+        return {Action::Stay, "Unable to step out: stack has no return address\n"};
+    }
+
+    const uint16_t stack_address = static_cast<uint16_t>(0x100 | ((sp + 1) & 0xFF));
+    const uint16_t return_address = static_cast<uint16_t>(machine.peek_byte(stack_address) |
+        (machine.peek_byte(static_cast<uint16_t>(stack_address + 1)) << 8));
+    machine.cpu->set_temporary_breakpoint(static_cast<uint16_t>(return_address + 1));
+    return {Action::Continue, std::format("Running out to ${:04X}\n", static_cast<uint16_t>(return_address + 1))};
+}
+
+DebuggerController::Result DebuggerController::run_to_cursor(uint16_t address)
+{
+    machine.cpu->set_temporary_breakpoint(address);
+    return {Action::Continue, std::format("Running to ${:04X}\n", address)};
 }
 
 std::string DebuggerController::step(size_t count)
@@ -206,7 +242,7 @@ DebuggerController::Result DebuggerController::execute(std::string command_line)
         std::ostringstream output;
         output << "Breakpoints:\n";
         for (const uint16_t address : breakpoints) {
-            output << std::format("  ${:04X}\n", address);
+            output << std::format("  [{}] ${:04X}\n", machine.cpu->breakpoint_enabled(address) ? 'x' : ' ', address);
         }
 
         return {Action::Stay, output.str()};
@@ -231,6 +267,17 @@ DebuggerController::Result DebuggerController::execute(std::string command_line)
         }
 
         return {Action::Stay, std::format("Cleared breakpoint at ${:04X}\n", *addr)};
+    }
+    if (cmd == "be" || cmd == "bd") {
+        if (parts.size() != 2) {
+            return {Action::Stay, std::format("Use: {} <address>\n", cmd)};
+        }
+
+        const auto addr = string_to_word(parts[1]);
+        if (!addr || !machine.cpu->set_breakpoint_enabled(*addr, cmd == "be")) {
+            return {Action::Stay, std::format("No breakpoint at ${:04X}\n", addr.value_or(0))};
+        }
+        return {Action::Stay, std::format("Breakpoint {} at ${:04X}\n", cmd == "be" ? "enabled" : "disabled", *addr)};
     }
     if (cmd == "d" || cmd == "disassemble") {
         if (parts.size() == 1) {
@@ -326,6 +373,28 @@ DebuggerController::Result DebuggerController::execute(std::string command_line)
         }
 
         return {Action::Stay, step(*count)};
+    }
+    if (cmd == "so" || cmd == "stepover") {
+        if (parts.size() != 1) {
+            return {Action::Stay, "Use: so\n"};
+        }
+        return step_over();
+    }
+    if (cmd == "su" || cmd == "stepout") {
+        if (parts.size() != 1) {
+            return {Action::Stay, "Use: su\n"};
+        }
+        return step_out();
+    }
+    if (cmd == "rtc" || cmd == "run-to-cursor") {
+        if (parts.size() != 2) {
+            return {Action::Stay, "Use: rtc <address>\n"};
+        }
+        const auto addr = string_to_word(parts[1]);
+        if (!addr) {
+            return {Action::Stay, std::format("Error: invalid address \"{}\"\n", parts[1])};
+        }
+        return run_to_cursor(*addr);
     }
     if (cmd == "sr" || cmd == "softreset") {
         machine.cpu->NMI();

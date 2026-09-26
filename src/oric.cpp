@@ -172,6 +172,11 @@ void Oric::break_execution()
         if (const auto breakpoint = machine->cpu->take_breakpoint_hit()) {
             frontend->append_debugger_output(std::format("Breakpoint hit at ${:04X}\n", *breakpoint));
         }
+        if (const auto watchpoint = machine->take_watchpoint_hit()) {
+            frontend->append_debugger_output(std::format("Watchpoint {} at ${:04X}: ${:02X}\n",
+                                                         watchpoint->write ? "write" : "read",
+                                                         watchpoint->address, watchpoint->value));
+        }
     }
 
     if (debugger_controller) {
@@ -187,6 +192,8 @@ void Oric::break_execution()
 
 void Oric::continue_execution()
 {
+    machine->clear_stop();
+    machine->cpu->skip_breakpoint_once();
     state = STATE_RUN;
 }
 

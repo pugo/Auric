@@ -66,7 +66,7 @@ Machine::Machine(Oric& oric) :
     frontend(nullptr),
     ula(*this, memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
     oric(oric),
-    monitor(*this, Machine::read_byte),
+    monitor(*this, Machine::read_byte_no_watchpoint),
     memory(oric_ram_size),
     oric_rom(oric_rom_size),
     disk_rom(disk_rom_size),
@@ -77,6 +77,7 @@ Machine::Machine(Oric& oric) :
     has_tape_turbo(false),
     disassemble_execution(false),
     cycle_count(0),
+    total_cycles(0),
     frame_timer_initialized(false),
     warpmode_on(false),
     break_exec(false),
@@ -303,6 +304,9 @@ void Machine::run_until_frame_or_break(Oric* oric)
             }
 
             uint8_t cycles = cpu->time_instruction();
+            if (trace_enabled) {
+                append_trace(cpu->get_current_instruction_addr(), cycles);
+            }
             if (disassemble_execution) {
                 PrintStat(cpu->get_current_instruction_addr());
             }
@@ -311,6 +315,7 @@ void Machine::run_until_frame_or_break(Oric* oric)
             disk->exec(cycles);
             mos_6522->exec(cycles);
             ay3->exec(cycles);
+            total_cycles += cycles;
 
             if (cpu->exec(false, break_exec)) {
                 update_key_output();
@@ -649,6 +654,69 @@ void Machine::eject_disk(uint8_t drive_number)
     else {
         frontend->get_status_bar().show_text_for(std::format("No disk in drive {}", (int)drive_number + 1), 2s);
     }
+}
+
+size_t Machine::add_watchpoint(uint16_t start, uint16_t end, bool on_read, bool on_write)
+{
+    if (start > end || (!on_read && !on_write)) {
+        return watchpoints.size();
+    }
+
+    watchpoints.push_back({start, end, on_read, on_write, true});
+    return watchpoints.size() - 1;
+}
+
+bool Machine::remove_watchpoint(size_t index)
+{
+    if (index >= watchpoints.size()) {
+        return false;
+    }
+
+    watchpoints.erase(watchpoints.begin() + static_cast<std::ptrdiff_t>(index));
+    return true;
+}
+
+bool Machine::set_watchpoint_enabled(size_t index, bool enabled)
+{
+    if (index >= watchpoints.size()) {
+        return false;
+    }
+
+    watchpoints[index].enabled = enabled;
+    return true;
+}
+
+std::optional<Machine::WatchpointHit> Machine::take_watchpoint_hit()
+{
+    const auto result = watchpoint_hit;
+    watchpoint_hit.reset();
+    return result;
+}
+
+void Machine::record_bus_access(uint16_t address, bool write, uint8_t value)
+{
+    if (break_exec || watchpoint_hit) {
+        return;
+    }
+
+    for (const auto& watchpoint : watchpoints) {
+        const bool type_matches = write ? watchpoint.on_write : watchpoint.on_read;
+        if (watchpoint.enabled && type_matches && address >= watchpoint.start && address <= watchpoint.end) {
+            watchpoint_hit = WatchpointHit{address, value, static_cast<uint16_t>(cpu ? cpu->get_pc() : 0), write};
+            break_exec = true;
+            return;
+        }
+    }
+}
+
+void Machine::append_trace(uint16_t pc, uint8_t cycles)
+{
+    constexpr size_t max_trace_entries = 4096;
+    if (trace_log.size() >= max_trace_entries) {
+        trace_log.pop_front();
+    }
+
+    trace_log.push_back({total_cycles, pc, cycles, monitor.disassemble_to_string(pc).output});
 }
 
 void Machine::PrintStat()

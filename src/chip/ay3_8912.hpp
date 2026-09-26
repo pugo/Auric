@@ -377,6 +377,7 @@ public:
      * @return register value
      */
     uint8_t get_register(Register reg) { return state.registers[reg]; }
+    const SoundState& get_state() const { return state; }
 
     /**
      * Set bus direction pin value - callback function.

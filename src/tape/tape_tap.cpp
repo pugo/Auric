@@ -45,6 +45,12 @@ TapeTap::TapeTap(MOS6522& via, const std::filesystem::path& path) :
 {
 }
 
+std::string TapeTap::debug_status() const
+{
+    return std::format("motor={} state={} position={}/{}", motor_running ? "on" : "off",
+                       static_cast<unsigned int>(tape_state), tape_pos, tape_size);
+}
+
 
 TapeTap::~TapeTap()
 {

@@ -19,10 +19,12 @@
 #define MACHINE_H
 
 #include <chrono>
+#include <deque>
 #include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "chip/mos6502.hpp"
 #include "chip/mos6522.hpp"
@@ -46,6 +48,31 @@ class TapeTapTurbo;
 class Machine
 {
 public:
+    struct Watchpoint
+    {
+        uint16_t start{0};
+        uint16_t end{0};
+        bool on_read{false};
+        bool on_write{true};
+        bool enabled{true};
+    };
+
+    struct WatchpointHit
+    {
+        uint16_t address{0};
+        uint8_t value{0};
+        uint16_t pc{0};
+        bool write{false};
+    };
+
+    struct TraceEntry
+    {
+        uint64_t cycle{0};
+        uint16_t pc{0};
+        uint8_t cycles{0};
+        std::string instruction;
+    };
+
     explicit Machine(Oric& oric);
     ~Machine() = default;
 
@@ -146,6 +173,7 @@ public:
      * Stop the machine.
      */
     void stop() { break_exec = true; }
+    void clear_stop() { break_exec = false; }
 
     /**
      * Trigger CPU IRQ.
@@ -199,6 +227,7 @@ public:
     void eject_disk(uint8_t drive_number);
 
     Drive* get_disk_drive() { return disk.get(); }
+    Tape* get_tape() { return tape.get(); }
 
     /**
      * Set whether to disassemble executed instructions.
@@ -215,10 +244,92 @@ public:
     void PrintStat();
     std::string format_stat();
 
+    /**
+     * Get the total number of CPU cycles.
+     * @return total cycles
+     */
+    uint64_t get_total_cycles() const { return total_cycles; }
+
+    /**
+     * Set whether to enable instruction trace logging.
+     * @param enabled true to enable instruction trace logging
+     */
+    void set_trace_enabled(bool enabled) { trace_enabled = enabled; }
+
+    /**
+     * Check if instruction trace logging is enabled.
+     * @return true if instruction trace logging is enabled
+     */
+    bool trace_is_enabled() const { return trace_enabled; }
+
+    /**
+     * Clear the instruction trace log.
+     */
+    void clear_trace() { trace_log.clear(); }
+
+    /**
+     * Get the instruction trace log.
+     * @return reference to instruction trace log
+     */
+    const std::deque<TraceEntry>& get_trace() const { return trace_log; }
+
+    /**
+     * Add a watchpoint.
+     * @param start start address of watchpoint
+     * @param end end address of watchpoint
+     * @param on_read true to trigger on read access
+     * @param on_write true to trigger on write access
+     * @return index of the added watchpoint
+     */
+    size_t add_watchpoint(uint16_t start, uint16_t end, bool on_read, bool on_write);
+
+    /**
+     * Remove a watchpoint by index.
+     * @param index index of the watchpoint to remove
+     * @return true if the watchpoint was removed, false if index is invalid
+     */
+    bool remove_watchpoint(size_t index);
+
+    /**
+     * Enable or disable a watchpoint by index.
+     * @param index index of the watchpoint to enable/disable
+     * @param enabled true to enable, false to disable
+     * @return true if the watchpoint was updated, false if index is invalid
+     */
+    bool set_watchpoint_enabled(size_t index, bool enabled);
+
+    /**
+     * Get the list of watchpoints.
+     * @return reference to the vector of watchpoints
+     */
+    const std::vector<Watchpoint>& get_watchpoints() const { return watchpoints; }
+
+    /**
+     * Take the last watchpoint hit, if any.
+     * @return optional WatchpointHit if a watchpoint was hit, std::nullopt otherwise
+     */
+    std::optional<WatchpointHit> take_watchpoint_hit();
+
+
+    /**
+     * Read a byte from memory.
+     * @param address address to read from
+     * @return value read from memory
+     */
+    uint8_t peek_byte(uint16_t address) const { return memory.mem[address]; }
+
+    /**
+     * Write a byte to memory.
+     * @param address address to write to
+     * @param value value to write
+     */
+    void poke_byte(uint16_t address, uint8_t value) { memory.mem[address] = value; }
+
     // --- Memory functions -------------------
 
     static uint8_t read_byte(Machine& machine, uint16_t address)
     {
+        machine.record_bus_access(address, false, 0);
         if (!machine.oric_rom_enabled) {
             if (machine.disk_rom_enabled && address >= 0xe000) {
                 return machine.disk_rom.mem[address - 0xe000];
@@ -241,8 +352,30 @@ public:
         return machine.memory.mem[address];
     }
 
+    static uint8_t read_byte_no_watchpoint(Machine& machine, uint16_t address)
+    {
+        if (!machine.oric_rom_enabled) {
+            if (machine.disk_rom_enabled && address >= 0xe000) {
+                return machine.disk_rom.mem[address - 0xe000];
+            }
+        }
+        else if (address >= 0xc000) {
+            return machine.oric_rom.mem[address - 0xc000];
+        }
+
+        if (address >= 0x300 && address < 0x400) {
+            if (address >= 0x310 && address < 0x31c) {
+                return machine.disk->read_byte(address - 0x310);
+            }
+            return machine.mos_6522->read_byte(address);
+        }
+
+        return machine.memory.mem[address];
+    }
+
     static uint8_t read_byte_zp(Machine &machine, uint8_t address)
     {
+        machine.record_bus_access(address, false, 0);
         return machine.memory.mem[address];
     }
 
@@ -258,6 +391,7 @@ public:
 
     static void write_byte(Machine &machine, uint16_t address, uint8_t val)
     {
+        machine.record_bus_access(address, true, val);
         if (! machine.oric_rom_enabled) {
             if (machine.disk_rom_enabled && address >= 0xe000) {
                 return;  // Can't write into disk ROM.
@@ -284,6 +418,7 @@ public:
 
     static void write_byte_zp(Machine &machine, uint8_t address, uint8_t val)
     {
+        machine.record_bus_access(address, true, val);
         if (address > 0x00ff) {
             return;
         }
@@ -355,6 +490,9 @@ protected:
 
     bool disassemble_execution;
     int32_t cycle_count;
+    uint64_t total_cycles;
+    bool trace_enabled{false};
+    std::deque<TraceEntry> trace_log;
     std::chrono::high_resolution_clock::time_point next_frame_tp;
     bool frame_timer_initialized;
 
@@ -365,6 +503,12 @@ protected:
     uint8_t key_rows[8];
 
     std::optional<Snapshot> snapshot;
+
+    std::vector<Watchpoint> watchpoints;
+    std::optional<WatchpointHit> watchpoint_hit;
+
+    void record_bus_access(uint16_t address, bool write, uint8_t value);
+    void append_trace(uint16_t pc, uint8_t cycles);
 };
 
 #endif // MACHINE_H

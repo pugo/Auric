@@ -10,6 +10,13 @@
 #include "snapshot.hpp"
 #include "tape.hpp"
 
+#include <format>
+
+std::string Tape::debug_status() const
+{
+    return std::format("motor={} ", motor_running ? "on" : "off");
+}
+
 
 void Tape::save_to_snapshot(Snapshot& snapshot) const
 {
