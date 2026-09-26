@@ -32,6 +32,7 @@
 #include "monitor.hpp"
 #include "rom_patcher.hpp"
 #include "snapshot.hpp"
+#include "snapshot_store.hpp"
 #include "tape/tape.hpp"
 #include "tape/tape_autostarter.hpp"
 #include "disk/drive.hpp"
@@ -338,6 +339,9 @@ protected:
     std::string format_stat(uint16_t address);
     bool try_tape_turbo_intercept();
     bool load_tape(std::filesystem::path path);
+    Snapshot capture_snapshot();
+    SnapshotContext current_snapshot_context();
+    void restore_snapshot(Snapshot& saved_snapshot);
 
     ULA ula;
     Oric& oric;

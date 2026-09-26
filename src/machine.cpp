@@ -402,40 +402,79 @@ void Machine::via_orb_changed(uint8_t orb)
     }
 }
 
+Snapshot Machine::capture_snapshot()
+{
+    Snapshot captured;
+
+    cpu->save_to_snapshot(captured);
+    mos_6522->save_to_snapshot(captured);
+    memory.save_to_snapshot(captured);
+    frontend->lock_audio();
+    ay3->save_to_snapshot(captured);
+    frontend->unlock_audio();
+    captured.microdrive_present = dynamic_cast<DriveMicrodrive*>(disk.get()) != nullptr;
+    disk->save_to_snapshot(captured);
+    tape->save_to_snapshot(captured);
+    captured.oric_rom_enabled = oric_rom_enabled;
+    captured.disk_rom_enabled = disk_rom_enabled;
+    captured.cycle_count = cycle_count;
+    captured.current_key_row = current_key_row;
+    std::copy(std::begin(key_rows), std::end(key_rows), captured.key_rows.begin());
+    ula.save_to_snapshot(captured);
+    return captured;
+}
+
+SnapshotContext Machine::current_snapshot_context()
+{
+    Snapshot media_state;
+    disk->save_to_snapshot(media_state);
+    tape->save_to_snapshot(media_state);
+    return SnapshotStore::context_from_snapshot(media_state);
+}
+
 void Machine::save_snapshot()
 {
-    if (! snapshot) {
-        snapshot = Snapshot{};
+    auto captured = capture_snapshot();
+    const auto context = SnapshotStore::context_from_snapshot(captured);
+    SnapshotStore store(oric.get_config().snapshots_path());
+    std::string error;
+    if (! store.save(captured, context, error)) {
+        spdlog::error("Unable to save snapshot: {}", error);
+        frontend->get_status_bar().show_text_for("Unable to save snapshot", 2s);
+        return;
     }
 
-    cpu->save_to_snapshot(*snapshot);
-    mos_6522->save_to_snapshot(*snapshot);
-    memory.save_to_snapshot(*snapshot);
-    frontend->lock_audio();
-    ay3->save_to_snapshot(*snapshot);
-    frontend->unlock_audio();
-    snapshot->microdrive_present = dynamic_cast<DriveMicrodrive*>(disk.get()) != nullptr;
-    disk->save_to_snapshot(*snapshot);
-    tape->save_to_snapshot(*snapshot);
-    snapshot->oric_rom_enabled = oric_rom_enabled;
-    snapshot->disk_rom_enabled = disk_rom_enabled;
-    snapshot->cycle_count = cycle_count;
-    snapshot->current_key_row = current_key_row;
-    std::copy(std::begin(key_rows), std::end(key_rows), snapshot->key_rows.begin());
-    ula.save_to_snapshot(*snapshot);
+    snapshot = std::move(captured);
     frontend->get_status_bar().show_text_for("Saved snapshot", std::chrono::seconds(2));
 }
 
 void Machine::load_snapshot()
 {
-    if (! snapshot) {
-        frontend->get_status_bar().show_text_for("No snapshot saved", 2s);
+    SnapshotStore store(oric.get_config().snapshots_path());
+    std::string error;
+    const auto loaded = store.load(current_snapshot_context(), error);
+    if (! loaded) {
+        if (error.empty()) {
+            frontend->get_status_bar().show_text_for("No snapshot saved", 2s);
+        }
+        else {
+            spdlog::error("Unable to load snapshot: {}", error);
+            frontend->get_status_bar().show_text_for("Unable to load snapshot", 2s);
+        }
         return;
     }
 
+    snapshot = *loaded;
+    restore_snapshot(*snapshot);
+}
+
+void Machine::restore_snapshot(Snapshot& saved_snapshot)
+{
+    auto& saved = saved_snapshot;
+
     const bool current_microdrive = dynamic_cast<DriveMicrodrive*>(disk.get()) != nullptr;
-    if (current_microdrive != snapshot->microdrive_present) {
-        if (snapshot->microdrive_present) {
+    if (current_microdrive != saved.microdrive_present) {
+        if (saved.microdrive_present) {
             disk = std::make_unique<DriveMicrodrive>(*this);
             disk->init();
         }
@@ -445,16 +484,16 @@ void Machine::load_snapshot()
         }
     }
 
-    cpu->load_from_snapshot(*snapshot);
-    mos_6522->load_from_snapshot(*snapshot);
-    memory.load_from_snapshot(*snapshot);
+    cpu->load_from_snapshot(saved);
+    mos_6522->load_from_snapshot(saved);
+    memory.load_from_snapshot(saved);
     frontend->lock_audio();
-    ay3->load_from_snapshot(*snapshot);
+    ay3->load_from_snapshot(saved);
     frontend->clear_audio();
     frontend->unlock_audio();
-    disk->load_from_snapshot(*snapshot);
+    disk->load_from_snapshot(saved);
 
-    const auto saved_tape_kind = snapshot->tape.kind;
+    const auto saved_tape_kind = saved.tape.kind;
     const bool is_blank = dynamic_cast<TapeBlank*>(tape.get()) != nullptr;
     const bool is_turbo = dynamic_cast<TapeTapTurbo*>(tape.get()) != nullptr;
     const bool is_normal = dynamic_cast<TapeTapNormal*>(tape.get()) != nullptr && !is_turbo;
@@ -469,14 +508,14 @@ void Machine::load_snapshot()
         }
         else if (saved_tape_kind == TapeSnapshotKind::TapTurbo && rom_patch) {
             tape = std::make_unique<TapeTapTurbo>(
-                *mos_6522, snapshot->tape.path, *rom_patch);
+                *mos_6522, saved.tape.path, *rom_patch);
             if (!tape->init()) {
                 frontend->get_status_bar().show_text_for("Unable to restore tape snapshot", 2s);
                 return;
             }
         }
         else if (saved_tape_kind == TapeSnapshotKind::TapNormal) {
-            tape = std::make_unique<TapeTapNormal>(*mos_6522, snapshot->tape.path);
+            tape = std::make_unique<TapeTapNormal>(*mos_6522, saved.tape.path);
             if (!tape->init()) {
                 frontend->get_status_bar().show_text_for("Unable to restore tape snapshot", 2s);
                 return;
@@ -488,14 +527,14 @@ void Machine::load_snapshot()
         }
     }
 
-    tape->load_from_snapshot(*snapshot);
+    tape->load_from_snapshot(saved);
     tape_autostarter.reset();
-    oric_rom_enabled = snapshot->oric_rom_enabled;
-    disk_rom_enabled = snapshot->disk_rom_enabled;
-    cycle_count = snapshot->cycle_count;
-    current_key_row = snapshot->current_key_row;
-    std::copy(snapshot->key_rows.begin(), snapshot->key_rows.end(), std::begin(key_rows));
-    ula.load_from_snapshot(*snapshot);
+    oric_rom_enabled = saved.oric_rom_enabled;
+    disk_rom_enabled = saved.disk_rom_enabled;
+    cycle_count = saved.cycle_count;
+    current_key_row = saved.current_key_row;
+    std::copy(saved.key_rows.begin(), saved.key_rows.end(), std::begin(key_rows));
+    ula.load_from_snapshot(saved);
 
     // State copies do not invoke chip wiring callbacks. Reconnect the
     // externally visible lines once, after all device state is restored.

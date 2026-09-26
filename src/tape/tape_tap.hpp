@@ -61,7 +61,6 @@ public:
 
     void save_to_snapshot(Snapshot& snapshot) const override;
     void load_from_snapshot(const Snapshot& snapshot) override;
-
     /**
      * Reset tape postion.
      */

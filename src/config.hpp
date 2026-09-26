@@ -138,6 +138,12 @@ public:
      */
     std::filesystem::path images_path() const { return _images_path; }
 
+    /**
+     * Return the directory used for persistent snapshots.
+     * @return snapshot directory path
+     */
+    std::filesystem::path snapshots_path() const { return _snapshots_path; }
+
     bool enable_scanlines() const { return _enable_scanlines; }
     bool enable_vertical_lines() const { return _enable_vertical_lines; }
     bool enable_vignette() const { return _enable_vignette; }
@@ -167,6 +173,7 @@ protected:
     // Media
     std::filesystem::path _fonts_path;
     std::filesystem::path _images_path;
+    std::filesystem::path _snapshots_path;
 
     // Video
     bool _enable_scanlines;

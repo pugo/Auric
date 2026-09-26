@@ -26,6 +26,7 @@ add_executable(gtests_run
         drive_microdrive_test.cpp
         tape_tap_turbo_test.cpp
         snapshot_test.cpp
+        snapshot_store_test.cpp
         debugger_controller_test.cpp
         mocks/test_machine.cpp
         mocks/test_machine.h

@@ -55,6 +55,7 @@ add_library(auric_lib STATIC
         oric.cpp
         rom_patcher.cpp
         snapshot.cpp
+        snapshot_store.cpp
 )
 
 target_include_directories(auric_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

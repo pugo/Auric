@@ -45,6 +45,7 @@ Config::Config() :
                {RomType::Microdisk, "microdis.rom"}},
     _fonts_path{"./fonts"},
     _images_path{"./images"},
+    _snapshots_path{"./snapshots"},
     _enable_scanlines{true},
     _enable_vertical_lines{true},
     _enable_vignette{true},
@@ -193,6 +194,10 @@ void Config::read_config_file(std::filesystem::path config_path)
 
     if (yaml_config["media"]["images_path"]) {
         _images_path = yaml_config["media"]["images_path"].as<std::string>();
+    }
+
+    if (yaml_config["media"]["snapshots_path"]) {
+        _snapshots_path = yaml_config["media"]["snapshots_path"].as<std::string>();
     }
 
     if (yaml_config["video"]) {

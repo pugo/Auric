@@ -97,8 +97,17 @@ public:
     uint16_t output_bit;
     uint16_t period;
 
+    uint32_t get_rng() const { return rng; }
+    uint32_t get_counter() const { return counter; }
+
+    void set_timing(uint32_t new_counter, uint32_t new_rng)
+    {
+        counter = new_counter;
+        rng = new_rng;
+    }
+
 private:
-        uint16_t counter;
+    uint16_t counter;
     uint32_t rng;
 };
 
@@ -169,6 +178,14 @@ public:
 
     uint8_t shape;
     uint8_t shape_counter;
+
+    uint32_t get_period() const { return period; }
+    uint32_t get_counter() const { return counter; }
+    void set_timing(uint32_t new_period, uint32_t new_counter)
+    {
+        period = new_period;
+        counter = new_counter;
+    }
 
 private:
     uint32_t period;

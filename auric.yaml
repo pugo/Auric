@@ -15,6 +15,8 @@ media:
   images_path: ./images
   # Path to the fonts directory.
   fonts_path: ./fonts
+  # Path to persistent emulator snapshots.
+  snapshots_path: ./snapshots
 
 video:
   # Controls the window width and height
