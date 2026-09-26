@@ -44,7 +44,7 @@ bool TapeAutostarter::exec(Machine& machine, Tape& tape)
         }
 
         spdlog::debug("Tape autostarter: key input ready");
-        delay_counter = 4;
+        delay_counter = 3;
         autostart_state = AutostartState::PressKey;
     }
 
@@ -65,7 +65,7 @@ bool TapeAutostarter::exec(Machine& machine, Tape& tape)
             spdlog::debug("Tape autostarter: pressing key {}", key & 0x7F);
             machine.key_press(key & 0x7F, true);
 
-            delay_counter = 2;
+            delay_counter = 1;
             autostart_state = AutostartState::ReleaseKey;
             return true;
         }
