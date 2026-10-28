@@ -27,6 +27,7 @@
 #ifndef MOS6502_H
 #define MOS6502_H
 
+#include "memory.hpp"
 #include "memory_interface.hpp"
 #include "mos6502_opcodes.hpp"
 #include "snapshot.hpp"
@@ -239,6 +240,139 @@ protected:
      * @param value value to substract
      */
     void SBC(uint8_t value);
+
+    // Read byte
+
+    uint8_t read_byte_imm()
+    {
+        return memory_read_byte_handler(machine, PC++);
+    }
+
+    inline uint8_t read_byte_zp()
+    {
+        return memory_read_byte_zp_handler(machine, read_addr_zp());
+    }
+
+    inline uint8_t read_byte_zp_x()
+    {
+        return memory_read_byte_zp_handler(machine, read_addr_zp_x());
+    }
+
+    inline uint8_t read_byte_zp_y()
+    {
+        return memory_read_byte_zp_handler(machine, read_addr_zp_y());
+    }
+
+    inline uint8_t read_byte_abs()
+    {
+        return memory_read_byte_handler(machine, read_addr_abs());
+    }
+
+    inline uint8_t read_byte_ind_x()
+    {
+        return memory_read_byte_handler(machine, read_addr_ind_x());
+    }
+
+    // Read address
+
+    uint8_t read_addr_zp()
+    {
+        return read_byte_imm();
+    }
+
+    uint8_t read_addr_zp_x()
+    {
+        return uint8_t(read_byte_imm() + X);
+    }
+
+    uint8_t read_addr_zp_y()
+    {
+        return uint8_t(read_byte_imm() + Y);
+    }
+
+    uint16_t read_addr_abs()
+    {
+        const uint16_t lo = read_byte_imm();
+        const uint16_t hi = read_byte_imm();
+        return lo | (hi << 8) ;
+    }
+
+    uint16_t read_addr_abs_x()
+    {
+        return uint16_t(read_addr_abs() + X);
+    }
+
+    uint16_t read_addr_abs_y()
+    {
+        return uint16_t(read_addr_abs() + Y);
+    }
+
+    uint16_t read_addr_ind_x()
+    {
+        return memory_read_word_zp_handler(
+            machine, uint8_t(read_byte_imm() + X));
+    }
+
+    uint16_t read_addr_ind_y()
+    {
+        return uint16_t(
+            memory_read_word_zp_handler(machine, read_byte_imm()) + Y);
+    }
+
+    [[nodiscard]] static constexpr bool pagecheck(uint16_t addr, int offset)
+    {
+        return ((addr + offset) & 0xff00) != (addr & 0xff00);
+    }
+
+    [[nodiscard]] static constexpr bool pagecheck2(uint16_t a, uint16_t b)
+    {
+        return (a & 0xff00) != (b & 0xff00);
+    }
+
+    [[nodiscard]] uint16_t read_jump_addr()
+    {
+        const int8_t offset = static_cast<int8_t>(read_byte_imm());
+        return static_cast<uint16_t>(PC + offset);
+    }
+
+    [[nodiscard]] uint16_t peek_jump_addr(uint16_t pc)
+    {
+        const uint8_t value = memory_read_byte_handler(machine, uint16_t(pc + 1));
+        const int8_t offset = static_cast<int8_t>(value);
+
+        return static_cast<uint16_t>(pc + 2 + offset);
+    }
+
+    [[nodiscard]] uint16_t peek_addr_abs(uint16_t pc)
+    {
+        const uint8_t lo = memory_read_byte_handler(machine, uint16_t(pc + 1));
+        const uint8_t hi = memory_read_byte_handler(machine, uint16_t(pc + 2));
+
+        return uint16_t(lo) | (uint16_t(hi) << 8);
+    }
+
+    // stack
+
+    void push_byte_stack(uint8_t value)
+    {
+        memory.mem[STACK_BOTTOM | SP--] = value;
+    }
+
+    uint8_t pop_byte_stack()
+    {
+        return memory.mem[STACK_BOTTOM | ++SP];
+    }
+
+    // flags
+
+    uint8_t set_flag_nz(uint8_t value)
+    {
+        N_INTERN = Z_INTERN = value;
+        return value;
+    }
+
+    bool get_z() const { return Z_INTERN == 0; }
+    bool get_n() const { return (N_INTERN & 0x80) != 0; }
 
     Machine& machine;
     Memory& memory;

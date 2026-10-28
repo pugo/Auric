@@ -308,6 +308,49 @@ TEST_F(MOS6502Test, OpLDY_ABS_X)
     ASSERT_EQ(machine.cpu->Y, 0x5f);
 }
 
+TEST_F(MOS6502Test, AbsoluteIndexedTimingAfterInterrupt)
+{
+    Machine& machine = oric->get_machine();
+    auto& cpu = *machine.cpu;
+    // Read vectors from RAM so this test does not depend on the loaded ROM.
+    cpu.memory_read_word_handler = [](Machine& m, uint16_t address) -> uint16_t {
+        return m.memory.mem[address] | (m.memory.mem[uint16_t(address + 1)] << 8);
+    };
+
+    for (const bool nmi : {false, true}) {
+        for (const auto opcode : {LDA_ABS_X, LDA_ABS_Y, ILL_LAX_ABS_Y}) {
+            for (const bool crossing : {false, true}) {
+                SCOPED_TRACE(testing::Message() << "NMI=" << nmi
+                    << " opcode=" << int(opcode) << " crossing=" << crossing);
+                cpu.set_pc(0x1000);
+                cpu.X = cpu.Y = 1;
+                cpu.I = false;
+                const uint16_t vector = nmi ? NMI_VECTOR_L : IRQ_VECTOR_L;
+                machine.memory.mem[vector] = 0x00;
+                machine.memory.mem[vector + 1] = 0x20;
+                machine.memory.mem[0x2000] = opcode;
+                machine.memory.mem[0x2001] = crossing ? 0xff : 0x00;
+                machine.memory.mem[0x2002] = 0x40;
+                // The interrupted instruction has the opposite page-cross behavior.
+                machine.memory.mem[0x1001] = crossing ? 0x00 : 0xff;
+                machine.memory.mem[0x1002] = 0x40;
+                cpu.set_pc(0x2000);
+                const auto handler_cycles = cpu.time_instruction();
+                cpu.set_pc(0x1000);
+                if (nmi)
+                    cpu.NMI();
+                else
+                    cpu.set_irq_source(IRQ_SOURCE_VIA);
+
+                EXPECT_EQ(cpu.time_instruction(), handler_cycles + 7);
+                bool brk = false;
+                cpu.exec(false, brk);
+                cpu.clear_irq_source(IRQ_SOURCE_VIA);
+            }
+        }
+    }
+}
+
 
 
 // --- STA ---
