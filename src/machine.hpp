@@ -474,6 +474,7 @@ protected:
     std::string format_stat(uint16_t address);
     bool try_tape_turbo_intercept();
     bool load_tape(std::filesystem::path path);
+    void connect_tape_callbacks();
     Snapshot capture_snapshot();
     SnapshotContext current_snapshot_context();
     void restore_snapshot(Snapshot& saved_snapshot);

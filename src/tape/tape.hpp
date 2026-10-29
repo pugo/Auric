@@ -19,8 +19,11 @@
 #define TAPE_H
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
+
+using FileFoundHandler = std::function<void(const std::string&)>;
 
 class Memory;
 class MOS6502;
@@ -115,8 +118,30 @@ public:
     bool is_motor_running() { return motor_running; };
     virtual std::string debug_status() const;
 
+    /**
+     * Set handler to be called when a file is found.
+     * @param handler handler to be called when a file is found.
+     */
+    void set_file_found_handler(FileFoundHandler handler)
+    {
+        file_found_handler = std::move(handler);
+    }
+
 protected:
+    /**
+     * Notify handler that a file was found.
+     * @param name name of the file found.
+     */
+    void notify_file_found(const std::string& name)
+    {
+        if (file_found_handler)
+            file_found_handler(name);
+    }
+
     bool motor_running;
+
+private:
+    FileFoundHandler file_found_handler;
 };
 
 #endif // TAPE_TAP_H

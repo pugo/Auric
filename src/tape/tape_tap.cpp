@@ -335,6 +335,7 @@ bool TapeTap::parse_header()
     // Read variable-length name
     const std::string name = read_null_terminated_string(i);
     spdlog::info("Tape: file name: {}", name);
+    notify_file_found(name);
 
     // Store where body starts, to allow delay after header.
     body_start = tape_pos + i + 1;

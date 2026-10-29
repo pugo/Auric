@@ -249,7 +249,19 @@ bool Machine::load_tape(std::filesystem::path path)
         tape_autostarter.reset();
     }
 
+    connect_tape_callbacks();
     return tape->init();
+}
+
+void Machine::connect_tape_callbacks()
+{
+    tape->set_file_found_handler([this](const std::string& name) {
+        if (frontend) {
+            frontend->get_status_bar().show_text_for(
+                std::format("Loading: {}", name),
+                std::chrono::seconds(3));
+        }
+    });
 }
 
 bool Machine::try_tape_turbo_intercept()
@@ -532,6 +544,7 @@ void Machine::restore_snapshot(Snapshot& saved_snapshot)
         }
     }
 
+    connect_tape_callbacks();
     tape->load_from_snapshot(saved);
     tape_autostarter.reset();
     oric_rom_enabled = saved.oric_rom_enabled;
