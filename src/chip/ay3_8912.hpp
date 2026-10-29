@@ -30,8 +30,8 @@
 class Snapshot;
 class Machine;
 
-typedef uint8_t (*f_read_data_handler)(Machine &oric);
-typedef uint8_t (*f_write_data_handler)(Machine &oric);
+using f_read_data_handler = uint8_t (*)(Machine &machine);
+using f_write_data_handler = uint8_t (*)(Machine &machine);
 
 constexpr size_t register_changes_size = 32768;
 

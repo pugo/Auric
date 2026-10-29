@@ -136,13 +136,13 @@ public:
         void sr_stop();
     };
 
-    typedef void (*f_orb_changed_handler)(Machine &machine, uint8_t orb);
-    typedef void (*f_ca2_changed_handler)(Machine &machine, bool value);
-    typedef void (*f_cb2_changed_handler)(Machine &machine, bool aValue);
-    typedef void (*f_psg_changed_handler)(Machine &machine);
+    using f_orb_changed_handler = void (*)(Machine &machine, uint8_t orb);
+    using f_ca2_changed_handler = void (*)(Machine &machine, bool value);
+    using f_cb2_changed_handler = void (*)(Machine &machine, bool value);
+    using f_psg_changed_handler = void (*)(Machine &machine);
 
-    typedef void (*f_irq_handler)(Machine &machine);
-    typedef void (*f_irq_clear_handler)(Machine &machine);
+    using f_irq_handler = void (*)(Machine &machine);
+    using f_irq_clear_handler = void (*)(Machine &machine);
 
     explicit MOS6522(Machine& a_Machine);
     ~MOS6522() = default;

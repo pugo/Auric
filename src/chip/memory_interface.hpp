@@ -20,14 +20,13 @@
 
 class Machine;
 
+using f_memory_read_byte_handler = uint8_t (*)(Machine&, uint16_t address);
+using f_memory_read_byte_zp_handler = uint8_t (*)(Machine&, uint8_t address);
 
-typedef uint8_t (*f_memory_read_byte_handler)(Machine &oric, uint16_t address);
-typedef uint8_t (*f_memory_read_byte_zp_handler)(Machine &oric, uint8_t address);
+using f_memory_read_word_handler = uint16_t (*)(Machine&, uint16_t address);
+using f_memory_read_word_zp_handler = uint16_t (*)(Machine&, uint8_t address);
 
-typedef uint16_t (*f_memory_read_word_handler)(Machine &oric, uint16_t address);
-typedef uint16_t (*f_memory_read_word_zp_handler)(Machine &oric, uint8_t address);
-
-typedef void (*f_memory_write_byte_handler)(Machine &oric, uint16_t address, uint8_t val);
-typedef void (*f_memory_write_byte_zp_handler)(Machine &oric, uint8_t address, uint8_t val);
+using f_memory_write_byte_handler = void (*)(Machine&, uint16_t address, uint8_t val);
+using f_memory_write_byte_zp_handler = void (*)(Machine&, uint8_t address, uint8_t val);
 
 #endif //ORIC_MEMORY_INTERFACE_HPP
